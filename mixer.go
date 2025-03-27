@@ -5,7 +5,7 @@ import (
 	"log"
 	"runtime"
 	"strings"
-
+	"image"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -14,6 +14,7 @@ import (
 
 const windowWidth = 1280
 const windowHeight = 720
+const numLayers = 3
 const f32 = 4
 
 var (
@@ -21,7 +22,7 @@ var (
 )
 
 var vertexShader = `
-#version 330
+#version 400
 
 in vec2 position;
 in vec2 uv;
@@ -35,23 +36,46 @@ void main() {
 `
 
 var fragmentShader = `
-#version 330
+#version 400
 
 in vec2 UV;
 
 out vec4 color;
 
-uniform sampler2D tex[3];
+uniform sampler2D tex[9];
 uniform vec4 sourcePosition[3];
 
+vec4 sampleLayerYUV(int layer, vec4 dve) {
+	vec2 tpos = (UV / dve.z) - (dve.xy / dve.z);
+	float Y = texture(tex[layer*3], tpos).r;
+	float Cb = texture(tex[layer*3+1], tpos).r - 0.5;
+	float Cr = texture(tex[layer*3+2], tpos).r - 0.5;
+	vec3 yuv = vec3(Y, Cr, Cb);
+        mat3 colorMatrix = mat3(
+                1,   0,       1.402,
+                1,  -0.344,  -0.714,
+                1,   1.772,   0);
+	vec3 col = yuv * colorMatrix;
+	float a = 1.0;
+	if(tpos.x < 0 || tpos.x > 1.0) {
+		a = 0.0;
+	}
+	if(tpos.y < 0 || tpos.y > 1.0) {
+		a = 0.0;
+	}
+	return vec4(col.r, col.g, col.b, a);
+}
+
+vec4 sampleLayerRGB(int layer, vec4 dve) {
+	return texture(tex[layer*3], (UV / dve.z) - (dve.xy / dve.z));
+}
+
 void main() {
-	vec4 background = texture(tex[0], UV + vec2(0.5, 0.5) - sourcePosition[0].xy);
-	
-	vec4 dve1 = texture(tex[1], (UV / sourcePosition[1].z) - (sourcePosition[1].xy / sourcePosition[1].z));
-	vec4 dve2 = texture(tex[2], (UV / sourcePosition[2].zw) - (sourcePosition[2].xy / sourcePosition[2].zw));
+	vec4 background = sampleLayerRGB(0, sourcePosition[0]);
+	vec4 dve1 = sampleLayerYUV(1, sourcePosition[1]);
+	vec4 dve2 = sampleLayerYUV(2, sourcePosition[2]);
 	vec4 temp = mix(background, dve1, dve1.a);
 	color = mix(temp, dve2, dve2.a);
-
 }
 `
 
@@ -158,7 +182,13 @@ func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error)
 	return program, nil
 }
 
+func loadConfig() {
+	return
+}
+
 func main() {
+	loadConfig()
+
 	window := makeWindow()
 	initGL()
 
@@ -167,15 +197,18 @@ func main() {
 		log.Fatalf("Could not init shader: %s", err)
 	}
 
-	sources[0] = newSource("background")
-	sources[1] = newSource("slides")
-	sources[2] = newSource("cam")
+	sources[0] = newSource("background", windowWidth, windowHeight)
+	sources[1] = newSource("slides", windowWidth, windowHeight)
+	sources[2] = newSource("cam", windowWidth, windowHeight)
 
 	sources[0].LoadStill("background.png")
-	sources[1].LoadStill("slides.png")
+	sources[0].Move(0, 0, 1)
+
+	//sources[1].LoadStill("slides.png")
+	sources[1].LoadV4l2("/dev/video2", "yuyv", 1920, 1080)
 	sources[1].Move(0.025, 0.049, 0.79)
 
-	sources[2].LoadV4l2("/dev/video0", 640, 480)
+	sources[2].LoadV4l2("/dev/video0", "yuyv",640, 480)
 	sources[2].Move(0.75, 0.6, 0.2)
 
 
@@ -200,16 +233,18 @@ func main() {
 	gl.EnableVertexAttribArray(texCoordAttrib)
 	gl.VertexAttribPointerWithOffset(texCoordAttrib, 2, gl.FLOAT, false, stride, 2*f32)
 
-	var layerPos [3*4]float32
+	var layerPos [numLayers*4]float32
 	layerPosUniform := gl.GetUniformLocation(program, gl.Str("sourcePosition\x00"))
-	gl.Uniform4fv(layerPosUniform, 3, &layerPos[0])
+	gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
-	var textures [3]int32
-	textures[0] = 0
-	textures[1] = 1
-	textures[2] = 2
+	// Allocate 3 textures for every layer in case of planar YUV
+	const numTextures = numLayers * 3
+	var textures [numTextures]int32
+	for i:= range numTextures {
+		textures[i] = int32(i)
+	}
 	texUniform := gl.GetUniformLocation(program, gl.Str("tex\x00"))
-	gl.Uniform1iv(texUniform, 3, &textures[0])
+	gl.Uniform1iv(texUniform, numTextures, &textures[0])
 
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
 
@@ -220,19 +255,40 @@ func main() {
 		gl.UseProgram(program)
 
 		gl.BindVertexArray(vao)
-
 		
-
-		gl.Uniform1iv(texUniform, 3, &textures[0])
-		for i := range 3 {
+		gl.Uniform1iv(texUniform, numTextures, &textures[0])
+		for i := range numLayers {
 			if sources[i].IsReady {
+				if sources[i].IsPlanar {
+					// Planar 4:2:2
+					var frm *image.YCbCr
+					select {
+						case rf := <-sources[i].ImagesYUV:
+							frm = rf
+							sources[i].LastImageYUV = frm
+						default:
+							frm = sources[i].LastImageYUV
+					}
+					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i*3)))
+					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[0])
+					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw), int32(sources[i].Fh), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Y))
 
-				gl.ActiveTexture(uint32(gl.TEXTURE0 + i))
-				if !sources[i].IsStill {
-					frm := <-sources[i].Images
-					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 640, 480, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
+					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i*3)+1))
+					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[1])
+					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw/2), int32(sources[i].Fh), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cr))
+
+					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i*3)+2))
+					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[2])
+					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw/2), int32(sources[i].Fh), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cb))
+
+				} else {
+					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i*3)))
+					if !sources[i].IsStill {
+						frm := <-sources[i].Images
+						gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw), int32(sources[i].Fh), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
+					}
+					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[0])
 				}
-				gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture)
 
 				layerPos[(i*4)+0] = sources[i].Position.x
 				layerPos[(i*4)+1] = sources[i].Position.y
@@ -240,7 +296,7 @@ func main() {
 				layerPos[(i*4)+3] = sources[i].Size.y
 			}
 		}
-		gl.Uniform4fv(layerPosUniform, 3, &layerPos[0])
+		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
 
