@@ -1,17 +1,15 @@
 package v4lsource
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"log"
 	"strings"
 
 	"image"
-	"image/draw"
 	_ "image/jpeg"
 	_ "image/png"
 
+	"github.com/fosdem/vidmix/encdec"
 	"github.com/fosdem/vidmix/layer"
 
 	"github.com/vladimirvivien/go4vl/device"
@@ -137,14 +135,11 @@ func (s *V4LSource) decodeFramesJPEG() {
 	// this does not work, dunno why
 	var frame []byte
 	for frame = range s.rawCamFrames {
-		img, _, err := image.Decode(bytes.NewReader(frame))
+		nrgba, err := encdec.DecodeRGBfromImage(frame)
 		if err != nil {
-			fmt.Printf("[%s] decode failure: %s", s.Name, err)
+			log.Printf("[%s] Could not decode frame: %s", s.Name, err)
 			continue
 		}
-		bounds := img.Bounds()
-		nrgba := image.NewNRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
-		draw.Draw(nrgba, nrgba.Bounds(), img, bounds.Min, draw.Src)
 		s.isReady = true
 		s.frames.SendRGBFrame(nrgba)
 	}
@@ -152,17 +147,10 @@ func (s *V4LSource) decodeFramesJPEG() {
 
 func (s *V4LSource) decodeFrames422p() {
 	for frame := range s.rawCamFrames {
-		ycbr := image.NewYCbCr(image.Rect(0, 0, s.frameWidth, s.frameHeight), image.YCbCrSubsampleRatio422)
-		if len(frame) < len(ycbr.Cb)*4 {
-			fmt.Printf("[%s] got a frame of len %d when %d was expected", s.Name, len(frame), len(ycbr.Cb)*4)
+		ycbr, err := encdec.DecodeYUYV422(frame, s.frames.GetBlankYUV422Frame(s.frameWidth, s.frameHeight))
+		if err != nil {
+			log.Printf("[%s] Could not decode frame: %s", s.Name, err)
 			continue
-		}
-		for i := range ycbr.Cb {
-			j := i * 4
-			ycbr.Y[i*2] = frame[j]
-			ycbr.Y[i*2+1] = frame[j+2]
-			ycbr.Cb[i] = frame[j+1]
-			ycbr.Cr[i] = frame[j+3]
 		}
 		s.isReady = true
 		s.frames.SendYUV422Frame(ycbr)

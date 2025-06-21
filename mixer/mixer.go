@@ -203,6 +203,14 @@ func MakeWindowAndMix() {
 		v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
 		windowWidth, windowHeight,
 	)
+	// layers[1] = layer.New(
+	// 	"sauce",
+	// 	ffmpegsource.New(`
+	// 		ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
+	// 		`,
+	// 	),
+	// 	windowWidth, windowHeight,
+	// )
 	layers[2] = layer.New(
 		"cam",
 		v4lsource.New("/dev/video0", "yuyv", 640, 480),
