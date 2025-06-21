@@ -266,9 +266,6 @@ func MakeWindowAndMix() {
 
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
 
-	lastImagesYUV := make([]*image.YCbCr, len(layers))
-	// lastImagesRGB := make([]*image.NRGBA, len(layers))
-
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
@@ -286,9 +283,8 @@ func MakeWindowAndMix() {
 					select {
 					case rf := <-layers[i].Frames().GenYUV422Frames():
 						frm = rf
-						lastImagesYUV[i] = frm
 					default:
-						frm = lastImagesYUV[i]
+						frm = layers[i].Frames().LastYUV422Frame
 					}
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
 					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
