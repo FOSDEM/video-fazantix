@@ -22,14 +22,9 @@ type V4LSource struct {
 	Name            string
 	Format          string
 	Device          *device.Device
-	Fw              int
-	Fh              int
-	Frames          <-chan []byte
+	rawCamFrames    <-chan []byte
 	outputFramesRGB chan *image.NRGBA
 	outputFramesYUV chan *image.YCbCr
-
-	LastImage    *image.NRGBA
-	LastImageYUV *image.YCbCr
 
 	isReady bool
 
@@ -37,6 +32,8 @@ type V4LSource struct {
 
 	requestedWidth  int
 	requestedHeight int
+	frameWidth      int
+	frameHeight     int
 }
 
 func New(devName string, mode string, width int, height int) *V4LSource {
@@ -64,11 +61,11 @@ func (s *V4LSource) IsStill() bool {
 }
 
 func (s *V4LSource) Width() int {
-	return s.Fw
+	return s.frameWidth
 }
 
 func (s *V4LSource) Height() int {
-	return s.Fh
+	return s.frameHeight
 }
 
 func (s *V4LSource) FrameType() layer.FrameType {
@@ -111,7 +108,7 @@ func (s *V4LSource) Start() bool {
 	if err := camera.Start(context.TODO()); err != nil {
 		log.Fatalf("[%s] camera start: %s", s.Name, err)
 	}
-	s.Frames = camera.GetOutput()
+	s.rawCamFrames = camera.GetOutput()
 	s.Device = camera
 	go s.decodeFrames()
 	return true
@@ -132,8 +129,8 @@ func (s *V4LSource) decodeFrames() {
 	}
 
 	log.Printf("[%s] format: %s", s.Name, format)
-	s.Fw = int(format.Width)
-	s.Fh = int(format.Height)
+	s.frameWidth = int(format.Width)
+	s.frameHeight = int(format.Height)
 
 	switch s.Format {
 	case "mjpeg":
@@ -146,7 +143,7 @@ func (s *V4LSource) decodeFrames() {
 func (s *V4LSource) decodeFramesJPEG() {
 	// this does not work, dunno why
 	var frame []byte
-	for frame = range s.Frames {
+	for frame = range s.rawCamFrames {
 		img, _, err := image.Decode(bytes.NewReader(frame))
 		if err != nil {
 			fmt.Printf("[%s] decode failure: %s", s.Name, err)
@@ -163,8 +160,8 @@ func (s *V4LSource) decodeFramesJPEG() {
 func (s *V4LSource) decodeFrames422p() {
 	s.frameType = layer.YUV422Frames
 
-	for frame := range s.Frames {
-		ycbr := image.NewYCbCr(image.Rect(0, 0, s.Fw, s.Fh), image.YCbCrSubsampleRatio422)
+	for frame := range s.rawCamFrames {
+		ycbr := image.NewYCbCr(image.Rect(0, 0, s.frameWidth, s.frameHeight), image.YCbCrSubsampleRatio422)
 		if len(frame) < len(ycbr.Cb)*4 {
 			fmt.Printf("[%s] got a frame of len %d when %d was expected", s.Name, len(frame), len(ycbr.Cb)*4)
 			continue
