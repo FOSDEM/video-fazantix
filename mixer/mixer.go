@@ -7,9 +7,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/fosdem/vidmix/ffmpegsource"
+	"github.com/fosdem/vidmix/imgsource"
 	"github.com/fosdem/vidmix/layer"
-	"github.com/fosdem/vidmix/v4lsource"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -73,10 +72,10 @@ vec4 sampleLayerRGB(int layer, vec4 dve) {
 }
 
 void main() {
-	// vec4 background = sampleLayerRGB(0, sourcePosition[0]);
-	vec4 background = sampleLayerYUV(0, sourcePosition[0]);
-	vec4 dve1 = sampleLayerYUV(1, sourcePosition[1]);
-	vec4 dve2 = sampleLayerYUV(2, sourcePosition[2]);
+	vec4 background = sampleLayerRGB(0, sourcePosition[0]);
+	// vec4 background = sampleLayerYUV(0, sourcePosition[0]);
+	vec4 dve1 = sampleLayerRGB(1, sourcePosition[1]);
+	vec4 dve2 = sampleLayerRGB(2, sourcePosition[2]);
 	vec4 temp = mix(background, dve1, dve1.a);
 	color = mix(temp, dve2, dve2.a);
 }
@@ -194,29 +193,55 @@ func MakeWindowAndMix() {
 		log.Fatalf("Could not init shader: %s", err)
 	}
 
-	// layers[0] = layer.New(
-	// 	"background",
-	// 	imgsource.New("background.png"),
-	// 	windowWidth, windowHeight,
-	// )
 	layers[0] = layer.New(
-		"sauce",
-		ffmpegsource.New(`
-			ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
-			`,
-		),
+		"background",
+		imgsource.New("background.png"),
 		windowWidth, windowHeight,
 	)
 	layers[1] = layer.New(
-		"slides",
-		v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
+		"background",
+		imgsource.New("background.png"),
 		windowWidth, windowHeight,
 	)
 	layers[2] = layer.New(
-		"cam",
-		v4lsource.New("/dev/video0", "yuyv", 640, 480),
+		"background",
+		imgsource.New("background.png"),
 		windowWidth, windowHeight,
 	)
+	// layers[0] = layer.New(
+	// 	"sauce",
+	// 	ffmpegsource.New(`
+	// 		ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
+	// 		`,
+	// 	),
+	// 	windowWidth, windowHeight,
+	// )
+	// layers[1] = layer.New(
+	// 	"sauce",
+	// 	ffmpegsource.New(`
+	// 		ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
+	// 		`,
+	// 	),
+	// 	windowWidth, windowHeight,
+	// )
+	// layers[2] = layer.New(
+	// 	"sauce",
+	// 	ffmpegsource.New(`
+	// 		ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
+	// 		`,
+	// 	),
+	// 	windowWidth, windowHeight,
+	// )
+	// layers[1] = layer.New(
+	// 	"slides",
+	// 	v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
+	// 	windowWidth, windowHeight,
+	// )
+	// layers[2] = layer.New(
+	// 	"cam",
+	// 	v4lsource.New("/dev/video0", "yuyv", 640, 480),
+	// 	windowWidth, windowHeight,
+	// )
 
 	layers[0].Source.Start()
 	layers[0].Move(0, 0, 1)

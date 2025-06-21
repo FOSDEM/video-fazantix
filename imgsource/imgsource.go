@@ -15,7 +15,7 @@ import (
 type ImgSource struct {
 	path   string
 	loaded bool
-	rgba   *image.RGBA
+	rgba   *image.NRGBA
 	img    image.Image
 
 	frames layer.FrameForwarder
@@ -39,15 +39,17 @@ func New(path string) *ImgSource {
 		return s
 	}
 
-	s.rgba = image.NewRGBA(s.img.Bounds())
-	if s.rgba.Stride != s.Width()*4 {
+	s.rgba = image.NewNRGBA(s.img.Bounds())
+
+	s.frames.Init(
+		layer.RGBFrames, s.rgba.Pix,
+		s.rgba.Rect.Size().X, s.rgba.Rect.Size().Y,
+	)
+
+	if s.rgba.Stride != s.frames.Width*4 {
 		log.Printf("[%s] Unsupported stride", s.path)
 		return s
 	}
-
-	s.frames.Init()
-	s.frames.PixFmt = s.rgba.Pix
-	s.frames.FrameType = layer.RGBFrames
 
 	s.loaded = true
 	return s
@@ -63,6 +65,7 @@ func (s *ImgSource) Start() bool {
 
 	s.frames.IsReady = true
 	s.frames.IsStill = true
+	s.frames.SendFrame(s.rgba)
 	return true
 }
 
