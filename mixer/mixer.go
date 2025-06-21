@@ -281,10 +281,10 @@ func MakeWindowAndMix() {
 					// Planar 4:2:2
 					var frm *image.YCbCr
 					select {
-					case rf := <-layers[i].Frames().GenYUV422Frames():
-						frm = rf
+					case rf := <-layers[i].Frames().GenFrames():
+						frm = rf.(*image.YCbCr)
 					default:
-						frm = layers[i].Frames().LastYUV422Frame
+						frm = layers[i].Frames().LastFrame.(*image.YCbCr)
 					}
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
 					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
@@ -301,7 +301,8 @@ func MakeWindowAndMix() {
 				} else {
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
 					if !layers[i].Source.IsStill() {
-						frm := <-layers[i].Frames().GenRGBFrames()
+						frmImg := <-layers[i].Frames().GenFrames()
+						frm := frmImg.(*image.NRGBA)
 						gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()), int32(layers[i].Source.Height()), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
 					}
 					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])

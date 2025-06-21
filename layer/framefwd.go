@@ -15,34 +15,21 @@ type FrameForwarder struct {
 	FrameType FrameType
 	PixFmt    []uint8
 
-	outputFramesRGB    chan *image.NRGBA
-	outputFramesYUV422 chan *image.YCbCr
-
-	LastRGBFrame    *image.NRGBA
-	LastYUV422Frame *image.YCbCr
+	outputFrames chan image.Image
+	LastFrame    image.Image
 }
 
 func (f *FrameForwarder) Init() {
-	f.outputFramesRGB = make(chan *image.NRGBA)
-	f.outputFramesYUV422 = make(chan *image.YCbCr)
+	f.outputFrames = make(chan image.Image)
 }
 
-func (f *FrameForwarder) GenRGBFrames() <-chan *image.NRGBA {
-	return f.outputFramesRGB
+func (f *FrameForwarder) GenFrames() <-chan image.Image {
+	return f.outputFrames
 }
 
-func (f *FrameForwarder) GenYUV422Frames() <-chan *image.YCbCr {
-	return f.outputFramesYUV422
-}
-
-func (f *FrameForwarder) SendRGBFrame(frame *image.NRGBA) {
-	f.outputFramesRGB <- frame
-	f.LastRGBFrame = frame
-}
-
-func (f *FrameForwarder) SendYUV422Frame(frame *image.YCbCr) {
-	f.outputFramesYUV422 <- frame
-	f.LastYUV422Frame = frame
+func (f *FrameForwarder) SendFrame(frame image.Image) {
+	f.outputFrames <- frame
+	f.LastFrame = frame
 }
 
 func (f *FrameForwarder) GetBlankRGBFrame(width int, height int) *image.NRGBA {

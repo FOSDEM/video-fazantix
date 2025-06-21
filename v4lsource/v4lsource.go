@@ -141,7 +141,7 @@ func (s *V4LSource) decodeFramesJPEG() {
 			continue
 		}
 		s.isReady = true
-		s.frames.SendRGBFrame(nrgba)
+		s.frames.SendFrame(nrgba)
 	}
 }
 
@@ -153,7 +153,7 @@ func (s *V4LSource) decodeFrames422p() {
 			continue
 		}
 		s.isReady = true
-		s.frames.SendYUV422Frame(ycbr)
+		s.frames.SendFrame(ycbr)
 	}
 }
 
