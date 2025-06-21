@@ -1,22 +1,22 @@
-package main
+package mixer
 
 import (
-	"log"
-	"os"
+	"bytes"
 	"context"
 	"fmt"
+	"log"
+	"os"
 	"strings"
-	"bytes"
 
 	"image"
 	"image/draw"
-	_ "image/png"
 	_ "image/jpeg"
+	_ "image/png"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 
-		"github.com/vladimirvivien/go4vl/device"
+	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
 )
 
@@ -26,49 +26,49 @@ type Coordinate struct {
 }
 
 type Mask struct {
-	top float32
+	top    float32
 	bottom float32
-	left float32
-	right float32
+	left   float32
+	right  float32
 }
 
 type Source struct {
-	Name string
+	Name    string
 	IsStill bool
 
 	IsVisible bool
-	IsReady bool
+	IsReady   bool
 
-	Size Coordinate
+	Size     Coordinate
 	Position Coordinate
-	Mask Mask
+	Mask     Mask
 
-	OutputWidth int
+	OutputWidth  int
 	OutputHeight int
 
-	Texture [3]uint32
+	Texture  [3]uint32
 	IsPlanar bool
 
-	Width uint32
-	Height uint32
+	Width   uint32
+	Height  uint32
 	Squeeze float32
 
 	// V4L2 source
-	Format string
-	Device *device.Device
-	Fw int
-	Fh int
-	Frames <-chan []byte
-	Images chan *image.NRGBA
+	Format    string
+	Device    *device.Device
+	Fw        int
+	Fh        int
+	Frames    <-chan []byte
+	Images    chan *image.NRGBA
 	ImagesYUV chan *image.YCbCr
 
-	LastImage *image.NRGBA
+	LastImage    *image.NRGBA
 	LastImageYUV *image.YCbCr
 }
 
 func newSource(name string, width int, height int) Source {
 	s := Source{Name: name, IsStill: true, IsVisible: false, IsReady: false}
-	s.Size = Coordinate{x: 1.0, y:1.0}
+	s.Size = Coordinate{x: 1.0, y: 1.0}
 	s.Squeeze = 1.0
 	s.IsPlanar = false
 	s.OutputWidth = width
@@ -136,7 +136,7 @@ func (s *Source) DecodeFrames() {
 	// Wait until the device is actually streaming
 	//frame := <- s.Frames
 	//_ = frame
-	
+
 	log.Printf("[%s] Got first frame", s.Name)
 
 	format, err := s.Device.GetPixFormat()
@@ -151,10 +151,10 @@ func (s *Source) DecodeFrames() {
 	// Create appropriate textures
 
 	switch s.Format {
-		case "mjpeg":
-			s.DecodeFramesJPEG()
-		case "yuyv":
-			s.DecodeFrames422p()
+	case "mjpeg":
+		s.DecodeFramesJPEG()
+	case "yuyv":
+		s.DecodeFrames422p()
 	}
 }
 
@@ -196,7 +196,6 @@ func (s *Source) DecodeFramesJPEG() {
 
 func (s *Source) DecodeFrames422p() {
 
-
 	s.IsPlanar = true
 
 	var frame []byte
@@ -220,10 +219,10 @@ func (s *Source) LoadV4l2(devName string, mode string, width int, height int) bo
 
 	pixfmt := v4l2.PixelFmtYUYV
 	switch strings.ToLower(mode) {
-		case "mjpeg":
-			pixfmt = v4l2.PixelFmtMJPEG
-		case "yuyv":
-			pixfmt = v4l2.PixelFmtYUYV
+	case "mjpeg":
+		pixfmt = v4l2.PixelFmtMJPEG
+	case "yuyv":
+		pixfmt = v4l2.PixelFmtYUYV
 	}
 	s.Format = mode
 	camera, err := device.Open(
@@ -254,7 +253,7 @@ func (s *Source) LoadV4l2(devName string, mode string, width int, height int) bo
 	//gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &borderColor[0])
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-	var buf [640*480]uint8;
+	var buf [640 * 480]uint8
 	gl.TexImage2D(
 		gl.TEXTURE_2D,
 		0,
@@ -265,8 +264,8 @@ func (s *Source) LoadV4l2(devName string, mode string, width int, height int) bo
 		gl.RED,
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(&buf[0]))
-	
-	for i := range(2) {
+
+	for i := range 2 {
 		gl.GenTextures(1, &s.Texture[i+1])
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(gl.TEXTURE_2D, s.Texture[1+i])
@@ -289,7 +288,7 @@ func (s *Source) LoadV4l2(devName string, mode string, width int, height int) bo
 			nil)
 	}
 
-	s.Squeeze = (float32(width)/float32(height)) / (float32(s.Width)/float32(s.Height))
+	s.Squeeze = (float32(width) / float32(height)) / (float32(s.Width) / float32(s.Height))
 	if err := camera.Start(context.TODO()); err != nil {
 		log.Fatalf("[%s] camera start: %s", s.Name, err)
 	}

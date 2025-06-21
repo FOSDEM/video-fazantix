@@ -1,15 +1,14 @@
-package main
+package mixer
 
 import (
 	"fmt"
+	"image"
 	"log"
 	"runtime"
 	"strings"
-	"image"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
-//	"github.com/go-gl/mathgl/mgl32"
 )
 
 const windowWidth = 1280
@@ -121,7 +120,7 @@ func initGL() {
 	}
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
-	log.Printf("OpenGL version '%s'", version)	
+	log.Printf("OpenGL version '%s'", version)
 }
 
 func compileShader(source string, shaderType uint32) (uint32, error) {
@@ -182,13 +181,7 @@ func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error)
 	return program, nil
 }
 
-func loadConfig() {
-	return
-}
-
-func main() {
-	loadConfig()
-
+func MakeWindowAndMix() {
 	window := makeWindow()
 	initGL()
 
@@ -208,9 +201,8 @@ func main() {
 	sources[1].LoadV4l2("/dev/video2", "yuyv", 1920, 1080)
 	sources[1].Move(0.025, 0.049, 0.79)
 
-	sources[2].LoadV4l2("/dev/video0", "yuyv",640, 480)
+	sources[2].LoadV4l2("/dev/video0", "yuyv", 640, 480)
 	sources[2].Move(0.75, 0.6, 0.2)
-
 
 	// Configure the vertex data
 	var vao uint32
@@ -221,7 +213,7 @@ func main() {
 	gl.GenBuffers(1, &vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*f32, gl.Ptr(vertices), gl.STATIC_DRAW)
-	
+
 	var stride int32
 	stride = 4 * f32
 
@@ -233,14 +225,14 @@ func main() {
 	gl.EnableVertexAttribArray(texCoordAttrib)
 	gl.VertexAttribPointerWithOffset(texCoordAttrib, 2, gl.FLOAT, false, stride, 2*f32)
 
-	var layerPos [numLayers*4]float32
+	var layerPos [numLayers * 4]float32
 	layerPosUniform := gl.GetUniformLocation(program, gl.Str("sourcePosition\x00"))
 	gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 	// Allocate 3 textures for every layer in case of planar YUV
 	const numTextures = numLayers * 3
 	var textures [numTextures]int32
-	for i:= range numTextures {
+	for i := range numTextures {
 		textures[i] = int32(i)
 	}
 	texUniform := gl.GetUniformLocation(program, gl.Str("tex\x00"))
@@ -255,7 +247,7 @@ func main() {
 		gl.UseProgram(program)
 
 		gl.BindVertexArray(vao)
-		
+
 		gl.Uniform1iv(texUniform, numTextures, &textures[0])
 		for i := range numLayers {
 			if sources[i].IsReady {
@@ -263,26 +255,26 @@ func main() {
 					// Planar 4:2:2
 					var frm *image.YCbCr
 					select {
-						case rf := <-sources[i].ImagesYUV:
-							frm = rf
-							sources[i].LastImageYUV = frm
-						default:
-							frm = sources[i].LastImageYUV
+					case rf := <-sources[i].ImagesYUV:
+						frm = rf
+						sources[i].LastImageYUV = frm
+					default:
+						frm = sources[i].LastImageYUV
 					}
-					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i*3)))
+					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
 					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[0])
 					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw), int32(sources[i].Fh), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Y))
 
-					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i*3)+1))
+					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 1))
 					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[1])
 					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw/2), int32(sources[i].Fh), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cr))
 
-					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i*3)+2))
+					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 2))
 					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[2])
 					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw/2), int32(sources[i].Fh), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cb))
 
 				} else {
-					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i*3)))
+					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
 					if !sources[i].IsStill {
 						frm := <-sources[i].Images
 						gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw), int32(sources[i].Fh), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
