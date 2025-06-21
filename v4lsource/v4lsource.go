@@ -194,15 +194,18 @@ func (s *V4LSource) decodeFramesJPEG() {
 func (s *V4LSource) decodeFrames422p() {
 	s.frameType = layer.YUVFrames
 
-	var frame []byte
-	for frame = range s.Frames {
+	for frame := range s.Frames {
 		ycbr := image.NewYCbCr(image.Rect(0, 0, s.Fw, s.Fh), image.YCbCrSubsampleRatio422)
+		if len(frame) < len(ycbr.Cb)*4 {
+			fmt.Printf("[%s] got a frame of len %d when %d was expected", s.Name, len(frame), len(ycbr.Cb)*4)
+			continue
+		}
 		for i := range ycbr.Cb {
-			ii := i * 4
-			ycbr.Y[i*2] = frame[ii]
-			ycbr.Y[i*2+1] = frame[ii+2]
-			ycbr.Cb[i] = frame[ii+1]
-			ycbr.Cr[i] = frame[ii+3]
+			j := i * 4
+			ycbr.Y[i*2] = frame[j]
+			ycbr.Y[i*2+1] = frame[j+2]
+			ycbr.Cb[i] = frame[j+1]
+			ycbr.Cr[i] = frame[j+3]
 		}
 		s.isReady = true
 		s.outputFramesYUV <- ycbr
