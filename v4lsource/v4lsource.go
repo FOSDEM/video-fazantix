@@ -22,14 +22,10 @@ type V4LSource struct {
 	Device       *device.Device
 	rawCamFrames <-chan []byte
 
-	isReady bool
-
 	frames layer.FrameForwarder
 
 	requestedWidth  int
 	requestedHeight int
-	frameWidth      int
-	frameHeight     int
 }
 
 func New(devName string, mode string, width int, height int) *V4LSource {
@@ -42,25 +38,8 @@ func New(devName string, mode string, width int, height int) *V4LSource {
 
 	s.requestedWidth = width
 	s.requestedHeight = height
-	s.frames.Init()
 
 	return s
-}
-
-func (s *V4LSource) IsReady() bool {
-	return s.isReady
-}
-
-func (s *V4LSource) IsStill() bool {
-	return false
-}
-
-func (s *V4LSource) Width() int {
-	return s.frameWidth
-}
-
-func (s *V4LSource) Height() int {
-	return s.frameHeight
 }
 
 func (s *V4LSource) Frames() *layer.FrameForwarder {
@@ -71,12 +50,8 @@ func (s *V4LSource) Start() bool {
 	pixfmt := v4l2.PixelFmtYUYV
 	switch strings.ToLower(s.Format) {
 	case "mjpeg":
-		s.frames.FrameType = layer.RGBFrames
 		pixfmt = v4l2.PixelFmtMJPEG
-		dummyImg := image.NewNRGBA(image.Rect(0, 0, 1, 1))
-		s.frames.PixFmt = dummyImg.Pix
 	case "yuyv":
-		s.frames.FrameType = layer.YUV422Frames
 		pixfmt = v4l2.PixelFmtYUYV
 	}
 
@@ -101,15 +76,6 @@ func (s *V4LSource) Start() bool {
 	}
 	s.rawCamFrames = camera.GetOutput()
 	s.Device = camera
-	go s.decodeFrames()
-	return true
-}
-
-func (s *V4LSource) Stop() {
-	s.Device.Close()
-}
-
-func (s *V4LSource) decodeFrames() {
 	// TODO: Wait until the device is actually streaming
 
 	log.Printf("[%s] Got first frame", s.Name)
@@ -120,9 +86,27 @@ func (s *V4LSource) decodeFrames() {
 	}
 
 	log.Printf("[%s] format: %s", s.Name, format)
-	s.frameWidth = int(format.Width)
-	s.frameHeight = int(format.Height)
 
+	switch strings.ToLower(s.Format) {
+	case "mjpeg":
+		dummyImg := image.NewNRGBA(image.Rect(0, 0, 1, 1))
+		s.frames.Init(
+			layer.RGBFrames, dummyImg.Pix,
+			int(format.Width), int(format.Height),
+		)
+	case "yuyv":
+		s.frames.Init(layer.YUV422Frames, []uint8{}, int(format.Width), int(format.Height))
+	}
+
+	go s.decodeFrames()
+	return true
+}
+
+func (s *V4LSource) Stop() {
+	s.Device.Close()
+}
+
+func (s *V4LSource) decodeFrames() {
 	switch s.Format {
 	case "mjpeg":
 		s.decodeFramesJPEG()
@@ -140,19 +124,20 @@ func (s *V4LSource) decodeFramesJPEG() {
 			log.Printf("[%s] Could not decode frame: %s", s.Name, err)
 			continue
 		}
-		s.isReady = true
+		s.frames.IsReady = true
 		s.frames.SendFrame(nrgba)
 	}
 }
 
 func (s *V4LSource) decodeFrames422p() {
 	for frame := range s.rawCamFrames {
-		ycbr, err := encdec.DecodeYUYV422(frame, s.frames.GetBlankYUV422Frame(s.frameWidth, s.frameHeight))
+		imgg := s.frames.GetBlankFrame()
+		ycbr, err := encdec.DecodeYUYV422(frame, imgg.(*image.YCbCr))
 		if err != nil {
 			log.Printf("[%s] Could not decode frame: %s", s.Name, err)
 			continue
 		}
-		s.isReady = true
+		s.frames.IsReady = true
 		s.frames.SendFrame(ycbr)
 	}
 }

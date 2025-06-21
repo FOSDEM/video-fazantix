@@ -13,11 +13,10 @@ import (
 )
 
 type ImgSource struct {
-	path    string
-	isReady bool
-	loaded  bool
-	rgba    *image.RGBA
-	img     image.Image
+	path   string
+	loaded bool
+	rgba   *image.RGBA
+	img    image.Image
 
 	frames layer.FrameForwarder
 }
@@ -54,22 +53,6 @@ func New(path string) *ImgSource {
 	return s
 }
 
-func (s *ImgSource) Width() int {
-	return s.rgba.Rect.Size().X
-}
-
-func (s *ImgSource) Height() int {
-	return s.rgba.Rect.Size().Y
-}
-
-func (s *ImgSource) IsReady() bool {
-	return s.isReady
-}
-
-func (s *ImgSource) IsStill() bool {
-	return true
-}
-
 func (s *ImgSource) Start() bool {
 	if !s.loaded {
 		return false
@@ -78,7 +61,8 @@ func (s *ImgSource) Start() bool {
 	draw.Draw(s.rgba, s.rgba.Bounds(), s.img, image.Point{0, 0}, draw.Src)
 	log.Printf("[%s] Size: %dx%d", s.path, s.rgba.Bounds().Dx(), s.rgba.Bounds().Dy())
 
-	s.isReady = true
+	s.frames.IsReady = true
+	s.frames.IsStill = true
 	return true
 }
 

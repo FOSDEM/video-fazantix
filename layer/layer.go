@@ -36,11 +36,6 @@ type Layer struct {
 
 type Source interface {
 	Frames() *FrameForwarder
-
-	IsReady() bool
-	IsStill() bool
-	Width() int
-	Height() int
 	Start() bool
 }
 
@@ -53,7 +48,7 @@ func New(name string, src Source, width int, height int) *Layer {
 	s.OutputHeight = height
 	s.Position = Coordinate{X: 0.5, Y: 0.5}
 	s.Mask = Mask{top: 0, bottom: 0, left: 0, right: 0}
-	s.Squeeze = (float32(width) / float32(height)) / (float32(s.Source.Width()) / float32(s.Source.Height()))
+	s.Squeeze = (float32(width) / float32(height)) / (float32(s.Source.Frames().Width) / float32(s.Source.Frames().Height))
 	return s
 }
 
@@ -65,8 +60,8 @@ func (s *Layer) Move(x float32, y float32, size float32) {
 }
 
 func (s *Layer) SetupTextures() {
-	width := s.Source.Width()
-	height := s.Source.Height()
+	width := s.Source.Frames().Width
+	height := s.Source.Frames().Height
 
 	switch s.Frames().FrameType {
 	case YUV422Frames:

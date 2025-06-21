@@ -277,44 +277,48 @@ func MakeWindowAndMix() {
 
 		gl.Uniform1iv(texUniform, numTextures, &textures[0])
 		for i := range numLayers {
-			if layers[i].Source.IsReady() {
-				if layers[i].Frames().FrameType == layer.YUV422Frames {
-					// Planar 4:2:2
-					rf := layers[i].Frames().LastFrame
-					if rf == nil {
-						continue
-					}
-					frm := rf.(*image.YCbCr)
-					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
-					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
-					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()), int32(layers[i].Source.Height()), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Y))
-
-					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 1))
-					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[1])
-					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()/2), int32(layers[i].Source.Height()), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cr))
-
-					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 2))
-					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[2])
-					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()/2), int32(layers[i].Source.Height()), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cb))
-
-				} else {
-					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
-					if !layers[i].Source.IsStill() {
-						frmImg := layers[i].Frames().LastFrame
-						if frmImg == nil {
-							continue
-						}
-						frm := frmImg.(*image.NRGBA)
-						gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()), int32(layers[i].Source.Height()), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
-					}
-					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
-				}
-
-				layerPos[(i*4)+0] = layers[i].Position.X
-				layerPos[(i*4)+1] = layers[i].Position.Y
-				layerPos[(i*4)+2] = layers[i].Size.X
-				layerPos[(i*4)+3] = layers[i].Size.Y
+			if !layers[i].Frames().IsReady {
+				continue
 			}
+			rf := layers[i].Frames().LastFrame
+			if rf == nil {
+				continue
+			}
+
+			width := layers[i].Frames().Width
+			height := layers[i].Frames().Height
+
+			if layers[i].Frames().FrameType == layer.YUV422Frames {
+				// Planar 4:2:2
+				frm := rf.(*image.YCbCr)
+
+				gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
+				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
+				gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(width), int32(height), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Y))
+
+				gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 1))
+				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[1])
+				gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(width/2), int32(height), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cr))
+
+				gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 2))
+				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[2])
+				gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(width/2), int32(height), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cb))
+
+			} else {
+				frm := rf.(*image.NRGBA)
+				gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
+				if !layers[i].Frames().IsStill {
+					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(width), int32(height), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
+				}
+				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
+			}
+
+			layerPos[(i*4)+0] = layers[i].Position.X
+			layerPos[(i*4)+1] = layers[i].Position.Y
+			layerPos[(i*4)+2] = layers[i].Size.X
+			layerPos[(i*4)+3] = layers[i].Size.Y
+
+			layers[i].Frames().RecycleFrame(rf)
 		}
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 

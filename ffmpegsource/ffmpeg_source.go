@@ -1,6 +1,7 @@
 package ffmpegsource
 
 import (
+	"image"
 	"io"
 	"log"
 	"os"
@@ -16,7 +17,6 @@ type FFmpegSource struct {
 	stdout   io.ReadCloser
 	stderr   io.ReadCloser
 	frames   layer.FrameForwarder
-	isReady  bool
 }
 
 func New(shellCmd string) *FFmpegSource {
@@ -38,14 +38,13 @@ func (f *FFmpegSource) Start() bool {
 		return false
 	}
 
-	f.frames.Init()
-	f.frames.FrameType = layer.YUV422Frames
+	f.frames.Init(layer.YUV422Frames, []uint8{}, 1920, 1080)
 
 	go f.runFFmpeg()
 	go f.processStdout()
 	go f.processStderr()
 
-	f.isReady = true
+	f.frames.IsReady = true
 	return true
 }
 
@@ -70,7 +69,7 @@ func (f *FFmpegSource) processStderr() {
 }
 
 func (f *FFmpegSource) processStdout() {
-	frameSize := f.Width() * f.Height() * 2 // bytes for yuyv422 frames
+	frameSize := f.frames.Width * f.frames.Height * 2 // bytes for yuyv422 frames
 	buf := make([]byte, frameSize)
 	for {
 		_, err := io.ReadFull(f.stdout, buf)
@@ -79,7 +78,8 @@ func (f *FFmpegSource) processStdout() {
 			return
 		}
 
-		img, err := encdec.DecodeYUYV422(buf, f.frames.GetBlankYUV422Frame(f.Width(), f.Height()))
+		imgg := f.frames.GetBlankFrame()
+		img, err := encdec.DecodeYUYV422(buf, imgg.(*image.YCbCr))
 		if err != nil {
 			log.Printf("could not decode frame: %s\n", err)
 			continue
@@ -90,20 +90,4 @@ func (f *FFmpegSource) processStdout() {
 
 func (f *FFmpegSource) Frames() *layer.FrameForwarder {
 	return &f.frames
-}
-
-func (f *FFmpegSource) Width() int {
-	return 1920
-}
-
-func (f *FFmpegSource) Height() int {
-	return 1080
-}
-
-func (f *FFmpegSource) IsReady() bool {
-	return f.isReady
-}
-
-func (f *FFmpegSource) IsStill() bool {
-	return false
 }
