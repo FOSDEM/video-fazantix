@@ -1,4 +1,4 @@
-module github.com/fosdem/vidmix
+module github.com/fosdem/fazantix
 
 go 1.24.4
 

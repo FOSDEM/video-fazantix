@@ -9,8 +9,8 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"github.com/fosdem/vidmix/encdec"
-	"github.com/fosdem/vidmix/layer"
+	"github.com/fosdem/fazantix/encdec"
+	"github.com/fosdem/fazantix/layer"
 
 	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"

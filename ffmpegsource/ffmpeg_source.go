@@ -7,8 +7,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/fosdem/vidmix/encdec"
-	"github.com/fosdem/vidmix/layer"
+	"github.com/fosdem/fazantix/encdec"
+	"github.com/fosdem/fazantix/layer"
 )
 
 type FFmpegSource struct {

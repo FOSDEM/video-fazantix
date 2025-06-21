@@ -1,7 +1,7 @@
 package layer
 
 import (
-	"github.com/fosdem/vidmix/rendering"
+	"github.com/fosdem/fazantix/rendering"
 )
 
 type Coordinate struct {

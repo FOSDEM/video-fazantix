@@ -9,7 +9,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"github.com/fosdem/vidmix/layer"
+	"github.com/fosdem/fazantix/layer"
 )
 
 type ImgSource struct {
