@@ -7,6 +7,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/fosdem/vidmix/imgsource"
+	"github.com/fosdem/vidmix/layer"
+	"github.com/fosdem/vidmix/v4lsource"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -17,7 +20,7 @@ const numLayers = 3
 const f32 = 4
 
 var (
-	sources [3]Source
+	layers [3]*layer.Layer
 )
 
 var vertexShader = `
@@ -190,19 +193,30 @@ func MakeWindowAndMix() {
 		log.Fatalf("Could not init shader: %s", err)
 	}
 
-	sources[0] = newSource("background", windowWidth, windowHeight)
-	sources[1] = newSource("slides", windowWidth, windowHeight)
-	sources[2] = newSource("cam", windowWidth, windowHeight)
+	layers[0] = layer.New(
+		"background",
+		imgsource.New("background.png"),
+		windowWidth, windowHeight,
+	)
+	layers[1] = layer.New(
+		"slides",
+		v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
+		windowWidth, windowHeight,
+	)
+	layers[2] = layer.New(
+		"cam",
+		v4lsource.New("/dev/video0", "yuyv", 640, 480),
+		windowWidth, windowHeight,
+	)
 
-	sources[0].LoadStill("background.png")
-	sources[0].Move(0, 0, 1)
+	layers[0].Source.Start()
+	layers[0].Move(0, 0, 1)
 
-	//sources[1].LoadStill("slides.png")
-	sources[1].LoadV4l2("/dev/video2", "yuyv", 1920, 1080)
-	sources[1].Move(0.025, 0.049, 0.79)
+	layers[1].Source.Start()
+	layers[1].Move(0.025, 0.049, 0.79)
 
-	sources[2].LoadV4l2("/dev/video0", "yuyv", 640, 480)
-	sources[2].Move(0.75, 0.6, 0.2)
+	layers[2].Source.Start()
+	layers[2].Move(0.75, 0.6, 0.2)
 
 	// Configure the vertex data
 	var vao uint32
@@ -240,6 +254,9 @@ func MakeWindowAndMix() {
 
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
 
+	lastImagesYUV := make([]*image.YCbCr, len(layers))
+	// lastImagesRGB := make([]*image.NRGBA, len(layers))
+
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
@@ -250,42 +267,42 @@ func MakeWindowAndMix() {
 
 		gl.Uniform1iv(texUniform, numTextures, &textures[0])
 		for i := range numLayers {
-			if sources[i].IsReady {
-				if sources[i].IsPlanar {
+			if layers[i].Source.IsReady() {
+				if layers[i].Source.FrameType() == layer.YUVFrames {
 					// Planar 4:2:2
 					var frm *image.YCbCr
 					select {
-					case rf := <-sources[i].ImagesYUV:
+					case rf := <-layers[i].Source.GenYUVFrames():
 						frm = rf
-						sources[i].LastImageYUV = frm
+						lastImagesYUV[i] = frm
 					default:
-						frm = sources[i].LastImageYUV
+						frm = lastImagesYUV[i]
 					}
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
-					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[0])
-					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw), int32(sources[i].Fh), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Y))
+					gl.BindTexture(gl.TEXTURE_2D, layers[i].Source.Texture(0))
+					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()), int32(layers[i].Source.Height()), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Y))
 
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 1))
-					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[1])
-					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw/2), int32(sources[i].Fh), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cr))
+					gl.BindTexture(gl.TEXTURE_2D, layers[i].Source.Texture(1))
+					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()/2), int32(layers[i].Source.Height()), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cr))
 
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 2))
-					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[2])
-					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw/2), int32(sources[i].Fh), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cb))
+					gl.BindTexture(gl.TEXTURE_2D, layers[i].Source.Texture(2))
+					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()/2), int32(layers[i].Source.Height()), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cb))
 
 				} else {
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
-					if !sources[i].IsStill {
-						frm := <-sources[i].Images
-						gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sources[i].Fw), int32(sources[i].Fh), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
+					if !layers[i].Source.IsStill() {
+						frm := <-layers[i].Source.GenRGBFrames()
+						gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()), int32(layers[i].Source.Height()), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
 					}
-					gl.BindTexture(gl.TEXTURE_2D, sources[i].Texture[0])
+					gl.BindTexture(gl.TEXTURE_2D, layers[i].Source.Texture(0))
 				}
 
-				layerPos[(i*4)+0] = sources[i].Position.x
-				layerPos[(i*4)+1] = sources[i].Position.y
-				layerPos[(i*4)+2] = sources[i].Size.x
-				layerPos[(i*4)+3] = sources[i].Size.y
+				layerPos[(i*4)+0] = layers[i].Position.X
+				layerPos[(i*4)+1] = layers[i].Position.Y
+				layerPos[(i*4)+2] = layers[i].Size.X
+				layerPos[(i*4)+3] = layers[i].Size.Y
 			}
 		}
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
