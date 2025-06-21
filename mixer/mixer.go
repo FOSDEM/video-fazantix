@@ -280,17 +280,11 @@ func MakeWindowAndMix() {
 			if layers[i].Source.IsReady() {
 				if layers[i].Frames().FrameType == layer.YUV422Frames {
 					// Planar 4:2:2
-					var frm *image.YCbCr
-					select {
-					case rf := <-layers[i].Frames().GenFrames():
-						frm = rf.(*image.YCbCr)
-					default:
-						rf := layers[i].Frames().LastFrame
-						if rf == nil {
-							continue
-						}
-						frm = rf.(*image.YCbCr)
+					rf := layers[i].Frames().LastFrame
+					if rf == nil {
+						continue
 					}
+					frm := rf.(*image.YCbCr)
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
 					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
 					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()), int32(layers[i].Source.Height()), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Y))
@@ -306,7 +300,10 @@ func MakeWindowAndMix() {
 				} else {
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
 					if !layers[i].Source.IsStill() {
-						frmImg := <-layers[i].Frames().GenFrames()
+						frmImg := layers[i].Frames().LastFrame
+						if frmImg == nil {
+							continue
+						}
 						frm := frmImg.(*image.NRGBA)
 						gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()), int32(layers[i].Source.Height()), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
 					}

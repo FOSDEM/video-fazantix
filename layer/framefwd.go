@@ -15,20 +15,13 @@ type FrameForwarder struct {
 	FrameType FrameType
 	PixFmt    []uint8
 
-	outputFrames chan image.Image
-	LastFrame    image.Image
+	LastFrame image.Image
 }
 
 func (f *FrameForwarder) Init() {
-	f.outputFrames = make(chan image.Image)
-}
-
-func (f *FrameForwarder) GenFrames() <-chan image.Image {
-	return f.outputFrames
 }
 
 func (f *FrameForwarder) SendFrame(frame image.Image) {
-	f.outputFrames <- frame
 	f.LastFrame = frame
 }
 

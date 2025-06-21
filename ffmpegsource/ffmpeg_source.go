@@ -1,9 +1,9 @@
 package ffmpegsource
 
 import (
-	"bufio"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 
 	"github.com/fosdem/vidmix/encdec"
@@ -59,10 +59,14 @@ func (f *FFmpegSource) runFFmpeg() {
 }
 
 func (f *FFmpegSource) processStderr() {
-	scanner := bufio.NewScanner(f.stdout)
-	for scanner.Scan() {
-		log.Printf("[ffmpeg] %s", scanner.Text)
+	fe, err := os.Create("/tmp/ffmpeg_stderr")
+	if err != nil {
+		log.Printf("[ffmpeg] could not open stderr file\n")
+		return
 	}
+	defer fe.Close()
+
+	io.Copy(fe, f.stderr)
 }
 
 func (f *FFmpegSource) processStdout() {
