@@ -107,7 +107,7 @@ func (s *Source) LoadStill(path string) bool {
 	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
 	log.Printf("[%s] Size: %dx%d", s.Name, rgba.Bounds().Dx(), rgba.Bounds().Dy())
 
-	s.setupRGBTexture(0, rgba.Rect.Size().X, rgba.Rect.Size().Y, rgba.Pix)
+	s.setupRGBTexture(&s.Texture[0], rgba.Rect.Size().X, rgba.Rect.Size().Y, rgba.Pix)
 	s.IsReady = true
 	return true
 }
@@ -193,10 +193,10 @@ func (s *Source) DecodeFrames422p() {
 	}
 }
 
-func (s *Source) setupInputTexture(channelID int, width int, height int) {
-	gl.GenTextures(1, &s.Texture[channelID])
+func (s *Source) setupYUVTexture(id *uint32, width int, height int) {
+	gl.GenTextures(1, id)
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, s.Texture[channelID])
+	gl.BindTexture(gl.TEXTURE_2D, *id)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
@@ -218,10 +218,10 @@ func (s *Source) setupInputTexture(channelID int, width int, height int) {
 	)
 }
 
-func (s *Source) setupRGBTexture(channelID int, width int, height int, texture []byte) {
-	gl.GenTextures(1, &s.Texture[channelID])
+func (s *Source) setupRGBTexture(id *uint32, width int, height int, texture []byte) {
+	gl.GenTextures(1, id)
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, s.Texture[channelID])
+	gl.BindTexture(gl.TEXTURE_2D, *id)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
@@ -271,9 +271,9 @@ func (s *Source) LoadV4l2(devName string, mode string, width int, height int) bo
 	}
 	log.Printf("[%s] framerate: %d", s.Name, fps)
 
-	s.setupInputTexture(0, width, height)
-	s.setupInputTexture(1, width/2, height)
-	s.setupInputTexture(2, width/2, height)
+	s.setupYUVTexture(&s.Texture[0], width, height)
+	s.setupYUVTexture(&s.Texture[1], width/2, height)
+	s.setupYUVTexture(&s.Texture[2], width/2, height)
 
 	s.Squeeze = (float32(width) / float32(height)) / (float32(s.Width) / float32(s.Height))
 	if err := camera.Start(context.TODO()); err != nil {
