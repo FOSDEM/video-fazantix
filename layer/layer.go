@@ -1,8 +1,6 @@
 package layer
 
 import (
-	"image"
-
 	"github.com/fosdem/vidmix/rendering"
 )
 
@@ -36,24 +34,14 @@ type Layer struct {
 	TextureIDs [3]uint32
 }
 
-type FrameType int
-
-const (
-	YUV422Frames FrameType = iota
-	RGBFrames
-)
-
 type Source interface {
-	GenRGBFrames() <-chan *image.NRGBA
-	GenYUV422Frames() <-chan *image.YCbCr
+	Frames() *FrameForwarder
+
 	IsReady() bool
 	IsStill() bool
 	Width() int
 	Height() int
 	Start() bool
-
-	FrameType() FrameType
-	PixFmt() []uint8
 }
 
 func New(name string, src Source, width int, height int) *Layer {
@@ -80,12 +68,16 @@ func (s *Layer) SetupTextures() {
 	width := s.Source.Width()
 	height := s.Source.Height()
 
-	switch s.Source.FrameType() {
+	switch s.Frames().FrameType {
 	case YUV422Frames:
 		s.TextureIDs[0] = rendering.SetupYUVTexture(width, height)
 		s.TextureIDs[1] = rendering.SetupYUVTexture(width/2, height)
 		s.TextureIDs[2] = rendering.SetupYUVTexture(width/2, height)
 	case RGBFrames:
-		s.TextureIDs[0] = rendering.SetupRGBTexture(width, height, s.Source.PixFmt())
+		s.TextureIDs[0] = rendering.SetupRGBTexture(width, height, s.Frames().PixFmt)
 	}
+}
+
+func (s *Layer) Frames() *FrameForwarder {
+	return s.Source.Frames()
 }

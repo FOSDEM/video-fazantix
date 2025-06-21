@@ -13,12 +13,13 @@ import (
 )
 
 type ImgSource struct {
-	framesRGB chan *image.NRGBA
-	path      string
-	isReady   bool
-	loaded    bool
-	rgba      *image.RGBA
-	img       image.Image
+	path    string
+	isReady bool
+	loaded  bool
+	rgba    *image.RGBA
+	img     image.Image
+
+	frames layer.FrameForwarder
 }
 
 func New(path string) *ImgSource {
@@ -44,24 +45,13 @@ func New(path string) *ImgSource {
 		log.Printf("[%s] Unsupported stride", s.path)
 		return s
 	}
+
+	s.frames.Init()
+	s.frames.PixFmt = s.rgba.Pix
+	s.frames.FrameType = layer.RGBFrames
+
 	s.loaded = true
 	return s
-}
-
-func (s *ImgSource) FrameType() layer.FrameType {
-	return layer.RGBFrames
-}
-
-func (s *ImgSource) GenRGBFrames() <-chan *image.NRGBA {
-	return s.framesRGB
-}
-
-func (s *ImgSource) PixFmt() []uint8 {
-	return s.rgba.Pix
-}
-
-func (s *ImgSource) GenYUV422Frames() <-chan *image.YCbCr {
-	panic("I have no yuv frames")
 }
 
 func (s *ImgSource) Width() int {
@@ -90,4 +80,8 @@ func (s *ImgSource) Start() bool {
 
 	s.isReady = true
 	return true
+}
+
+func (s *ImgSource) Frames() *layer.FrameForwarder {
+	return &s.frames
 }

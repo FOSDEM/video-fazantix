@@ -19,16 +19,14 @@ import (
 )
 
 type V4LSource struct {
-	Name            string
-	Format          string
-	Device          *device.Device
-	rawCamFrames    <-chan []byte
-	outputFramesRGB chan *image.NRGBA
-	outputFramesYUV chan *image.YCbCr
+	Name         string
+	Format       string
+	Device       *device.Device
+	rawCamFrames <-chan []byte
 
 	isReady bool
 
-	frameType layer.FrameType
+	frames layer.FrameForwarder
 
 	requestedWidth  int
 	requestedHeight int
@@ -42,12 +40,11 @@ func New(devName string, mode string, width int, height int) *V4LSource {
 
 	log.Printf("[%s] Loading v4l2 device %s", s.Name)
 
-	s.outputFramesRGB = make(chan *image.NRGBA)
-	s.outputFramesYUV = make(chan *image.YCbCr)
 	s.Format = mode
 
 	s.requestedWidth = width
 	s.requestedHeight = height
+	s.frames.Init()
 
 	return s
 }
@@ -68,24 +65,20 @@ func (s *V4LSource) Height() int {
 	return s.frameHeight
 }
 
-func (s *V4LSource) FrameType() layer.FrameType {
-	return s.frameType
-}
-
-func (s *V4LSource) GenRGBFrames() <-chan *image.NRGBA {
-	return s.outputFramesRGB
-}
-
-func (s *V4LSource) GenYUV422Frames() <-chan *image.YCbCr {
-	return s.outputFramesYUV
+func (s *V4LSource) Frames() *layer.FrameForwarder {
+	return &s.frames
 }
 
 func (s *V4LSource) Start() bool {
 	pixfmt := v4l2.PixelFmtYUYV
 	switch strings.ToLower(s.Format) {
 	case "mjpeg":
+		s.frames.FrameType = layer.RGBFrames
 		pixfmt = v4l2.PixelFmtMJPEG
+		dummyImg := image.NewNRGBA(image.Rect(0, 0, 1, 1))
+		s.frames.PixFmt = dummyImg.Pix
 	case "yuyv":
+		s.frames.FrameType = layer.YUV422Frames
 		pixfmt = v4l2.PixelFmtYUYV
 	}
 
@@ -153,13 +146,11 @@ func (s *V4LSource) decodeFramesJPEG() {
 		nrgba := image.NewNRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
 		draw.Draw(nrgba, nrgba.Bounds(), img, bounds.Min, draw.Src)
 		s.isReady = true
-		s.outputFramesRGB <- nrgba
+		s.frames.SendRGBFrame(nrgba)
 	}
 }
 
 func (s *V4LSource) decodeFrames422p() {
-	s.frameType = layer.YUV422Frames
-
 	for frame := range s.rawCamFrames {
 		ycbr := image.NewYCbCr(image.Rect(0, 0, s.frameWidth, s.frameHeight), image.YCbCrSubsampleRatio422)
 		if len(frame) < len(ycbr.Cb)*4 {
@@ -174,7 +165,7 @@ func (s *V4LSource) decodeFrames422p() {
 			ycbr.Cr[i] = frame[j+3]
 		}
 		s.isReady = true
-		s.outputFramesYUV <- ycbr
+		s.frames.SendYUV422Frame(ycbr)
 	}
 }
 

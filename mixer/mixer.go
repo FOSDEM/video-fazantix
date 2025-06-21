@@ -272,11 +272,11 @@ func MakeWindowAndMix() {
 		gl.Uniform1iv(texUniform, numTextures, &textures[0])
 		for i := range numLayers {
 			if layers[i].Source.IsReady() {
-				if layers[i].Source.FrameType() == layer.YUV422Frames {
+				if layers[i].Frames().FrameType == layer.YUV422Frames {
 					// Planar 4:2:2
 					var frm *image.YCbCr
 					select {
-					case rf := <-layers[i].Source.GenYUV422Frames():
+					case rf := <-layers[i].Frames().GenYUV422Frames():
 						frm = rf
 						lastImagesYUV[i] = frm
 					default:
@@ -297,7 +297,7 @@ func MakeWindowAndMix() {
 				} else {
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
 					if !layers[i].Source.IsStill() {
-						frm := <-layers[i].Source.GenRGBFrames()
+						frm := <-layers[i].Frames().GenRGBFrames()
 						gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()), int32(layers[i].Source.Height()), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
 					}
 					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
