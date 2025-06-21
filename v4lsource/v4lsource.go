@@ -14,7 +14,6 @@ import (
 
 	"github.com/fosdem/vidmix/layer"
 	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
@@ -156,32 +155,13 @@ func (s *V4LSource) decodeFrames() {
 }
 
 func (s *V4LSource) decodeFramesJPEG() {
-	gl.GenTextures(1, &s.texture[0])
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, s.texture[0])
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-
-	borderColor := mgl32.Vec4{0, 0, 0, 0}
-	gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &borderColor[0])
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
-	gl.TexImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.RGBA,
-		int32(s.Fw),
-		int32(s.Fh),
-		0,
-		gl.RGBA,
-		gl.UNSIGNED_BYTE,
-		nil)
-
+	// this does not work, dunno why
 	var frame []byte
 	for frame = range s.Frames {
 		img, _, err := image.Decode(bytes.NewReader(frame))
 		if err != nil {
 			fmt.Printf("[%s] decode failure: %s", s.Name, err)
+			continue
 		}
 		bounds := img.Bounds()
 		nrgba := image.NewNRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
