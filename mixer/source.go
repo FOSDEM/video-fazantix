@@ -213,6 +213,32 @@ func (s *Source) DecodeFrames422p() {
 	}
 }
 
+func (s *Source) setupTexture(channelID int, width int, height int) {
+	gl.GenTextures(1, &s.Texture[channelID])
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, s.Texture[channelID])
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+
+	//borderColor := mgl32.Vec4{0, 0, 0, 0}
+	//gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &borderColor[0])
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+
+	buf := make([]uint8, width*height)
+	gl.TexImage2D(
+		gl.TEXTURE_2D,
+		0,
+		gl.RED,
+		int32(width),
+		int32(height),
+		0,
+		gl.RED,
+		gl.UNSIGNED_BYTE,
+		gl.Ptr(&buf[0]),
+	)
+}
+
 func (s *Source) LoadV4l2(devName string, mode string, width int, height int) bool {
 	log.Printf("[%s] Loading v4l2 device %s", s.Name, devName)
 	s.IsStill = false
@@ -243,27 +269,7 @@ func (s *Source) LoadV4l2(devName string, mode string, width int, height int) bo
 	}
 	log.Printf("[%s] framerate: %d", s.Name, fps)
 
-	gl.GenTextures(1, &s.Texture[0])
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, s.Texture[0])
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-
-	//borderColor := mgl32.Vec4{0, 0, 0, 0}
-	//gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &borderColor[0])
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-	var buf [640 * 480]uint8
-	gl.TexImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.RED,
-		int32(width),
-		int32(height),
-		0,
-		gl.RED,
-		gl.UNSIGNED_BYTE,
-		gl.Ptr(&buf[0]))
+	s.setupTexture(0, width, height)
 
 	for i := range 2 {
 		gl.GenTextures(1, &s.Texture[i+1])
