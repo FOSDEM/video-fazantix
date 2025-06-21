@@ -13,7 +13,6 @@ import (
 	_ "image/png"
 
 	"github.com/fosdem/vidmix/layer"
-	"github.com/go-gl/gl/v4.1-core/gl"
 
 	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
@@ -38,8 +37,6 @@ type V4LSource struct {
 
 	requestedWidth  int
 	requestedHeight int
-
-	texture [3]uint32
 }
 
 func New(devName string, mode string, width int, height int) *V4LSource {
@@ -52,18 +49,10 @@ func New(devName string, mode string, width int, height int) *V4LSource {
 	s.outputFramesYUV = make(chan *image.YCbCr)
 	s.Format = mode
 
-	s.texture[0] = s.setupYUVTexture(width, height)
-	s.texture[1] = s.setupYUVTexture(width/2, height)
-	s.texture[2] = s.setupYUVTexture(width/2, height)
-
 	s.requestedWidth = width
 	s.requestedHeight = height
 
 	return s
-}
-
-func (s *V4LSource) Texture(idx int) uint32 {
-	return s.texture[idx]
 }
 
 func (s *V4LSource) IsReady() bool {
@@ -90,7 +79,7 @@ func (s *V4LSource) GenRGBFrames() <-chan *image.NRGBA {
 	return s.outputFramesRGB
 }
 
-func (s *V4LSource) GenYUVFrames() <-chan *image.YCbCr {
+func (s *V4LSource) GenYUV422Frames() <-chan *image.YCbCr {
 	return s.outputFramesYUV
 }
 
@@ -172,7 +161,7 @@ func (s *V4LSource) decodeFramesJPEG() {
 }
 
 func (s *V4LSource) decodeFrames422p() {
-	s.frameType = layer.YUVFrames
+	s.frameType = layer.YUV422Frames
 
 	for frame := range s.Frames {
 		ycbr := image.NewYCbCr(image.Rect(0, 0, s.Fw, s.Fh), image.YCbCrSubsampleRatio422)
@@ -192,29 +181,6 @@ func (s *V4LSource) decodeFrames422p() {
 	}
 }
 
-func (s *V4LSource) setupYUVTexture(width int, height int) uint32 {
-	var id uint32
-	gl.GenTextures(1, &id)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, id)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-
-	// this is to compenasate for floating-point errors on x==0/y==0
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-
-	buf := make([]uint8, width*height)
-	gl.TexImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.RED,
-		int32(width),
-		int32(height),
-		0,
-		gl.RED,
-		gl.UNSIGNED_BYTE,
-		gl.Ptr(&buf[0]),
-	)
-	return id
+func (s *V4LSource) PixFmt() []uint8 {
+	panic("why do you want this")
 }

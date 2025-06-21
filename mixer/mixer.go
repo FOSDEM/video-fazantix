@@ -218,6 +218,10 @@ func MakeWindowAndMix() {
 	layers[2].Source.Start()
 	layers[2].Move(0.75, 0.6, 0.2)
 
+	for i := range layers {
+		layers[i].SetupTextures()
+	}
+
 	// Configure the vertex data
 	var vao uint32
 	gl.GenVertexArrays(1, &vao)
@@ -268,26 +272,26 @@ func MakeWindowAndMix() {
 		gl.Uniform1iv(texUniform, numTextures, &textures[0])
 		for i := range numLayers {
 			if layers[i].Source.IsReady() {
-				if layers[i].Source.FrameType() == layer.YUVFrames {
+				if layers[i].Source.FrameType() == layer.YUV422Frames {
 					// Planar 4:2:2
 					var frm *image.YCbCr
 					select {
-					case rf := <-layers[i].Source.GenYUVFrames():
+					case rf := <-layers[i].Source.GenYUV422Frames():
 						frm = rf
 						lastImagesYUV[i] = frm
 					default:
 						frm = lastImagesYUV[i]
 					}
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
-					gl.BindTexture(gl.TEXTURE_2D, layers[i].Source.Texture(0))
+					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
 					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()), int32(layers[i].Source.Height()), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Y))
 
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 1))
-					gl.BindTexture(gl.TEXTURE_2D, layers[i].Source.Texture(1))
+					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[1])
 					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()/2), int32(layers[i].Source.Height()), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cr))
 
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 2))
-					gl.BindTexture(gl.TEXTURE_2D, layers[i].Source.Texture(2))
+					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[2])
 					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()/2), int32(layers[i].Source.Height()), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cb))
 
 				} else {
@@ -296,7 +300,7 @@ func MakeWindowAndMix() {
 						frm := <-layers[i].Source.GenRGBFrames()
 						gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(layers[i].Source.Width()), int32(layers[i].Source.Height()), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
 					}
-					gl.BindTexture(gl.TEXTURE_2D, layers[i].Source.Texture(0))
+					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
 				}
 
 				layerPos[(i*4)+0] = layers[i].Position.X
