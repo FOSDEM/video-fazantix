@@ -107,27 +107,7 @@ func (s *Source) LoadStill(path string) bool {
 	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
 	log.Printf("[%s] Size: %dx%d", s.Name, rgba.Bounds().Dx(), rgba.Bounds().Dy())
 
-	gl.GenTextures(1, &s.Texture[0])
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, s.Texture[0])
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-
-	borderColor := mgl32.Vec4{0, 0, 0, 0}
-	gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &borderColor[0])
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
-	gl.TexImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.RGBA,
-		int32(rgba.Rect.Size().X),
-		int32(rgba.Rect.Size().Y),
-		0,
-		gl.RGBA,
-		gl.UNSIGNED_BYTE,
-		gl.Ptr(rgba.Pix))
-
+	s.setupRGBTexture(0, rgba.Rect.Size().X, rgba.Rect.Size().Y, rgba.Pix)
 	s.IsReady = true
 	return true
 }
@@ -213,15 +193,14 @@ func (s *Source) DecodeFrames422p() {
 	}
 }
 
-func (s *Source) setupTexture(channelID int, width int, height int) {
+func (s *Source) setupInputTexture(channelID int, width int, height int) {
 	gl.GenTextures(1, &s.Texture[channelID])
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, s.Texture[channelID])
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
-	//borderColor := mgl32.Vec4{0, 0, 0, 0}
-	//gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &borderColor[0])
+	// this is to compenasate for floating-point errors on x==0/y==0
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
@@ -237,6 +216,29 @@ func (s *Source) setupTexture(channelID int, width int, height int) {
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(&buf[0]),
 	)
+}
+
+func (s *Source) setupRGBTexture(channelID int, width int, height int, texture []byte) {
+	gl.GenTextures(1, &s.Texture[channelID])
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, s.Texture[channelID])
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+
+	borderColor := mgl32.Vec4{0, 0, 0, 0}
+	gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &borderColor[0])
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
+	gl.TexImage2D(
+		gl.TEXTURE_2D,
+		0,
+		gl.RGBA,
+		int32(width),
+		int32(height),
+		0,
+		gl.RGBA,
+		gl.UNSIGNED_BYTE,
+		gl.Ptr(texture))
 }
 
 func (s *Source) LoadV4l2(devName string, mode string, width int, height int) bool {
@@ -269,30 +271,9 @@ func (s *Source) LoadV4l2(devName string, mode string, width int, height int) bo
 	}
 	log.Printf("[%s] framerate: %d", s.Name, fps)
 
-	s.setupTexture(0, width, height)
-
-	for i := range 2 {
-		gl.GenTextures(1, &s.Texture[i+1])
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, s.Texture[1+i])
-		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-
-		borderColor := mgl32.Vec4{0, 0, 0, 0}
-		gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &borderColor[0])
-		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
-		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
-		gl.TexImage2D(
-			gl.TEXTURE_2D,
-			0,
-			gl.RED,
-			int32(width/2),
-			int32(height),
-			0,
-			gl.RED,
-			gl.UNSIGNED_BYTE,
-			nil)
-	}
+	s.setupInputTexture(0, width, height)
+	s.setupInputTexture(1, width/2, height)
+	s.setupInputTexture(2, width/2, height)
 
 	s.Squeeze = (float32(width) / float32(height)) / (float32(s.Width) / float32(s.Height))
 	if err := camera.Start(context.TODO()); err != nil {
