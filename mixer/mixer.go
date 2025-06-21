@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/fosdem/vidmix/ffmpegsource"
 	"github.com/fosdem/vidmix/imgsource"
 	"github.com/fosdem/vidmix/layer"
 	"github.com/fosdem/vidmix/v4lsource"
@@ -198,19 +199,19 @@ func MakeWindowAndMix() {
 		imgsource.New("background.png"),
 		windowWidth, windowHeight,
 	)
-	layers[1] = layer.New(
-		"slides",
-		v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
-		windowWidth, windowHeight,
-	)
 	// layers[1] = layer.New(
-	// 	"sauce",
-	// 	ffmpegsource.New(`
-	// 		ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
-	// 		`,
-	// 	),
+	// 	"slides",
+	// 	v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
 	// 	windowWidth, windowHeight,
 	// )
+	layers[1] = layer.New(
+		"sauce",
+		ffmpegsource.New(`
+			ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
+			`,
+		),
+		windowWidth, windowHeight,
+	)
 	layers[2] = layer.New(
 		"cam",
 		v4lsource.New("/dev/video0", "yuyv", 640, 480),
@@ -284,7 +285,11 @@ func MakeWindowAndMix() {
 					case rf := <-layers[i].Frames().GenFrames():
 						frm = rf.(*image.YCbCr)
 					default:
-						frm = layers[i].Frames().LastFrame.(*image.YCbCr)
+						rf := layers[i].Frames().LastFrame
+						if rf == nil {
+							continue
+						}
+						frm = rf.(*image.YCbCr)
 					}
 					gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
 					gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])

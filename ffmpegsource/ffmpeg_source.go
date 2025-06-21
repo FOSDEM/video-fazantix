@@ -44,6 +44,8 @@ func (f *FFmpegSource) Start() bool {
 	go f.runFFmpeg()
 	go f.processStdout()
 	go f.processStderr()
+
+	f.isReady = true
 	return true
 }
 
@@ -72,15 +74,13 @@ func (f *FFmpegSource) processStdout() {
 			log.Printf("could not read from ffmpeg's output: %s\n", err)
 			return
 		}
-		log.Printf("[ffmpeg] got frame\n")
 
 		img, err := encdec.DecodeYUYV422(buf, f.frames.GetBlankYUV422Frame(f.Width(), f.Height()))
 		if err != nil {
 			log.Printf("could not decode frame: %s\n", err)
 			continue
 		}
-		f.frames.SendYUV422Frame(img)
-		log.Printf("[ffmpeg] sent frame\n")
+		f.frames.SendFrame(img)
 	}
 }
 
