@@ -91,8 +91,8 @@ func (s *ImgSource) Start() bool {
 	draw.Draw(s.rgba, s.rgba.Bounds(), s.img, image.Point{0, 0}, draw.Src)
 	log.Printf("[%s] Size: %dx%d", s.path, s.rgba.Bounds().Dx(), s.rgba.Bounds().Dy())
 
-	// s.texture = s.setupRGBTexture(s.Width(), s.Height(), s.rgba.Pix)
-	// s.isReady = true
+	s.texture = s.setupRGBTexture(s.Width(), s.Height(), s.rgba.Pix)
+	s.isReady = true
 	return true
 }
 
