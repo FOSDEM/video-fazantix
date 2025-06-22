@@ -1,8 +1,20 @@
 sources:
-  balloon:
+  background:
     type: image
     path: background.png
     z: 0
+  test1:
+    type: image
+    path: testsrc1.png
+    z: 1
+  test2:
+    type: image
+    path: testsrc2.png
+    z: 2
+  test3:
+    type: image
+    path: testsrc3.png
+    z: 3
   video0:
     type: v4l
     path: /dev/video0
@@ -10,43 +22,6 @@ sources:
     w: 1920
     h: 1080
     z: 1
-  video2:
-    type: v4l
-    path: /dev/video2
-    fmt: yuyv
-    w: 1920
-    h: 1080
-    z: 2
-  video0_ffmpeg:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
-    z: 3
-  video2_ffmpeg:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video2 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
-    z: 4
-  pheasant:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
-    z: 5
-  cows:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
-    z: 6
-  fazantfazantfazant:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
-    z: 7
   video_listen:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
@@ -56,50 +31,60 @@ sources:
 
 
 scenes:
-  dedo:
-    pheasant:
+  side-by-side:
+    background:
       x: 0
       y: 0
       scale: 1
       opacity: 1
-    video_listen:
-      x: 0.085
-      y: 0.085
-      scale: 0.79
+    test1:
+      x: 0.03
+      y: 0.25
+      scale: 0.45
       opacity: 1
-    video0:
+    test2:
+      x: 0.52
+      y: 0.25
+      scale: 0.45
+      opacity: 1
+  full-1:
+    background:
       x: 0
       y: 0
       scale: 1
       opacity: 1
-  baba:
-    pheasant:
+    test1:
+      x: 0.03
+      y: 0.03
+      scale: 0.93
+      opacity: 1
+    test2:
+      opacity: 0
+  full-2:
+    background:
       x: 0
       y: 0
       scale: 1
       opacity: 1
-    video_listen:
-      x: 0.025
-      y: 0.049
-      scale: 0.79
+    test2:
+      x: 0.03
+      y: 0.03
+      scale: 0.93
       opacity: 1
-    video0:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
+    test1:
+      opacity: 0
   default:
-    balloon:
+    background:
       x: 0
       y: 0
       scale: 1
       opacity: 1
-    pheasant:
+    test1:
       x: 0.025
       y: 0.049
       scale: 0.79
       opacity: 1
-    fazantfazantfazant:
+    test2:
       x: 0.75
       y: 0.6
       scale: 0.2
