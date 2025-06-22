@@ -20,12 +20,7 @@ import (
 
 const windowWidth = 1280
 const windowHeight = 720
-const numLayers = 3
 const f32 = 4
-
-var (
-	layers [3]*layer.Layer
-)
 
 var vertices = []float32{
 	//  X, Y,  U, V
@@ -145,10 +140,6 @@ func MakeWindowAndMix() {
 	window := makeWindow()
 	initGL()
 
-	theatre := &theatre.Theatre{
-		Layers: layers[:],
-	}
-
 	allLayers := map[string]*layer.Layer{
 		"balloon": layer.New(
 			"background",
@@ -217,9 +208,17 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 		),
 	}
 
-	layers[0] = allLayers["balloon"]
-	layers[1] = allLayers["video0_ffmpeg"]
-	layers[2] = allLayers["video4_ffmpeg"]
+	layers := []*layer.Layer{
+		allLayers["balloon"],
+		allLayers["video0_ffmpeg"],
+		allLayers["video4_ffmpeg"],
+	}
+
+	theatre := &theatre.Theatre{
+		Layers: layers[:],
+	}
+
+	numLayers := int32(len(layers))
 
 	shaderer, err := shaders.NewShaderer(theatre)
 	if err != nil {
@@ -278,13 +277,13 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 	gl.EnableVertexAttribArray(texCoordAttrib)
 	gl.VertexAttribPointerWithOffset(texCoordAttrib, 2, gl.FLOAT, false, stride, 2*f32)
 
-	var layerPos [numLayers * 4]float32
+	layerPos := make([]float32, numLayers*4)
 	layerPosUniform := gl.GetUniformLocation(program, gl.Str("sourcePosition\x00"))
 	gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 	// Allocate 3 textures for every layer in case of planar YUV
-	const numTextures = numLayers * 3
-	var textures [numTextures]int32
+	numTextures := numLayers * 3
+	textures := make([]int32, numTextures)
 	for i := range numTextures {
 		textures[i] = int32(i)
 	}
@@ -319,7 +318,7 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 			for j := 0; j < rf.NumTextures; j++ {
 				dataPtr, w, h := rf.Texture(j)
 
-				gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + j))
+				gl.ActiveTexture(uint32(gl.TEXTURE0 + (int32(i) * 3) + int32(j)))
 				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[j])
 				gl.TexSubImage2D(
 					gl.TEXTURE_2D,
