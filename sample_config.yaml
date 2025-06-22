@@ -60,6 +60,17 @@ scenes:
       opacity: 1
     test2:
       opacity: 0
+  full-3:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    test3:
+      x: 0.03
+      y: 0.03
+      scale: 0.93
+      opacity: 1
   full-2:
     background:
       x: 0
