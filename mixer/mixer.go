@@ -167,7 +167,7 @@ func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error)
 	gl.AttachShader(program, vertexShader)
 	gl.AttachShader(program, fragmentShader)
 	gl.LinkProgram(program)
-	glfw.SwapInterval(0)
+	glfw.SwapInterval(1)
 
 	var status int32
 	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
@@ -237,18 +237,18 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv42
 			),
 			windowWidth, windowHeight,
 		),
-		"video2": layer.New(
+		"video4": layer.New(
 			"slides",
-			v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
+			v4lsource.New("/dev/video4", "yuyv", 1920, 1080),
 			windowWidth, windowHeight,
 		),
-		"video2_ffmpeg": layer.New(
+		"video4_ffmpeg": layer.New(
 			"slides",
 			ffmpegsource.New(
 				`
-ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video2 -pix_fmt yuv422p -f rawvideo -r 60 -
+ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv422p -f rawvideo -r 60 -
 			`,
-				1280, 720,
+				1920, 1080,
 			),
 			windowWidth, windowHeight,
 		),
@@ -266,7 +266,7 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video2 -pix_fmt yuv42
 
 	layers[0] = allLayers["balloon"]
 	layers[1] = allLayers["video0_ffmpeg"]
-	layers[2] = allLayers["video2_ffmpeg"]
+	layers[2] = allLayers["video4_ffmpeg"]
 
 	layers[0].Source.Start()
 	layers[0].Move(0, 0, 1)
