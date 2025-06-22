@@ -2,6 +2,7 @@ package layer
 
 import (
 	"math"
+
 	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/rendering"
 )
@@ -68,10 +69,9 @@ func (s *Layer) Name() string {
 
 func (s *Layer) ApplyState(state *LayerState) {
 	if state == nil {
+		state = &LayerState{}
 		if s.targetState != nil {
-			state = s.targetState
-		} else {
-			state = &LayerState{}
+			*state = *s.targetState
 		}
 		state.Opacity = 0
 	}
@@ -117,5 +117,5 @@ func (s *Layer) Frames() *FrameForwarder {
 
 func ramp(x float32, tgt float32, delta float32) float32 {
 	speed := float64(0.1)
-	return x + (tgt - x) * (1 - float32(math.Exp(-speed)))
+	return x + (tgt-x)*(1-float32(math.Exp(-speed)))
 }
