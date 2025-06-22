@@ -4,8 +4,8 @@ import (
 	"image"
 	"io"
 	"log"
-	"os"
 	"os/exec"
+	"bufio"
 
 	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/layer"
@@ -58,14 +58,10 @@ func (f *FFmpegSource) runFFmpeg() {
 }
 
 func (f *FFmpegSource) processStderr() {
-	fe, err := os.Create("/tmp/ffmpeg_stderr")
-	if err != nil {
-		log.Printf("[ffmpeg] could not open stderr file\n")
-		return
+	scanner := bufio.NewScanner(f.stderr)
+	for scanner.Scan() {
+		log.Printf("[ffmpeg] %s", scanner.Text())
 	}
-	defer fe.Close()
-
-	io.Copy(fe, f.stderr)
 }
 
 func (f *FFmpegSource) processStdout() {
