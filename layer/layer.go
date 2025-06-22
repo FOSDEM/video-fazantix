@@ -1,6 +1,7 @@
 package layer
 
 import (
+	"math"
 	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/rendering"
 )
@@ -115,16 +116,6 @@ func (s *Layer) Frames() *FrameForwarder {
 }
 
 func ramp(x float32, tgt float32, delta float32) float32 {
-	maxDelta := x - tgt
-	if maxDelta < 0 {
-		maxDelta *= -1
-	}
-	if maxDelta <= delta {
-		return tgt
-	}
-	if x < tgt {
-		return x + delta
-	} else {
-		return x - delta
-	}
+	speed := float64(0.1)
+	return x + (tgt - x) * (1 - float32(math.Exp(-speed)))
 }
