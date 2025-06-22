@@ -243,18 +243,11 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 		log.Fatalf("Could not init shader: %s", err)
 	}
 
-	layers[0].Source.Start()
+	theatre.Start()
+
 	layers[0].Move(0, 0, 1)
-
-	layers[1].Source.Start()
 	layers[1].Move(0.025, 0.049, 0.79)
-
-	layers[2].Source.Start()
 	layers[2].Move(0.75, 0.6, 0.2)
-
-	for i := range layers {
-		layers[i].SetupTextures()
-	}
 
 	// Configure the vertex data
 	var vao uint32
