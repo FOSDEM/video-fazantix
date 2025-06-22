@@ -56,45 +56,54 @@ sources:
 
 
 scenes:
-#  dedo:
-#    pheasant:
-#      x: 0
-#      y: 0
-#      scale: 1
-#    video_listen:
-#      x: 0.085
-#      y: 0.085
-#      scale: 0.79
-#    video0:
-#      x: 0
-#      y: 0
-#      scale: 1
-#  baba:
-#    pheasant:
-#      x: 0
-#      y: 0
-#      scale: 1
-#    video_listen:
-#      x: 0.025
-#      y: 0.049
-#      scale: 0.79
-#    video0:
-#      x: 0
-#      y: 0
-#      scale: 1
+  dedo:
+    pheasant:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    video_listen:
+      x: 0.085
+      y: 0.085
+      scale: 0.79
+      opacity: 1
+    video0:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+  baba:
+    pheasant:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    video_listen:
+      x: 0.025
+      y: 0.049
+      scale: 0.79
+      opacity: 1
+    video0:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
   default:
     balloon:
       x: 0
       y: 0
       scale: 1
+      opacity: 1
     pheasant:
       x: 0.025
       y: 0.049
       scale: 0.79
+      opacity: 1
     fazantfazantfazant:
       x: 0.75
       y: 0.6
       scale: 0.2
+      opacity: 1
 
 window:
   w: 1280

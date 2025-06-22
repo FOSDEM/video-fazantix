@@ -211,8 +211,12 @@ func MakeWindowAndMix(cfg *config.Config) {
 	gl.VertexAttribPointerWithOffset(texCoordAttrib, 2, gl.FLOAT, false, stride, 2*f32)
 
 	layerPos := make([]float32, numLayers*4)
-	layerPosUniform := gl.GetUniformLocation(program, gl.Str("sourcePosition\x00"))
+	layerPosUniform := gl.GetUniformLocation(program, gl.Str("layerPosition\x00"))
 	gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
+
+	layerData := make([]float32, numLayers*4)
+	layerDataUniform := gl.GetUniformLocation(program, gl.Str("layerData\x00"))
+	gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
 
 	// Allocate 3 textures for every layer in case of planar YUV
 	numTextures := numLayers * 3
@@ -265,10 +269,12 @@ func MakeWindowAndMix(cfg *config.Config) {
 			layerPos[(i*4)+1] = layers[i].Position.Y
 			layerPos[(i*4)+2] = layers[i].Size.X
 			layerPos[(i*4)+3] = layers[i].Size.Y
+			layerData[(i*4)+0] = layers[i].Opacity
 
 			layers[i].Frames().RecycleFrame(rf)
-			theatre.Animate()
 		}
+		theatre.Animate()
+		gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)

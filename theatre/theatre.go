@@ -36,8 +36,9 @@ func (t *Theatre) NumLayers() int {
 
 func (t *Theatre) Start() {
 	for _, l := range t.Layers {
-		l.Source.Start()
-		l.SetupTextures()
+		if l.Source.Start() {
+			l.SetupTextures()
+		}
 	}
 }
 

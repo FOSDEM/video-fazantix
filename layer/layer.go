@@ -18,8 +18,6 @@ type Mask struct {
 }
 
 type Layer struct {
-	IsVisible bool
-
 	Size     Coordinate
 	Position Coordinate
 	Mask     Mask
@@ -27,6 +25,8 @@ type Layer struct {
 	OutputWidth  int
 	OutputHeight int
 	Squeeze      float32
+
+	Opacity float32
 
 	Source Source
 
@@ -36,9 +36,10 @@ type Layer struct {
 }
 
 type LayerState struct {
-	X     float32
-	Y     float32
-	Scale float32
+	X       float32
+	Y       float32
+	Scale   float32
+	Opacity float32
 }
 
 type Source interface {
@@ -48,7 +49,7 @@ type Source interface {
 }
 
 func New(src Source, width int, height int) *Layer {
-	s := &Layer{IsVisible: false}
+	s := &Layer{}
 	s.Size = Coordinate{X: 1.0, Y: 1.0}
 	s.Source = src
 	s.Squeeze = 1.0
@@ -66,9 +67,12 @@ func (s *Layer) Name() string {
 
 func (s *Layer) ApplyState(state *LayerState) {
 	if state == nil {
-		s.IsVisible = false
-		s.targetState = nil
-		return
+		if s.targetState != nil {
+			state = s.targetState
+		} else {
+			state = &LayerState{}
+		}
+		state.Opacity = 0
 	}
 
 	if s.targetState == nil {
@@ -76,6 +80,7 @@ func (s *Layer) ApplyState(state *LayerState) {
 		s.Position.Y = state.Y
 		s.Size.X = state.Scale
 		s.Size.Y = state.Scale / s.Squeeze
+		s.Opacity = state.Opacity
 	}
 	s.targetState = state
 }
@@ -88,6 +93,7 @@ func (s *Layer) Animate() {
 	s.Position.Y = ramp(s.Position.Y, s.targetState.Y, 0.01)
 	s.Size.X = ramp(s.Size.X, s.targetState.Scale, 0.01)
 	s.Size.Y = ramp(s.Size.Y, s.targetState.Scale/s.Squeeze, 0.01)
+	s.Opacity = ramp(s.Opacity, s.targetState.Opacity, 0.01)
 }
 
 func (s *Layer) SetupTextures() {
