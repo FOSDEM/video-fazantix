@@ -86,8 +86,8 @@ func DecodeYUYV422(buf []byte, into *ImageData) error {
 	}
 
 	Y := into.MakeTexture(numPixels, into.Width, into.Height)
-	V := into.MakeTexture(numChromaPixels, into.Width/2, into.Height)
 	U := into.MakeTexture(numChromaPixels, into.Width/2, into.Height)
+	V := into.MakeTexture(numChromaPixels, into.Width/2, into.Height)
 
 	for i := range U {
 		j := i * 4
@@ -96,6 +96,19 @@ func DecodeYUYV422(buf []byte, into *ImageData) error {
 		Y[i*2+1] = buf[j+2]
 		V[i] = buf[j+3]
 	}
+	return nil
+}
+
+func PrepareYUYV422p(into *ImageData) error {
+	into.Clear()
+
+	numPixels := into.Width * into.Height
+	numChromaPixels := numPixels / 2 // the chroma plane is half-sized
+
+	into.MakeTexture(numPixels, into.Width, into.Height)
+	into.MakeTexture(numChromaPixels, into.Width/2, into.Height)
+	into.MakeTexture(numChromaPixels, into.Width/2, into.Height)
+
 	return nil
 }
 

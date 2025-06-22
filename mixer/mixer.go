@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/fosdem/fazantix/encdec"
+	"github.com/fosdem/fazantix/ffmpegsource"
 	"github.com/fosdem/fazantix/imgsource"
 	"github.com/fosdem/fazantix/layer"
 	"github.com/fosdem/fazantix/v4lsource"
@@ -50,8 +51,8 @@ uniform vec4 sourcePosition[3];
 vec4 sampleLayerYUV(int layer, vec4 dve) {
 	vec2 tpos = (UV / dve.z) - (dve.xy / dve.z);
 	float Y = texture(tex[layer*3], tpos).r;
-	float Cb = texture(tex[layer*3+1], tpos).r - 0.5;
-	float Cr = texture(tex[layer*3+2], tpos).r - 0.5;
+	float Cb = texture(tex[layer*3+2], tpos).r - 0.5;
+	float Cr = texture(tex[layer*3+1], tpos).r - 0.5;
 	vec3 yuv = vec3(Y, Cr, Cb);
         mat3 colorMatrix = mat3(
                 1,   0,       1.402,
@@ -218,14 +219,14 @@ func MakeWindowAndMix() {
 	// 	),
 	// 	windowWidth, windowHeight,
 	// )
-	// layers[1] = layer.New(
-	// 	"sauce",
-	// 	ffmpegsource.New(`
-	// 		ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
-	// 		`,
-	// 	),
-	// 	windowWidth, windowHeight,
-	// )
+	layers[1] = layer.New(
+		"sauce",
+		ffmpegsource.New(`
+			ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -
+			`,
+		),
+		windowWidth, windowHeight,
+	)
 	// layers[2] = layer.New(
 	// 	"sauce",
 	// 	ffmpegsource.New(`
@@ -234,11 +235,11 @@ func MakeWindowAndMix() {
 	// 	),
 	// 	windowWidth, windowHeight,
 	// )
-	layers[1] = layer.New(
-		"slides",
-		v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
-		windowWidth, windowHeight,
-	)
+	// layers[1] = layer.New(
+	// 	"slides",
+	// 	v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
+	// 	windowWidth, windowHeight,
+	// )
 	layers[2] = layer.New(
 		"cam",
 		v4lsource.New("/dev/video0", "yuyv", 640, 480),

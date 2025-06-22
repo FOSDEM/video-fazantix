@@ -64,21 +64,15 @@ func (f *FFmpegSource) processStderr() {
 }
 
 func (f *FFmpegSource) processStdout() {
-	frameSize := f.frames.Width * f.frames.Height * 2 // bytes for yuyv422 frames
-	buf := make([]byte, frameSize)
 	for {
-		_, err := io.ReadFull(f.stdout, buf)
+		frame := f.frames.GetBlankFrame()
+		encdec.PrepareYUYV422p(frame)
+		_, err := io.ReadFull(f.stdout, frame.Data)
 		if err != nil {
 			log.Printf("could not read from ffmpeg's output: %s\n", err)
 			return
 		}
 
-		frame := f.frames.GetBlankFrame()
-		err = encdec.DecodeYUYV422(buf, frame)
-		if err != nil {
-			log.Printf("could not decode frame: %s\n", err)
-			continue
-		}
 		f.frames.SendFrame(frame)
 	}
 }
