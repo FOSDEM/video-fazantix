@@ -1,16 +1,18 @@
 package ffmpegsource
 
 import (
+	"bufio"
 	"io"
 	"log"
 	"os/exec"
-	"bufio"
 
+	"github.com/fosdem/fazantix/config"
 	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/layer"
 )
 
 type FFmpegSource struct {
+	name     string
 	shellCmd string
 	cmd      *exec.Cmd
 	stdout   io.ReadCloser
@@ -18,11 +20,15 @@ type FFmpegSource struct {
 	frames   layer.FrameForwarder
 }
 
-func New(shellCmd string, w int, h int) *FFmpegSource {
-	f := &FFmpegSource{shellCmd: shellCmd}
-
-	f.frames.Init(encdec.YUV422Frames, []uint8{}, w, h)
+func New(name string, cfg *config.FFmpegSourceCfg) *FFmpegSource {
+	f := &FFmpegSource{shellCmd: cfg.Cmd}
+	f.name = name
+	f.frames.Init(encdec.YUV422Frames, []uint8{}, cfg.W, cfg.H)
 	return f
+}
+
+func (f *FFmpegSource) Name() string {
+	return f.name
 }
 
 func (f *FFmpegSource) Start() bool {

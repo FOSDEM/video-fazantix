@@ -1,16 +1,17 @@
 package main
 
-import "github.com/fosdem/fazantix/mixer"
-import _ "net/http/pprof"
-import "log"
-import "net/http"
+import (
+	"log"
+	"os"
 
-func profiler() {
-	log.Println("[pprof] Profiler on :6060")
-	log.Println(http.ListenAndServe("localhost:6060", nil))
-}
+	"github.com/fosdem/fazantix/config"
+	"github.com/fosdem/fazantix/mixer"
+)
 
 func main() {
-	go profiler()
-	mixer.MakeWindowAndMix()
+	cfg, err := config.Parse(os.Args[1])
+	if err != nil {
+		log.Fatal(err)
+	}
+	mixer.MakeWindowAndMix(cfg)
 }

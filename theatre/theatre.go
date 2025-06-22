@@ -11,7 +11,22 @@ type Theatre struct {
 	Scenes map[string]*Scene
 }
 
+func New(sources []layer.Source, scenes map[string]*Scene, windowWidth int, windowHeight int) *Theatre {
+	t := &Theatre{}
+
+	t.Layers = make([]*layer.Layer, len(sources))
+
+	for i, src := range sources {
+		t.Layers[i] = layer.New(src, windowWidth, windowHeight)
+	}
+
+	t.Scenes = scenes
+
+	return t
+}
+
 type Scene struct {
+	Name        string
 	LayerStates []*layer.LayerState
 }
 

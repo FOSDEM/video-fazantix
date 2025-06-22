@@ -4,6 +4,8 @@ github.com/go-gl/glfw/v3.3/glfw v0.0.0-20250301202403-da16c1255728 h1:RkGhqHxEVA
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20250301202403-da16c1255728/go.mod h1:SyRD8YfuKk+ZXlDqYiqe1qMSqjNgtHzBTG810KUagMc=
 github.com/go-gl/mathgl v1.2.0 h1:v2eOj/y1B2afDxF6URV1qCYmo1KW08lAMtTbOn3KXCY=
 github.com/go-gl/mathgl v1.2.0/go.mod h1:pf9+b5J3LFP7iZ4XXaVzZrCle0Q/vNpB/vDe5+3ulRE=
+github.com/goccy/go-yaml v1.18.0 h1:8W7wMFS12Pcas7KU+VVkaiCng+kG8QiFeFwzFb+rwuw=
+github.com/goccy/go-yaml v1.18.0/go.mod h1:XBurs7gK8ATbW4ZPGKgcbrY1Br56PdM69F7LkFRi1kA=
 github.com/vladimirvivien/go4vl v0.0.5 h1:jHuo/CZOAzYGzrSMOc7anOMNDr03uWH5c1B5kQ+Chnc=
 github.com/vladimirvivien/go4vl v0.0.5/go.mod h1:FP+/fG/X1DUdbZl9uN+l33vId1QneVn+W80JMc17OL8=
 golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c h1:F1jZWGFhYfh0Ci55sIpILtKKK8p3i2/krTr0H1rg74I=

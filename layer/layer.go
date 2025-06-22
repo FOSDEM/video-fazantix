@@ -18,8 +18,6 @@ type Mask struct {
 }
 
 type Layer struct {
-	Name string
-
 	IsVisible bool
 
 	Size     Coordinate
@@ -44,10 +42,11 @@ type LayerState struct {
 type Source interface {
 	Frames() *FrameForwarder
 	Start() bool
+	Name() string
 }
 
-func New(name string, src Source, width int, height int) *Layer {
-	s := &Layer{Name: name, IsVisible: false}
+func New(src Source, width int, height int) *Layer {
+	s := &Layer{IsVisible: false}
 	s.Size = Coordinate{X: 1.0, Y: 1.0}
 	s.Source = src
 	s.Squeeze = 1.0
@@ -57,6 +56,10 @@ func New(name string, src Source, width int, height int) *Layer {
 	s.Mask = Mask{top: 0, bottom: 0, left: 0, right: 0}
 	s.Squeeze = (float32(width) / float32(height)) / (float32(s.Source.Frames().Width) / float32(s.Source.Frames().Height))
 	return s
+}
+
+func (s *Layer) Name() string {
+	return s.Source.Name()
 }
 
 func (s *Layer) ApplyState(state *LayerState) {

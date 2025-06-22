@@ -7,13 +7,12 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/fosdem/fazantix/config"
 	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/ffmpegsource"
-	"github.com/fosdem/fazantix/imgsource"
 	"github.com/fosdem/fazantix/layer"
 	"github.com/fosdem/fazantix/rendering/shaders"
 	"github.com/fosdem/fazantix/theatre"
-	"github.com/fosdem/fazantix/v4lsource"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -136,96 +135,12 @@ func writeFileDebug(filename string, content string) {
 	fmt.Fprintf(f, "%s", content)
 }
 
-func MakeWindowAndMix() {
+func MakeWindowAndMix(cfg *config.Config) {
 	window := makeWindow()
 	initGL()
 
-	allLayers := map[string]*layer.Layer{
-		"balloon": layer.New(
-			"background",
-			imgsource.New("background.png"),
-			windowWidth, windowHeight,
-		),
-		"pheasants": layer.New(
-			"sauce",
-			ffmpegsource.New(
-				`
-			ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -
-			`,
-				1920, 1080,
-			),
-			windowWidth, windowHeight,
-		),
-		"fazant": layer.New(
-			"sauce",
-			ffmpegsource.New(
-				`
-			ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -
-			`,
-				1920, 1080,
-			),
-			windowWidth, windowHeight,
-		),
-		"video0": layer.New(
-			"slides",
-			v4lsource.New("/dev/video0", "yuyv", 1920, 1080),
-			windowWidth, windowHeight,
-		),
-		"video0_ffmpeg": layer.New(
-			"slides",
-			ffmpegsource.New(
-				`
-ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -f rawvideo -r 60 -
-			`,
-				1920, 1080,
-			),
-			windowWidth, windowHeight,
-		),
-		"video4": layer.New(
-			"slides",
-			v4lsource.New("/dev/video4", "yuyv", 1920, 1080),
-			windowWidth, windowHeight,
-		),
-		"video4_ffmpeg": layer.New(
-			"slides",
-			ffmpegsource.New(
-				`
-ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv422p -f rawvideo -r 60 -
-			`,
-				1920, 1080,
-			),
-			windowWidth, windowHeight,
-		),
-		"cows": layer.New(
-			"sauce",
-			ffmpegsource.New(
-				`
-			ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -
-			`,
-				1920, 1080,
-			),
-			windowWidth, windowHeight,
-		),
-	}
-
-	layers := []*layer.Layer{
-		allLayers["balloon"],
-		allLayers["video0_ffmpeg"],
-		allLayers["video4_ffmpeg"],
-	}
-
-	theatre := &theatre.Theatre{
-		Layers: layers[:],
-		Scenes: map[string]*theatre.Scene{
-			"default": {
-				LayerStates: []*layer.LayerState{
-					{X: 0, Y: 0, Scale: 1},
-					{X: 0.025, Y: 0.049, Scale: 0.79},
-					{X: 0.75, Y: 0.6, Scale: 0.2},
-				},
-			},
-		},
-	}
+	theatre := makeTheatre(cfg)
+	layers := theatre.Layers
 
 	numLayers := int32(len(layers))
 
@@ -345,4 +260,29 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 		window.SwapBuffers()
 		glfw.PollEvents()
 	}
+}
+
+func makeTheatre(cfg *config.Config) *theatre.Theatre {
+	var sources []layer.Source
+	for srcName, srcCfg := range cfg.Sources {
+		switch sc := srcCfg.Cfg.(type) {
+		case *config.FFmpegSourceCfg:
+			sources = append(sources, ffmpegsource.New(srcName, sc))
+		default:
+			panic(fmt.Sprintf("unhandled source type: %+v", srcCfg.Cfg))
+		}
+	}
+
+	scenes := make(map[string]*theatre.Scene)
+	for sceneName, layerStateMap := range cfg.Scenes {
+		layerStates := make([]*layer.LayerState, len(sources))
+		for i, src := range sources {
+			layerStates[i] = layerStateMap[src.Name()]
+		}
+		scenes[sceneName] = &theatre.Scene{
+			Name:        sceneName,
+			LayerStates: layerStates,
+		}
+	}
+	return theatre.New(sources, scenes, cfg.Window.W, cfg.Window.H)
 }

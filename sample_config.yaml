@@ -1,0 +1,35 @@
+sources:
+  pheasant:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+  cows:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+  fazantfazantfazant:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+
+scenes:
+  default:
+    pheasant:
+      x: 0
+      y: 0
+      scale: 1
+    cows:
+      x: 0.025
+      y: 0.049
+      scale: 0.79
+    fazantfazantfazant:
+      x: 0.75
+      y: 0.6
+      scale: 0.2
+
+window:
+  w: 1280
+  h: 720
