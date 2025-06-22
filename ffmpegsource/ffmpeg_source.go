@@ -75,7 +75,8 @@ func (f *FFmpegSource) processStdout() {
 		}
 
 		imgg := f.frames.GetBlankFrame()
-		img, err := encdec.DecodeYUYV422(buf, imgg.(*image.YCbCr))
+		img := imgg.(*image.YCbCr)
+		err = encdec.DecodeYUYV422(buf, img)
 		if err != nil {
 			log.Printf("could not decode frame: %s\n", err)
 			continue

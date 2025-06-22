@@ -132,13 +132,14 @@ func (s *V4LSource) decodeFramesJPEG() {
 func (s *V4LSource) decodeFrames422p() {
 	for frame := range s.rawCamFrames {
 		imgg := s.frames.GetBlankFrame()
-		ycbr, err := encdec.DecodeYUYV422(frame, imgg.(*image.YCbCr))
+		img := imgg.(*image.YCbCr)
+		err := encdec.DecodeYUYV422(frame, img)
 		if err != nil {
 			log.Printf("[%s] Could not decode frame: %s", s.Name, err)
 			continue
 		}
 		s.frames.IsReady = true
-		s.frames.SendFrame(ycbr)
+		s.frames.SendFrame(img)
 	}
 }
 

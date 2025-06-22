@@ -7,9 +7,9 @@ import (
 	"image/draw"
 )
 
-func DecodeYUYV422(buf []byte, image *image.YCbCr) (*image.YCbCr, error) {
+func DecodeYUYV422(buf []byte, image *image.YCbCr) error {
 	if len(buf) < len(image.Cb)*4 {
-		return nil, fmt.Errorf("got a buf of len %d when %d was expected", len(buf), len(image.Cb)*4)
+		return fmt.Errorf("got a buf of len %d when %d was expected", len(buf), len(image.Cb)*4)
 	}
 	for i := range image.Cb {
 		j := i * 4
@@ -18,7 +18,7 @@ func DecodeYUYV422(buf []byte, image *image.YCbCr) (*image.YCbCr, error) {
 		image.Cb[i] = buf[j+1]
 		image.Cr[i] = buf[j+3]
 	}
-	return image, nil
+	return nil
 }
 
 func DecodeRGBfromImage(buf []byte) (*image.NRGBA, error) {
