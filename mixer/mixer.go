@@ -10,10 +10,10 @@ import (
 
 	"github.com/fosdem/fazantix/api"
 	"github.com/fosdem/fazantix/config"
-	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/ffmpegsource"
 	"github.com/fosdem/fazantix/imgsource"
 	"github.com/fosdem/fazantix/layer"
+	"github.com/fosdem/fazantix/rendering"
 	"github.com/fosdem/fazantix/rendering/shaders"
 	"github.com/fosdem/fazantix/theatre"
 	"github.com/fosdem/fazantix/v4lsource"
@@ -240,6 +240,9 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 		gl.Uniform1iv(texUniform, numTextures, &textures[0])
 		for i := range numLayers {
+			if layers[i].Frames().IsStill && !firstFrame {
+				continue
+			}
 			if !layers[i].Frames().IsReady {
 				continue
 			}
@@ -248,26 +251,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 				continue
 			}
 
-			channelType := uint32(gl.RED)
-			if rf.Type == encdec.RGBFrames {
-				channelType = gl.RGBA
-			}
-
-			for j := 0; j < rf.NumTextures; j++ {
-				if layers[i].Frames().IsStill && !firstFrame {
-					continue
-				}
-				dataPtr, w, h := rf.Texture(j)
-
-				gl.ActiveTexture(uint32(gl.TEXTURE0 + (int32(i) * 3) + int32(j)))
-				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[j])
-				gl.TexSubImage2D(
-					gl.TEXTURE_2D,
-					0, 0, 0,
-					int32(w), int32(h),
-					channelType, gl.UNSIGNED_BYTE, gl.Ptr(dataPtr),
-				)
-			}
+			rendering.SendFrameToGPU(rf, layers[i].TextureIDs, int(i))
 
 			layerPos[(i*4)+0] = layers[i].Position.X
 			layerPos[(i*4)+1] = layers[i].Position.Y

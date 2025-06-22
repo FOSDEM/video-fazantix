@@ -4,6 +4,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	"github.com/fosdem/fazantix/encdec"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -59,4 +60,31 @@ func SetupRGBTexture(width int, height int, texture []byte) uint32 {
 		gl.Ptr(texture),
 	)
 	return id
+}
+
+func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32, data []byte) {
+	gl.ActiveTexture(uint32(gl.TEXTURE0 + offset))
+	gl.BindTexture(gl.TEXTURE_2D, texID)
+	gl.TexSubImage2D(
+		gl.TEXTURE_2D,
+		0, 0, 0,
+		int32(w), int32(h),
+		channelType, gl.UNSIGNED_BYTE, gl.Ptr(data),
+	)
+}
+
+func SendFrameToGPU(frame *encdec.ImageData, textureIDs [3]uint32, offset int) {
+	channelType := uint32(gl.RED)
+	if frame.Type == encdec.RGBFrames {
+		channelType = gl.RGBA
+	}
+
+	for j := 0; j < frame.NumTextures; j++ {
+		dataPtr, w, h := frame.Texture(j)
+		SendTextureToGPU(
+			textureIDs[j], offset*3+j,
+			w, h, channelType,
+			dataPtr,
+		)
+	}
 }
