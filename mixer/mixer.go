@@ -216,6 +216,15 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 
 	theatre := &theatre.Theatre{
 		Layers: layers[:],
+		Scenes: map[string]*theatre.Scene{
+			"default": {
+				LayerStates: []*layer.LayerState{
+					{X: 0, Y: 0, Scale: 1},
+					{X: 0.025, Y: 0.049, Scale: 0.79},
+					{X: 0.75, Y: 0.6, Scale: 0.2},
+				},
+			},
+		},
 	}
 
 	numLayers := int32(len(layers))
@@ -244,10 +253,10 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 	}
 
 	theatre.Start()
-
-	layers[0].Move(0, 0, 1)
-	layers[1].Move(0.025, 0.049, 0.79)
-	layers[2].Move(0.75, 0.6, 0.2)
+	err = theatre.SetScene("default")
+	if err != nil {
+		log.Fatalf("Could not apply default scene")
+	}
 
 	// Configure the vertex data
 	var vao uint32

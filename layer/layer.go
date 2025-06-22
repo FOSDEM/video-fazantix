@@ -35,6 +35,12 @@ type Layer struct {
 	TextureIDs [3]uint32
 }
 
+type LayerState struct {
+	X     float32
+	Y     float32
+	Scale float32
+}
+
 type Source interface {
 	Frames() *FrameForwarder
 	Start() bool
@@ -53,11 +59,11 @@ func New(name string, src Source, width int, height int) *Layer {
 	return s
 }
 
-func (s *Layer) Move(x float32, y float32, size float32) {
-	s.Position.X = x
-	s.Position.Y = y
-	s.Size.X = size
-	s.Size.Y = size / s.Squeeze
+func (s *Layer) ApplyState(state *LayerState) {
+	s.Position.X = state.X
+	s.Position.Y = state.Y
+	s.Size.X = state.Scale
+	s.Size.Y = state.Scale / s.Squeeze
 }
 
 func (s *Layer) SetupTextures() {
