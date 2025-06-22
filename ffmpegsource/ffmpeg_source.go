@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
+	"time"
 
 	"github.com/fosdem/fazantix/config"
 	"github.com/fosdem/fazantix/encdec"
@@ -55,12 +56,16 @@ func (f *FFmpegSource) Start() bool {
 }
 
 func (f *FFmpegSource) runFFmpeg() {
-	err := f.cmd.Run()
-	if err != nil {
-		log.Printf("ffmpeg error: %s\n", err)
-	}
+	for {
+		log.Printf("starting ffmpeg")
+		err := f.cmd.Run()
+		if err != nil {
+			log.Printf("ffmpeg error: %s\n", err)
+		}
 
-	log.Printf("ffmpeg died")
+		log.Printf("ffmpeg died")
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func (f *FFmpegSource) processStderr() {

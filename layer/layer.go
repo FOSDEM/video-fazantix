@@ -65,6 +65,12 @@ func (s *Layer) Name() string {
 }
 
 func (s *Layer) ApplyState(state *LayerState) {
+	if state == nil {
+		s.IsVisible = false
+		s.targetState = nil
+		return
+	}
+
 	if s.targetState == nil {
 		s.Position.X = state.X
 		s.Position.Y = state.Y
@@ -75,6 +81,9 @@ func (s *Layer) ApplyState(state *LayerState) {
 }
 
 func (s *Layer) Animate() {
+	if s.targetState == nil {
+		return
+	}
 	s.Position.X = ramp(s.Position.X, s.targetState.X, 0.01)
 	s.Position.Y = ramp(s.Position.Y, s.targetState.Y, 0.01)
 	s.Size.X = ramp(s.Size.X, s.targetState.Scale, 0.01)

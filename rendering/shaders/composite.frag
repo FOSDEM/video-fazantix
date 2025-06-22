@@ -8,7 +8,7 @@ uniform sampler2D tex[{{ .NumLayers }} * 3];
 uniform vec4 sourcePosition[{{ .NumLayers }}];
 
 vec4 sampleLayerYUV422(int layer, vec4 dve) {
-	vec2 tpos = (UV / dve.z) - (dve.xy / dve.z);
+	vec2 tpos = (UV / dve.z) - (dve.xy / dve.zw);
 	float Y = texture(tex[layer*3], tpos).r;
 	float Cb = texture(tex[layer*3+2], tpos).r - 0.5;
 	float Cr = texture(tex[layer*3+1], tpos).r - 0.5;
@@ -29,7 +29,7 @@ vec4 sampleLayerYUV422(int layer, vec4 dve) {
 }
 
 vec4 sampleLayerRGB(int layer, vec4 dve) {
-	return texture(tex[layer*3], (UV / dve.z) - (dve.xy / dve.z));
+	return texture(tex[layer*3], (UV / dve.z) - (dve.xy / dve.zw));
 }
 
 void main() {

@@ -9,7 +9,7 @@ sources:
     fmt: yuyv
     w: 1920
     h: 1080
-    z: 100
+    z: 1
   video2:
     type: v4l
     path: /dev/video2
@@ -47,40 +47,47 @@ sources:
     w: 1920
     h: 1080
     z: 7
+  video_listen:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+    z: 8
+
 
 scenes:
-  dedo:
-    balloon:
-      x: 0
-      y: 0
-      scale: 1
-    video0:
-      x: 0.085
-      y: 0.085
-      scale: 0.79
-    fazantfazantfazant:
-      x: 0
-      y: 0
-      scale: 1
-  baba:
-    balloon:
-      x: 0
-      y: 0
-      scale: 1
-    video0:
-      x: 0.025
-      y: 0.049
-      scale: 0.79
-    fazantfazantfazant:
-      x: 0
-      y: 0
-      scale: 1
+#  dedo:
+#    pheasant:
+#      x: 0
+#      y: 0
+#      scale: 1
+#    video_listen:
+#      x: 0.085
+#      y: 0.085
+#      scale: 0.79
+#    video0:
+#      x: 0
+#      y: 0
+#      scale: 1
+#  baba:
+#    pheasant:
+#      x: 0
+#      y: 0
+#      scale: 1
+#    video_listen:
+#      x: 0.025
+#      y: 0.049
+#      scale: 0.79
+#    video0:
+#      x: 0
+#      y: 0
+#      scale: 1
   default:
     balloon:
       x: 0
       y: 0
       scale: 1
-    video0:
+    pheasant:
       x: 0.025
       y: 0.049
       scale: 0.79

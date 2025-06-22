@@ -283,7 +283,11 @@ func makeTheatre(cfg *config.Config) *theatre.Theatre {
 	enabledSources := make(map[string]struct{})
 	for _, layerStateMap := range cfg.Scenes {
 		for name := range layerStateMap {
-			enabledSources[name] = struct{}{}
+			if _, ok := cfg.Sources[name]; ok {
+				enabledSources[name] = struct{}{}
+			} else {
+				log.Fatalf("no such source: %s", name)
+			}
 		}
 	}
 
