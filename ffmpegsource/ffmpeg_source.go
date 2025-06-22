@@ -18,8 +18,11 @@ type FFmpegSource struct {
 	frames   layer.FrameForwarder
 }
 
-func New(shellCmd string) *FFmpegSource {
-	return &FFmpegSource{shellCmd: shellCmd}
+func New(shellCmd string, w int, h int) *FFmpegSource {
+	f := &FFmpegSource{shellCmd: shellCmd}
+
+	f.frames.Init(encdec.YUV422Frames, []uint8{}, w, h)
+	return f
 }
 
 func (f *FFmpegSource) Start() bool {
@@ -36,8 +39,6 @@ func (f *FFmpegSource) Start() bool {
 		log.Printf("could not get ffmpeg stderr: %s\n", err)
 		return false
 	}
-
-	f.frames.Init(encdec.YUV422Frames, []uint8{}, 1920, 1080)
 
 	go f.runFFmpeg()
 	go f.processStdout()

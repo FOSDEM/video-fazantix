@@ -32,8 +32,6 @@ func New(devName string, mode string, width int, height int) *V4LSource {
 	s := &V4LSource{}
 	s.Name = devName
 
-	log.Printf("[%s] Loading v4l2 device %s", s.Name)
-
 	s.Format = mode
 
 	s.requestedWidth = width
@@ -54,6 +52,8 @@ func (s *V4LSource) Start() bool {
 	case "yuyv":
 		pixfmt = v4l2.PixelFmtYUYV
 	}
+
+	log.Printf("[%s] Loading v4l2 device", s.Name)
 
 	camera, err := device.Open(
 		s.Name,

@@ -196,55 +196,77 @@ func MakeWindowAndMix() {
 		log.Fatalf("Could not init shader: %s", err)
 	}
 
-	layers[0] = layer.New(
-		"background",
-		imgsource.New("background.png"),
-		windowWidth, windowHeight,
-	)
-	// layers[1] = layer.New(
-	// 	"background",
-	// 	imgsource.New("background.png"),
-	// 	windowWidth, windowHeight,
-	// )
-	// layers[2] = layer.New(
-	// 	"background",
-	// 	imgsource.New("background.png"),
-	// 	windowWidth, windowHeight,
-	// )
-	// layers[0] = layer.New(
-	// 	"sauce",
-	// 	ffmpegsource.New(`
-	// 		ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
-	// 		`,
-	// 	),
-	// 	windowWidth, windowHeight,
-	// )
-	layers[1] = layer.New(
-		"sauce",
-		ffmpegsource.New(`
+	allLayers := map[string]*layer.Layer{
+		"balloon": layer.New(
+			"background",
+			imgsource.New("background.png"),
+			windowWidth, windowHeight,
+		),
+		"pheasants": layer.New(
+			"sauce",
+			ffmpegsource.New(
+				`
+			ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -
+			`,
+				1920, 1080,
+			),
+			windowWidth, windowHeight,
+		),
+		"fazant": layer.New(
+			"sauce",
+			ffmpegsource.New(
+				`
 			ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -
 			`,
+				1920, 1080,
+			),
+			windowWidth, windowHeight,
 		),
-		windowWidth, windowHeight,
-	)
-	// layers[2] = layer.New(
-	// 	"sauce",
-	// 	ffmpegsource.New(`
-	// 		ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
-	// 		`,
-	// 	),
-	// 	windowWidth, windowHeight,
-	// )
-	// layers[1] = layer.New(
-	// 	"slides",
-	// 	v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
-	// 	windowWidth, windowHeight,
-	// )
-	layers[2] = layer.New(
-		"cam",
-		v4lsource.New("/dev/video0", "yuyv", 640, 480),
-		windowWidth, windowHeight,
-	)
+		"video0": layer.New(
+			"slides",
+			v4lsource.New("/dev/video0", "yuyv", 1920, 1080),
+			windowWidth, windowHeight,
+		),
+		"video0_ffmpeg": layer.New(
+			"slides",
+			ffmpegsource.New(
+				`
+ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -f rawvideo -r 60 -
+			`,
+				1920, 1080,
+			),
+			windowWidth, windowHeight,
+		),
+		"video2": layer.New(
+			"slides",
+			v4lsource.New("/dev/video2", "yuyv", 1920, 1080),
+			windowWidth, windowHeight,
+		),
+		"video2_ffmpeg": layer.New(
+			"slides",
+			ffmpegsource.New(
+				`
+ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video2 -pix_fmt yuv422p -f rawvideo -r 60 -
+			`,
+				1280, 720,
+			),
+			windowWidth, windowHeight,
+		),
+		"cows": layer.New(
+			"sauce",
+			ffmpegsource.New(
+				`
+			ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -
+			`,
+				1920, 1080,
+			),
+			windowWidth, windowHeight,
+		),
+	}
+
+	layers[0] = allLayers["balloon"]
+	layers[1] = allLayers["video0_ffmpeg"]
+	layers[2] = allLayers["video2_ffmpeg"]
 
 	layers[0].Source.Start()
 	layers[0].Move(0, 0, 1)
