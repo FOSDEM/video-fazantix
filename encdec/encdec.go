@@ -142,3 +142,14 @@ func FrameFromImage(img image.Image, into *ImageData) error {
 	draw.Draw(nrgba, nrgba.Bounds(), img, img.Bounds().Min, draw.Src)
 	return nil
 }
+
+func (f FrameType) String() string {
+	switch f {
+	case YUV422Frames:
+		return "YUV422"
+	case RGBFrames:
+		return "RGB"
+	default:
+		panic("unknown frame type")
+	}
+}

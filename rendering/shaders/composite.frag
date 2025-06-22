@@ -4,10 +4,10 @@ in vec2 UV;
 
 out vec4 color;
 
-uniform sampler2D tex[9];
-uniform vec4 sourcePosition[3];
+uniform sampler2D tex[{{ .NumLayers }} * 3];
+uniform vec4 sourcePosition[{{ .NumLayers }}];
 
-vec4 sampleLayerYUV(int layer, vec4 dve) {
+vec4 sampleLayerYUV422(int layer, vec4 dve) {
 	vec2 tpos = (UV / dve.z) - (dve.xy / dve.z);
 	float Y = texture(tex[layer*3], tpos).r;
 	float Cb = texture(tex[layer*3+2], tpos).r - 0.5;
@@ -33,10 +33,16 @@ vec4 sampleLayerRGB(int layer, vec4 dve) {
 }
 
 void main() {
-	vec4 background = sampleLayerRGB(0, sourcePosition[0]);
-	// vec4 background = sampleLayerYUV(0, sourcePosition[0]);
-	vec4 dve1 = sampleLayerYUV(1, sourcePosition[1]);
-	vec4 dve2 = sampleLayerYUV(2, sourcePosition[2]);
-	vec4 temp = mix(background, dve1, dve1.a);
-	color = mix(temp, dve2, dve2.a);
+    vec4 composite;
+    {{ range $i, $layer := .Layers }}
+        vec4 layer_{{ $i }} = sampleLayer{{ $layer.Frames.FrameType.String }}({{ $i }}, sourcePosition[{{ $i }}]);
+
+        {{ if eq $i 0 }}
+            composite = layer_{{ $i }};
+        {{ else }}
+            composite = mix(composite, layer_{{ $i }}, layer_{{ $i }}.a);
+        {{ end }}
+    {{ end }}
+
+	color = composite;
 }

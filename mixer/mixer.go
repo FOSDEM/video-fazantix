@@ -12,6 +12,7 @@ import (
 	"github.com/fosdem/fazantix/imgsource"
 	"github.com/fosdem/fazantix/layer"
 	"github.com/fosdem/fazantix/rendering/shaders"
+	"github.com/fosdem/fazantix/theatre"
 	"github.com/fosdem/fazantix/v4lsource"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -144,24 +145,8 @@ func MakeWindowAndMix() {
 	window := makeWindow()
 	initGL()
 
-	shaderer, err := shaders.NewShaderer()
-	if err != nil {
-		log.Fatalf("Could not get shaders: %s", err)
-	}
-
-	vertexShader, err := shaderer.GetShaderSource("screen.vert")
-	if err != nil {
-		log.Fatalf("Could not get vertex shader: %s", err)
-	}
-
-	fragmentShader, err := shaderer.GetShaderSource("composite.frag")
-	if err != nil {
-		log.Fatalf("Could not get vertex shader: %s", err)
-	}
-
-	program, err := newProgram(vertexShader, fragmentShader)
-	if err != nil {
-		log.Fatalf("Could not init shader: %s", err)
+	theatre := &theatre.Theatre{
+		Layers: layers[:],
 	}
 
 	allLayers := map[string]*layer.Layer{
@@ -235,6 +220,29 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 	layers[0] = allLayers["balloon"]
 	layers[1] = allLayers["video0_ffmpeg"]
 	layers[2] = allLayers["video4_ffmpeg"]
+
+	shaderer, err := shaders.NewShaderer(theatre)
+	if err != nil {
+		log.Fatalf("Could not get shaders: %s", err)
+	}
+
+	vertexShader, err := shaderer.GetShaderSource("screen.vert")
+	if err != nil {
+		log.Fatalf("Could not get vertex shader: %s", err)
+	}
+
+	fragmentShader, err := shaderer.GetShaderSource("composite.frag")
+	if err != nil {
+		log.Fatalf("Could not get vertex shader: %s", err)
+	}
+
+	writeFileDebug("/tmp/shader.vert", vertexShader)
+	writeFileDebug("/tmp/shader.frag", fragmentShader)
+
+	program, err := newProgram(vertexShader, fragmentShader)
+	if err != nil {
+		log.Fatalf("Could not init shader: %s", err)
+	}
 
 	layers[0].Source.Start()
 	layers[0].Move(0, 0, 1)
