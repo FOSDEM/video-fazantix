@@ -2,6 +2,7 @@ package ffmpegsource
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"os/exec"
@@ -35,15 +36,9 @@ func (f *FFmpegSource) Name() string {
 func (f *FFmpegSource) Start() bool {
 	var err error
 
-	f.cmd = exec.Command("bash", "-c", f.shellCmd)
-	f.stdout, err = f.cmd.StdoutPipe()
+	err = f.setupCmd()
 	if err != nil {
-		log.Printf("could not get ffmpeg stdout: %s\n", err)
-		return false
-	}
-	f.stderr, err = f.cmd.StderrPipe()
-	if err != nil {
-		log.Printf("could not get ffmpeg stderr: %s\n", err)
+		log.Printf("could not setup ffmpeg command: %s", err)
 		return false
 	}
 
@@ -55,15 +50,36 @@ func (f *FFmpegSource) Start() bool {
 	return true
 }
 
+func (f *FFmpegSource) setupCmd() error {
+	f.cmd = exec.Command("bash", "-c", f.shellCmd)
+	var err error
+	f.stdout, err = f.cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("could not get ffmpeg stdout: %s\n", err)
+	}
+	f.stderr, err = f.cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("could not get ffmpeg stderr: %s\n", err)
+	}
+	return nil
+}
+
 func (f *FFmpegSource) runFFmpeg() {
 	for {
 		log.Printf("starting ffmpeg")
+
 		err := f.cmd.Run()
 		if err != nil {
 			log.Printf("ffmpeg error: %s\n", err)
 		}
 
 		log.Printf("ffmpeg died")
+		err = f.setupCmd()
+		if err != nil {
+			log.Printf("could not setup ffmpeg command: %s\n", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
 		time.Sleep(1 * time.Second)
 	}
 }
