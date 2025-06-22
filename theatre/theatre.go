@@ -41,6 +41,13 @@ func (t *Theatre) Start() {
 	}
 }
 
+func (t *Theatre) Animate() {
+	// todo: use delta-t
+	for _, l := range t.Layers {
+		l.Animate()
+	}
+}
+
 func (t *Theatre) SetScene(name string) error {
 	if scene, ok := t.Scenes[name]; ok {
 		for i, l := range t.Layers {

@@ -31,6 +31,8 @@ type Layer struct {
 	Source Source
 
 	TextureIDs [3]uint32
+
+	targetState *LayerState
 }
 
 type LayerState struct {
@@ -63,10 +65,20 @@ func (s *Layer) Name() string {
 }
 
 func (s *Layer) ApplyState(state *LayerState) {
-	s.Position.X = state.X
-	s.Position.Y = state.Y
-	s.Size.X = state.Scale
-	s.Size.Y = state.Scale / s.Squeeze
+	if s.targetState == nil {
+		s.Position.X = state.X
+		s.Position.Y = state.Y
+		s.Size.X = state.Scale
+		s.Size.Y = state.Scale / s.Squeeze
+	}
+	s.targetState = state
+}
+
+func (s *Layer) Animate() {
+	s.Position.X = ramp(s.Position.X, s.targetState.X, 0.01)
+	s.Position.Y = ramp(s.Position.Y, s.targetState.Y, 0.01)
+	s.Size.X = ramp(s.Size.X, s.targetState.Scale, 0.01)
+	s.Size.Y = ramp(s.Size.Y, s.targetState.Scale/s.Squeeze, 0.01)
 }
 
 func (s *Layer) SetupTextures() {
@@ -85,4 +97,19 @@ func (s *Layer) SetupTextures() {
 
 func (s *Layer) Frames() *FrameForwarder {
 	return s.Source.Frames()
+}
+
+func ramp(x float32, tgt float32, delta float32) float32 {
+	maxDelta := x - tgt
+	if maxDelta < 0 {
+		maxDelta *= -1
+	}
+	if maxDelta <= delta {
+		return tgt
+	}
+	if x < tgt {
+		return x + delta
+	} else {
+		return x - delta
+	}
 }

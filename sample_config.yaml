@@ -9,7 +9,7 @@ sources:
     fmt: yuyv
     w: 1920
     h: 1080
-    z: 1
+    z: 100
   video2:
     type: v4l
     path: /dev/video2
@@ -49,6 +49,32 @@ sources:
     z: 7
 
 scenes:
+  dedo:
+    balloon:
+      x: 0
+      y: 0
+      scale: 1
+    video0:
+      x: 0.085
+      y: 0.085
+      scale: 0.79
+    fazantfazantfazant:
+      x: 0
+      y: 0
+      scale: 1
+  baba:
+    balloon:
+      x: 0
+      y: 0
+      scale: 1
+    video0:
+      x: 0.025
+      y: 0.049
+      scale: 0.79
+    fazantfazantfazant:
+      x: 0
+      y: 0
+      scale: 1
   default:
     balloon:
       x: 0

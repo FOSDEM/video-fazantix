@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fosdem/fazantix/api"
 	"github.com/fosdem/fazantix/config"
 	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/ffmpegsource"
@@ -145,6 +146,18 @@ func MakeWindowAndMix(cfg *config.Config) {
 	theatre := makeTheatre(cfg)
 	layers := theatre.Layers
 
+	if cfg.Api != nil {
+		api := api.New(cfg.Api, theatre)
+
+		log.Printf("starting web server\n")
+		go func() {
+			err := api.Serve()
+			if err != nil {
+				log.Fatalf("could not start web server: %s", err)
+			}
+		}()
+	}
+
 	numLayers := int32(len(layers))
 
 	shaderer, err := shaders.NewShaderer(theatre)
@@ -254,6 +267,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 			layerPos[(i*4)+3] = layers[i].Size.Y
 
 			layers[i].Frames().RecycleFrame(rf)
+			theatre.Animate()
 		}
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 

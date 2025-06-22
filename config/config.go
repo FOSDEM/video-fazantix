@@ -12,6 +12,7 @@ type Config struct {
 	Sources map[string]*SourceCfg
 	Scenes  map[string]map[string]*layer.LayerState
 	Window  *WindowCfg
+	Api     *ApiCfg
 }
 
 func Parse(filename string) (*Config, error) {
@@ -81,4 +82,9 @@ func (s *SourceCfg) UnmarshalYAML(b []byte) error {
 	default:
 		return fmt.Errorf("unknown source type: %s", s.Type)
 	}
+}
+
+type ApiCfg struct {
+	Bind           string
+	EnableProfiler bool `yaml:"enable_profiler"`
 }
