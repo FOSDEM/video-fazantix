@@ -1,8 +1,11 @@
 package mixer
 
 import (
+	"fmt"
 	"log"
+	"os"
 	"runtime"
+	"strings"
 
 	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/ffmpegsource"
@@ -14,8 +17,8 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-const windowWidth = 1920
-const windowHeight = 1080
+const windowWidth = 1280
+const windowHeight = 720
 const numLayers = 3
 const f32 = 4
 
@@ -68,27 +71,101 @@ func initGL() {
 	log.Printf("OpenGL version '%s'", version)
 }
 
+func compileShader(source string, shaderType uint32) (uint32, error) {
+	shader := gl.CreateShader(shaderType)
+
+	csources, free := gl.Strs(source)
+	gl.ShaderSource(shader, 1, csources, nil)
+	free()
+	gl.CompileShader(shader)
+
+	var status int32
+	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
+	if status == gl.FALSE {
+		var logLength int32
+		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
+
+		log := strings.Repeat("\x00", int(logLength+1))
+		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
+
+		return 0, fmt.Errorf("failed to compile %v: %v", source, log)
+	}
+
+	return shader, nil
+}
+
+func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
+	vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+	if err != nil {
+		return 0, err
+	}
+
+	fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+	if err != nil {
+		return 0, err
+	}
+
+	program := gl.CreateProgram()
+
+	gl.AttachShader(program, vertexShader)
+	gl.AttachShader(program, fragmentShader)
+	gl.LinkProgram(program)
+	glfw.SwapInterval(1)
+
+	var status int32
+	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
+	if status == gl.FALSE {
+		var logLength int32
+		gl.GetProgramiv(program, gl.INFO_LOG_LENGTH, &logLength)
+
+		logmsg := strings.Repeat("\x00", int(logLength+1))
+		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(logmsg))
+
+		return 0, fmt.Errorf("failed to link program: %v", logmsg)
+	}
+
+	gl.DeleteShader(vertexShader)
+	gl.DeleteShader(fragmentShader)
+
+	return program, nil
+}
+
+func writeFileDebug(filename string, content string) {
+	f, err := os.Create(filename)
+	if err != nil {
+		log.Fatalf("could not create debug file %s: %s", filename, err)
+	}
+	defer f.Close()
+
+	fmt.Fprintf(f, "%s", content)
+}
+
 func MakeWindowAndMix() {
 	window := makeWindow()
 	initGL()
 
-	shaderer, err := shaders.BuildShaderer()
+	shaderer, err := shaders.NewShaderer()
 	if err != nil {
-		log.Fatalf("Could not init shaders: %s", err)
+		log.Fatalf("Could not get shaders: %s", err)
+	}
+
+	vertexShader, err := shaderer.GetShaderSource("screen.vert")
+	if err != nil {
+		log.Fatalf("Could not get vertex shader: %s", err)
+	}
+
+	fragmentShader, err := shaderer.GetShaderSource("composite.frag")
+	if err != nil {
+		log.Fatalf("Could not get vertex shader: %s", err)
+	}
+
+	program, err := newProgram(vertexShader, fragmentShader)
+	if err != nil {
+		log.Fatalf("Could not init shader: %s", err)
 	}
 
 	allLayers := map[string]*layer.Layer{
 		"balloon": layer.New(
-			"background",
-			imgsource.New("background.png"),
-			windowWidth, windowHeight,
-		),
-		"balloon2": layer.New(
-			"background",
-			imgsource.New("background.png"),
-			windowWidth, windowHeight,
-		),
-		"balloon3": layer.New(
 			"background",
 			imgsource.New("background.png"),
 			windowWidth, windowHeight,
@@ -156,8 +233,8 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 	}
 
 	layers[0] = allLayers["balloon"]
-	layers[1] = allLayers["balloon2"]
-	layers[2] = allLayers["balloon3"]
+	layers[1] = allLayers["video0_ffmpeg"]
+	layers[2] = allLayers["video4_ffmpeg"]
 
 	layers[0].Source.Start()
 	layers[0].Move(0, 0, 1)
@@ -185,16 +262,16 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 	var stride int32
 	stride = 4 * f32
 
-	vertAttrib := uint32(gl.GetAttribLocation(shaderer.Program, gl.Str("position\x00")))
+	vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("position\x00")))
 	gl.EnableVertexAttribArray(vertAttrib)
 	gl.VertexAttribPointerWithOffset(vertAttrib, 2, gl.FLOAT, false, stride, 0)
 
-	texCoordAttrib := uint32(gl.GetAttribLocation(shaderer.Program, gl.Str("uv\x00")))
+	texCoordAttrib := uint32(gl.GetAttribLocation(program, gl.Str("uv\x00")))
 	gl.EnableVertexAttribArray(texCoordAttrib)
 	gl.VertexAttribPointerWithOffset(texCoordAttrib, 2, gl.FLOAT, false, stride, 2*f32)
 
 	var layerPos [numLayers * 4]float32
-	layerPosUniform := gl.GetUniformLocation(shaderer.Program, gl.Str("sourcePosition\x00"))
+	layerPosUniform := gl.GetUniformLocation(program, gl.Str("sourcePosition\x00"))
 	gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 	// Allocate 3 textures for every layer in case of planar YUV
@@ -203,7 +280,7 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 	for i := range numTextures {
 		textures[i] = int32(i)
 	}
-	texUniform := gl.GetUniformLocation(shaderer.Program, gl.Str("tex\x00"))
+	texUniform := gl.GetUniformLocation(program, gl.Str("tex\x00"))
 	gl.Uniform1iv(texUniform, numTextures, &textures[0])
 
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
@@ -212,7 +289,7 @@ ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video4 -pix_fmt yuv42
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
 		// Render
-		gl.UseProgram(shaderer.Program)
+		gl.UseProgram(program)
 
 		gl.BindVertexArray(vao)
 

@@ -35,8 +35,8 @@ vec4 sampleLayerRGB(int layer, vec4 dve) {
 void main() {
 	vec4 background = sampleLayerRGB(0, sourcePosition[0]);
 	// vec4 background = sampleLayerYUV(0, sourcePosition[0]);
-	vec4 dve1 = sampleLayerRGB(1, sourcePosition[1]);
-	vec4 dve2 = sampleLayerRGB(2, sourcePosition[2]);
+	vec4 dve1 = sampleLayerYUV(1, sourcePosition[1]);
+	vec4 dve2 = sampleLayerYUV(2, sourcePosition[2]);
 	vec4 temp = mix(background, dve1, dve1.a);
 	color = mix(temp, dve2, dve2.a);
 }
