@@ -1,7 +1,6 @@
 package ffmpegsource
 
 import (
-	"image"
 	"io"
 	"log"
 	"os/exec"
@@ -38,7 +37,7 @@ func (f *FFmpegSource) Start() bool {
 		return false
 	}
 
-	f.frames.Init(layer.YUV422Frames, []uint8{}, 1920, 1080)
+	f.frames.Init(encdec.YUV422Frames, []uint8{}, 1920, 1080)
 
 	go f.runFFmpeg()
 	go f.processStdout()
@@ -74,14 +73,13 @@ func (f *FFmpegSource) processStdout() {
 			return
 		}
 
-		imgg := f.frames.GetBlankFrame()
-		img := imgg.(*image.YCbCr)
-		err = encdec.DecodeYUYV422(buf, img)
+		frame := f.frames.GetBlankFrame()
+		err = encdec.DecodeYUYV422(buf, frame)
 		if err != nil {
 			log.Printf("could not decode frame: %s\n", err)
 			continue
 		}
-		f.frames.SendFrame(img)
+		f.frames.SendFrame(frame)
 	}
 }
 

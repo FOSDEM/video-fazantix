@@ -2,12 +2,12 @@ package mixer
 
 import (
 	"fmt"
-	"image"
 	"log"
 	"runtime"
 	"strings"
 
-	"github.com/fosdem/fazantix/ffmpegsource"
+	"github.com/fosdem/fazantix/encdec"
+	"github.com/fosdem/fazantix/imgsource"
 	"github.com/fosdem/fazantix/layer"
 	"github.com/fosdem/fazantix/v4lsource"
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -73,8 +73,8 @@ vec4 sampleLayerRGB(int layer, vec4 dve) {
 }
 
 void main() {
-	// vec4 background = sampleLayerRGB(0, sourcePosition[0]);
-	vec4 background = sampleLayerYUV(0, sourcePosition[0]);
+	vec4 background = sampleLayerRGB(0, sourcePosition[0]);
+	// vec4 background = sampleLayerYUV(0, sourcePosition[0]);
 	vec4 dve1 = sampleLayerYUV(1, sourcePosition[1]);
 	vec4 dve2 = sampleLayerYUV(2, sourcePosition[2]);
 	vec4 temp = mix(background, dve1, dve1.a);
@@ -195,11 +195,11 @@ func MakeWindowAndMix() {
 		log.Fatalf("Could not init shader: %s", err)
 	}
 
-	// layers[0] = layer.New(
-	// 	"background",
-	// 	imgsource.New("background.png"),
-	// 	windowWidth, windowHeight,
-	// )
+	layers[0] = layer.New(
+		"background",
+		imgsource.New("background.png"),
+		windowWidth, windowHeight,
+	)
 	// layers[1] = layer.New(
 	// 	"background",
 	// 	imgsource.New("background.png"),
@@ -210,14 +210,14 @@ func MakeWindowAndMix() {
 	// 	imgsource.New("background.png"),
 	// 	windowWidth, windowHeight,
 	// )
-	layers[0] = layer.New(
-		"sauce",
-		ffmpegsource.New(`
-			ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
-			`,
-		),
-		windowWidth, windowHeight,
-	)
+	// layers[0] = layer.New(
+	// 	"sauce",
+	// 	ffmpegsource.New(`
+	// 		ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuyv422 -f rawvideo -r 60 -
+	// 		`,
+	// 	),
+	// 	windowWidth, windowHeight,
+	// )
 	// layers[1] = layer.New(
 	// 	"sauce",
 	// 	ffmpegsource.New(`
@@ -312,32 +312,22 @@ func MakeWindowAndMix() {
 				continue
 			}
 
-			width := layers[i].Frames().Width
-			height := layers[i].Frames().Height
+			channelType := uint32(gl.RED)
+			if rf.Type == encdec.RGBFrames {
+				channelType = gl.RGBA
+			}
 
-			if layers[i].Frames().FrameType == layer.YUV422Frames {
-				// Planar 4:2:2
-				frm := rf.(*image.YCbCr)
+			for j := 0; j < rf.NumTextures; j++ {
+				dataPtr, w, h := rf.Texture(j)
 
-				gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
-				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
-				gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(width), int32(height), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Y))
-
-				gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 1))
-				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[1])
-				gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(width/2), int32(height), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cr))
-
-				gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + 2))
-				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[2])
-				gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(width/2), int32(height), gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(frm.Cb))
-
-			} else {
-				frm := rf.(*image.NRGBA)
-				gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3)))
-				if !layers[i].Frames().IsStill {
-					gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(width), int32(height), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frm.Pix))
-				}
-				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[0])
+				gl.ActiveTexture(uint32(gl.TEXTURE0 + (i * 3) + j))
+				gl.BindTexture(gl.TEXTURE_2D, layers[i].TextureIDs[j])
+				gl.TexSubImage2D(
+					gl.TEXTURE_2D,
+					0, 0, 0,
+					int32(w), int32(h),
+					channelType, gl.UNSIGNED_BYTE, gl.Ptr(dataPtr),
+				)
 			}
 
 			layerPos[(i*4)+0] = layers[i].Position.X

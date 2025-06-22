@@ -91,11 +91,11 @@ func (s *V4LSource) Start() bool {
 	case "mjpeg":
 		dummyImg := image.NewNRGBA(image.Rect(0, 0, 1, 1))
 		s.frames.Init(
-			layer.RGBFrames, dummyImg.Pix,
+			encdec.RGBFrames, dummyImg.Pix,
 			int(format.Width), int(format.Height),
 		)
 	case "yuyv":
-		s.frames.Init(layer.YUV422Frames, []uint8{}, int(format.Width), int(format.Height))
+		s.frames.Init(encdec.YUV422Frames, []uint8{}, int(format.Width), int(format.Height))
 	}
 
 	go s.decodeFrames()
@@ -117,29 +117,28 @@ func (s *V4LSource) decodeFrames() {
 
 func (s *V4LSource) decodeFramesJPEG() {
 	// this does not work, dunno why
-	var frame []byte
-	for frame = range s.rawCamFrames {
-		nrgba, err := encdec.DecodeRGBfromImage(frame)
+	for rawFrame := range s.rawCamFrames {
+		frame := s.frames.GetBlankFrame()
+		err := encdec.DecodeRGBfromImage(rawFrame, frame)
 		if err != nil {
 			log.Printf("[%s] Could not decode frame: %s", s.Name, err)
 			continue
 		}
 		s.frames.IsReady = true
-		s.frames.SendFrame(nrgba)
+		s.frames.SendFrame(frame)
 	}
 }
 
 func (s *V4LSource) decodeFrames422p() {
-	for frame := range s.rawCamFrames {
-		imgg := s.frames.GetBlankFrame()
-		img := imgg.(*image.YCbCr)
-		err := encdec.DecodeYUYV422(frame, img)
+	for rawFrame := range s.rawCamFrames {
+		frame := s.frames.GetBlankFrame()
+		err := encdec.DecodeYUYV422(rawFrame, frame)
 		if err != nil {
 			log.Printf("[%s] Could not decode frame: %s", s.Name, err)
 			continue
 		}
 		s.frames.IsReady = true
-		s.frames.SendFrame(img)
+		s.frames.SendFrame(frame)
 	}
 }
 

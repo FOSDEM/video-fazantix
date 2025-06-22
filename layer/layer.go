@@ -1,6 +1,7 @@
 package layer
 
 import (
+	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/rendering"
 )
 
@@ -64,11 +65,11 @@ func (s *Layer) SetupTextures() {
 	height := s.Source.Frames().Height
 
 	switch s.Frames().FrameType {
-	case YUV422Frames:
+	case encdec.YUV422Frames:
 		s.TextureIDs[0] = rendering.SetupYUVTexture(width, height)
 		s.TextureIDs[1] = rendering.SetupYUVTexture(width/2, height)
 		s.TextureIDs[2] = rendering.SetupYUVTexture(width/2, height)
-	case RGBFrames:
+	case encdec.RGBFrames:
 		s.TextureIDs[0] = rendering.SetupRGBTexture(width, height, s.Frames().PixFmt)
 	}
 }
