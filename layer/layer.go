@@ -60,6 +60,9 @@ func New(src Source, width int, height int) *Layer {
 	s.Position = Coordinate{X: 0.5, Y: 0.5}
 	s.Mask = Mask{top: 0, bottom: 0, left: 0, right: 0}
 	s.Squeeze = (float32(width) / float32(height)) / (float32(s.Source.Frames().Width) / float32(s.Source.Frames().Height))
+	if s.Squeeze != s.Squeeze {
+		s.Squeeze = 1.0
+	}
 	return s
 }
 
@@ -90,6 +93,7 @@ func (s *Layer) Animate() {
 	if s.targetState == nil {
 		return
 	}
+	s.Squeeze = (float32(s.OutputWidth) / float32(s.OutputHeight)) / (float32(s.Source.Frames().Width) / float32(s.Source.Frames().Height))
 	s.Position.X = ramp(s.Position.X, s.targetState.X, 0.01)
 	s.Position.Y = ramp(s.Position.Y, s.targetState.Y, 0.01)
 	s.Size.X = ramp(s.Size.X, s.targetState.Scale, 0.01)
