@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/pprof"
+	"runtime/pprof"
+	"time"
 
 	"github.com/fosdem/fazantix/config"
 	"github.com/fosdem/fazantix/theatre"
@@ -29,7 +30,7 @@ func New(cfg *config.ApiCfg, theatre *theatre.Theatre) *Api {
 
 func (a *Api) Serve() error {
 	if a.cfg.EnableProfiler {
-		a.mux.Handle("/prof", pprof.Handler("goroutine"))
+		a.mux.HandleFunc("/prof", a.profileCPU)
 		a.mux.HandleFunc("/scene", a.handleScene)
 	}
 
@@ -55,4 +56,10 @@ func (a *Api) handleScene(w http.ResponseWriter, req *http.Request) {
 	}
 
 	fmt.Fprintf(w, "\"ok\"\n")
+}
+
+func (a *Api) profileCPU(w http.ResponseWriter, req *http.Request) {
+	pprof.StartCPUProfile(w)
+	time.Sleep(10 * time.Second)
+	pprof.StopCPUProfile()
 }

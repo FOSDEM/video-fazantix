@@ -229,6 +229,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
 
+	firstFrame := true
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
@@ -253,6 +254,9 @@ func MakeWindowAndMix(cfg *config.Config) {
 			}
 
 			for j := 0; j < rf.NumTextures; j++ {
+				if layers[i].Frames().IsStill && !firstFrame {
+					continue
+				}
 				dataPtr, w, h := rf.Texture(j)
 
 				gl.ActiveTexture(uint32(gl.TEXTURE0 + (int32(i) * 3) + int32(j)))
@@ -282,6 +286,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		// Maintenance
 		window.SwapBuffers()
 		glfw.PollEvents()
+		firstFrame = false
 	}
 }
 
