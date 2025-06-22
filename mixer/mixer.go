@@ -5,14 +5,17 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/fosdem/fazantix/config"
 	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/ffmpegsource"
+	"github.com/fosdem/fazantix/imgsource"
 	"github.com/fosdem/fazantix/layer"
 	"github.com/fosdem/fazantix/rendering/shaders"
 	"github.com/fosdem/fazantix/theatre"
+	"github.com/fosdem/fazantix/v4lsource"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -263,11 +266,37 @@ func MakeWindowAndMix(cfg *config.Config) {
 }
 
 func makeTheatre(cfg *config.Config) *theatre.Theatre {
+	enabledSources := make(map[string]struct{})
+	for _, layerStateMap := range cfg.Scenes {
+		for name := range layerStateMap {
+			enabledSources[name] = struct{}{}
+		}
+	}
+
+	var sortedSourceNames []string
+	for name := range enabledSources {
+		sortedSourceNames = append(sortedSourceNames, name)
+	}
+
+	sort.Slice(sortedSourceNames, func(i, j int) bool {
+		ni := sortedSourceNames[i]
+		nj := sortedSourceNames[j]
+		return cfg.Sources[ni].Z < cfg.Sources[nj].Z
+	})
+
 	var sources []layer.Source
-	for srcName, srcCfg := range cfg.Sources {
+	for _, srcName := range sortedSourceNames {
+		srcCfg := cfg.Sources[srcName]
+
+		log.Printf("adding source: %s\n", srcName)
+
 		switch sc := srcCfg.Cfg.(type) {
 		case *config.FFmpegSourceCfg:
 			sources = append(sources, ffmpegsource.New(srcName, sc))
+		case *config.ImgSourceCfg:
+			sources = append(sources, imgsource.New(srcName, sc))
+		case *config.V4LSourceCfg:
+			sources = append(sources, v4lsource.New(srcName, sc))
 		default:
 			panic(fmt.Sprintf("unhandled source type: %+v", srcCfg.Cfg))
 		}

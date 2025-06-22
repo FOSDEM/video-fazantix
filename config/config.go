@@ -29,6 +29,7 @@ func Parse(filename string) (*Config, error) {
 
 type SourceCfgStub struct {
 	Type string
+	Z    float32
 }
 
 type SourceCfg struct {
@@ -47,6 +48,17 @@ type FFmpegSourceCfg struct {
 	Cmd string
 }
 
+type ImgSourceCfg struct {
+	Path string
+}
+
+type V4LSourceCfg struct {
+	Path string
+	Fmt  string
+	W    int
+	H    int
+}
+
 func (s *SourceCfg) UnmarshalYAML(b []byte) error {
 	err := yaml.Unmarshal(b, &s.SourceCfgStub)
 	if err != nil {
@@ -56,6 +68,14 @@ func (s *SourceCfg) UnmarshalYAML(b []byte) error {
 	switch s.Type {
 	case "ffmpeg_stdout":
 		cfg := FFmpegSourceCfg{}
+		s.Cfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	case "image":
+		cfg := ImgSourceCfg{}
+		s.Cfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	case "v4l":
+		cfg := V4LSourceCfg{}
 		s.Cfg = &cfg
 		return yaml.Unmarshal(b, &cfg)
 	default:

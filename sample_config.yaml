@@ -1,27 +1,60 @@
 sources:
+  balloon:
+    type: image
+    path: background.png
+    z: 0
+  video0:
+    type: v4l
+    path: /dev/video0
+    fmt: yuyv
+    w: 1920
+    h: 1080
+    z: 1
+  video2:
+    type: v4l
+    path: /dev/video2
+    fmt: yuyv
+    w: 1920
+    h: 1080
+    z: 2
+  video0_ffmpeg:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+    z: 3
+  video2_ffmpeg:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video2 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+    z: 4
   pheasant:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     w: 1920
     h: 1080
+    z: 5
   cows:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     w: 1920
     h: 1080
+    z: 6
   fazantfazantfazant:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     w: 1920
     h: 1080
+    z: 7
 
 scenes:
   default:
-    pheasant:
+    balloon:
       x: 0
       y: 0
       scale: 1
-    cows:
+    video0:
       x: 0.025
       y: 0.049
       scale: 0.79
@@ -33,3 +66,7 @@ scenes:
 window:
   w: 1280
   h: 720
+
+api:
+  bind: ':6666'
+  enable_profiler: true
