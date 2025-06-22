@@ -8,14 +8,17 @@ import (
 	"time"
 
 	"github.com/fosdem/fazantix/config"
+	"github.com/fosdem/fazantix/rendering"
 	"github.com/fosdem/fazantix/theatre"
 )
 
 type Api struct {
-	srv     http.Server
-	mux     *http.ServeMux
-	cfg     *config.ApiCfg
-	theatre *theatre.Theatre
+	srv          http.Server
+	mux          *http.ServeMux
+	cfg          *config.ApiCfg
+	theatre      *theatre.Theatre
+	start        time.Time
+	FrameCounter uint64
 }
 
 func New(cfg *config.ApiCfg, theatre *theatre.Theatre) *Api {
@@ -29,8 +32,10 @@ func New(cfg *config.ApiCfg, theatre *theatre.Theatre) *Api {
 }
 
 func (a *Api) Serve() error {
+	a.start = time.Now()
 	if a.cfg.EnableProfiler {
 		a.mux.HandleFunc("/prof", a.profileCPU)
+		a.mux.HandleFunc("/stats", a.stats)
 		a.mux.HandleFunc("/scene", a.handleScene)
 	}
 
@@ -62,4 +67,31 @@ func (a *Api) profileCPU(w http.ResponseWriter, req *http.Request) {
 	pprof.StartCPUProfile(w)
 	time.Sleep(10 * time.Second)
 	pprof.StopCPUProfile()
+}
+
+type Stats struct {
+	TextureUpload      uint64  `json:"texture_upload"`
+	TextureUploadAvgGb float64 `json:"texture_upload_avg_gb"`
+	Uptime             float64 `json:"uptime"`
+	TotalFrames        uint64  `json:"total_frames"`
+	FPS                float64 `json:"fps"`
+}
+
+func (a *Api) stats(w http.ResponseWriter, req *http.Request) {
+	uptime := float64(time.Since(a.start).Nanoseconds()) / 1e9
+	stats := &Stats{
+		Uptime:             uptime,
+		TextureUpload:      rendering.TextureUploadCounter,
+		TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
+		TotalFrames:        a.FrameCounter,
+		FPS:                float64(a.FrameCounter) / uptime,
+	}
+
+	encoder := json.NewEncoder(w)
+	err := encoder.Encode(stats)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("could encode stats: %s", err), http.StatusForbidden)
+		return
+	}
+	fmt.Fprintf(w, "\n")
 }

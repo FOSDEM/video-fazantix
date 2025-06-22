@@ -21,8 +21,6 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-const windowWidth = 1280
-const windowHeight = 720
 const f32 = 4
 
 var vertices = []float32{
@@ -41,7 +39,7 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func makeWindow() *glfw.Window {
+func makeWindow(cfg *config.WindowCfg) *glfw.Window {
 	log.Println("Initializing window")
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
@@ -53,7 +51,7 @@ func makeWindow() *glfw.Window {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(windowWidth, windowHeight, "OpenGL", nil, nil)
+	window, err := glfw.CreateWindow(cfg.W, cfg.H, "OpenGL", nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -140,18 +138,19 @@ func writeFileDebug(filename string, content string) {
 }
 
 func MakeWindowAndMix(cfg *config.Config) {
-	window := makeWindow()
+	window := makeWindow(cfg.Window)
 	initGL()
 
 	theatre := makeTheatre(cfg)
 	layers := theatre.Layers
 
+	var theApi *api.Api
 	if cfg.Api != nil {
-		api := api.New(cfg.Api, theatre)
+		theApi = api.New(cfg.Api, theatre)
 
 		log.Printf("starting web server\n")
 		go func() {
-			err := api.Serve()
+			err := theApi.Serve()
 			if err != nil {
 				log.Fatalf("could not start web server: %s", err)
 			}
@@ -271,6 +270,10 @@ func MakeWindowAndMix(cfg *config.Config) {
 		window.SwapBuffers()
 		glfw.PollEvents()
 		firstFrame = false
+
+		if theApi != nil {
+			theApi.FrameCounter++
+		}
 	}
 }
 

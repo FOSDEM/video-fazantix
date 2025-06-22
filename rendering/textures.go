@@ -62,6 +62,8 @@ func SetupRGBTexture(width int, height int, texture []byte) uint32 {
 	return id
 }
 
+var TextureUploadCounter uint64
+
 func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32, data []byte) {
 	gl.ActiveTexture(uint32(gl.TEXTURE0 + offset))
 	gl.BindTexture(gl.TEXTURE_2D, texID)
@@ -71,6 +73,7 @@ func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32
 		int32(w), int32(h),
 		channelType, gl.UNSIGNED_BYTE, gl.Ptr(data),
 	)
+	TextureUploadCounter += uint64(len(data))
 }
 
 func SendFrameToGPU(frame *encdec.ImageData, textureIDs [3]uint32, offset int) {
