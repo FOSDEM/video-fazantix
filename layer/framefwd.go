@@ -1,6 +1,8 @@
 package layer
 
 import (
+	"fmt"
+	"log"
 	"sync"
 
 	"github.com/fosdem/fazantix/encdec"
@@ -12,6 +14,7 @@ type FrameForwarder struct {
 	Width     int
 	Height    int
 
+	Name    string
 	IsReady bool
 	IsStill bool
 
@@ -21,7 +24,8 @@ type FrameForwarder struct {
 	sync.Mutex
 }
 
-func (f *FrameForwarder) Init(ft encdec.FrameType, pf []uint8, width int, height int) {
+func (f *FrameForwarder) Init(name string, ft encdec.FrameType, pf []uint8, width int, height int) {
+	f.Name = name
 	f.FrameType = ft
 	f.PixFmt = pf
 	f.Width = width
@@ -48,4 +52,8 @@ func (f *FrameForwarder) RecycleFrame(frame *encdec.ImageData) {
 	f.Lock()
 	defer f.Unlock()
 	f.recycledFrames = append(f.recycledFrames, frame)
+}
+
+func (f *FrameForwarder) Log(msg string, args ...interface{}) {
+	log.Printf("[%s]: %s\n", f.Name, fmt.Sprintf(msg, args...))
 }

@@ -47,7 +47,6 @@ type LayerState struct {
 type Source interface {
 	Frames() *FrameForwarder
 	Start() bool
-	Name() string
 }
 
 func New(src Source, width int, height int) *Layer {
@@ -67,7 +66,7 @@ func New(src Source, width int, height int) *Layer {
 }
 
 func (s *Layer) Name() string {
-	return s.Source.Name()
+	return s.Source.Frames().Name
 }
 
 func (s *Layer) ApplyState(state *LayerState) {

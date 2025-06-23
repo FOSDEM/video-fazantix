@@ -322,7 +322,7 @@ func makeTheatre(cfg *config.Config) *theatre.Theatre {
 	for sceneName, layerStateMap := range cfg.Scenes {
 		layerStates := make([]*layer.LayerState, len(sources))
 		for i, src := range sources {
-			layerStates[i] = layerStateMap[src.Name()]
+			layerStates[i] = layerStateMap[src.Frames().Name]
 		}
 		scenes[sceneName] = &theatre.Scene{
 			Name:        sceneName,

@@ -1,7 +1,6 @@
 package imgsource
 
 import (
-	"log"
 	"os"
 
 	"image"
@@ -19,8 +18,6 @@ type ImgSource struct {
 	rgba   *image.NRGBA
 	img    image.Image
 
-	name string
-
 	frames layer.FrameForwarder
 }
 
@@ -28,39 +25,34 @@ func New(name string, cfg *config.ImgSourceCfg) *ImgSource {
 	s := &ImgSource{}
 
 	s.path = cfg.Path
-	s.name = name
-
-	log.Printf("[%s] Loading", s.name)
+	s.log("Loading")
 	imgFile, err := os.Open(s.path)
 	if err != nil {
-		log.Printf("[%s] Error: %s", s.name, err)
+		s.log("Error opening %s: %s", s.path, err)
 		return s
 	}
 
 	s.img, _, err = image.Decode(imgFile)
 	if err != nil {
-		log.Printf("[%s] Error: %s", s.name, err)
+		s.log("Error decoding %s: %s", s.path, err)
 		return s
 	}
 
 	s.rgba = image.NewNRGBA(s.img.Bounds())
 
 	s.frames.Init(
+		name,
 		encdec.RGBFrames, s.rgba.Pix,
 		s.rgba.Rect.Size().X, s.rgba.Rect.Size().Y,
 	)
 
 	if s.rgba.Stride != s.frames.Width*4 {
-		log.Printf("[%s] Unsupported stride", s.name)
+		s.log("Unsupported stride")
 		return s
 	}
 
 	s.loaded = true
 	return s
-}
-
-func (i *ImgSource) Name() string {
-	return i.name
 }
 
 func (s *ImgSource) Start() bool {
@@ -70,7 +62,7 @@ func (s *ImgSource) Start() bool {
 
 	w := s.img.Bounds().Dx()
 	h := s.img.Bounds().Dy()
-	log.Printf("[%s] Size: %dx%d", s.name, w, h)
+	s.log("Size: %dx%d", w, h)
 
 	s.frames.IsReady = true
 	s.frames.IsStill = true
@@ -78,7 +70,7 @@ func (s *ImgSource) Start() bool {
 	frame := encdec.NewFrame(encdec.RGBFrames, w, h)
 	err := encdec.FrameFromImage(s.img, frame)
 	if err != nil {
-		log.Printf("[%s] Decode error: %s", s.name, err)
+		s.log("Decode error: %s", err)
 		return false
 	}
 	s.frames.SendFrame(frame)
@@ -87,4 +79,8 @@ func (s *ImgSource) Start() bool {
 
 func (s *ImgSource) Frames() *layer.FrameForwarder {
 	return &s.frames
+}
+
+func (s *ImgSource) log(msg string, args ...interface{}) {
+	s.Frames().Log(msg, args...)
 }
