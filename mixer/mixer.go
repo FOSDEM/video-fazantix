@@ -5,19 +5,14 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"sort"
 	"strings"
 
 	"github.com/fosdem/fazantix/api"
 	"github.com/fosdem/fazantix/config"
-	"github.com/fosdem/fazantix/ffmpegsource"
-	"github.com/fosdem/fazantix/ffmpegsink"
-	"github.com/fosdem/fazantix/imgsource"
-	"github.com/fosdem/fazantix/layer"
 	"github.com/fosdem/fazantix/rendering"
 	"github.com/fosdem/fazantix/rendering/shaders"
 	"github.com/fosdem/fazantix/theatre"
-	"github.com/fosdem/fazantix/v4lsource"
+	"github.com/fosdem/fazantix/windowsink"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -40,7 +35,7 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func makeWindow(cfg *config.WindowCfg) *glfw.Window {
+func makeWindow(sink *windowsink.WindowSink) *glfw.Window {
 	log.Println("Initializing window")
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
@@ -52,7 +47,7 @@ func makeWindow(cfg *config.WindowCfg) *glfw.Window {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(cfg.W, cfg.H, "OpenGL", nil, nil)
+	window, err := glfw.CreateWindow(sink.Frames().Width, sink.Frames().Height, sink.Frames().Name, nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -146,14 +141,18 @@ func writeFileDebug(filename string, content string) {
 }
 
 func MakeWindowAndMix(cfg *config.Config) {
-	window := makeWindow(cfg.Window)
+	theatre, err := theatre.New(cfg)
+	if err != nil {
+		log.Fatalf("could not build theatre: %s", err)
+	}
+
+	// assume a single sink called "projector" of type "window" for now
+	windowStage := theatre.GetTheSingleWindowStage()
+	window := makeWindow(windowStage.Sink.(*windowsink.WindowSink))
 	initGL()
 
-	theatre := makeTheatre(cfg)
-	layers := theatre.Layers
+	layers := windowStage.Layers
 
-	testsink.Init()
-	
 	var theApi *api.Api
 	if cfg.Api != nil {
 		theApi = api.New(cfg.Api, theatre)
@@ -167,43 +166,38 @@ func MakeWindowAndMix(cfg *config.Config) {
 		}()
 	}
 
+	shaderData := &shaders.ShaderData{
+		NumSources: theatre.NumSources(),
+		Sources:    theatre.SourceList,
+	}
+
 	numLayers := int32(len(layers))
 
-	shaderer, err := shaders.NewShaderer(theatre)
+	shaderer, err := shaders.NewShaderer()
 	if err != nil {
 		log.Fatalf("Could not get shaders: %s", err)
 	}
 
-	vertexShader, err := shaderer.GetShaderSource("screen.vert")
+	vertexShader, err := shaderer.GetShaderSource("screen.vert", shaderData)
 	if err != nil {
 		log.Fatalf("Could not get vertex shader: %s", err)
 	}
 
-	fragmentShader, err := shaderer.GetShaderSource("composite.frag")
+	fragmentShader, err := shaderer.GetShaderSource("composite.frag", shaderData)
 	if err != nil {
 		log.Fatalf("Could not get vertex shader: %s", err)
-	}
-	
-	fragmentBlitShader, err := shaderer.GetShaderSource("blit.frag")
-	if err != nil {
-		log.Fatalf("Could not get fragment shader: %s", err)
 	}
 
 	writeFileDebug("/tmp/shader.vert", vertexShader)
 	writeFileDebug("/tmp/shader.frag", fragmentShader)
-	writeFileDebug("/tmp/blit.frag", fragmentBlitShader)
 
 	program, err := newProgram(vertexShader, fragmentShader)
 	if err != nil {
 		log.Fatalf("Could not init shader: %s", err)
 	}
-	//blitProgram, err := newProgram(vertexShader, fragmentBlitShader)
-	//if err != nil {
-	//	log.Fatalf("Could not init blit shader: %s", err)
-	//}
 
 	theatre.Start()
-	err = theatre.SetScene("default")
+	err = theatre.SetScene("projector", "default")
 	if err != nil {
 		log.Fatalf("Could not apply default scene")
 	}
@@ -237,7 +231,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 	layerDataUniform := gl.GetUniformLocation(program, gl.Str("layerData\x00"))
 	gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
 
-
 	// Allocate 3 textures for every layer in case of planar YUV
 	numTextures := numLayers * 3
 	textures := make([]int32, numTextures)
@@ -248,34 +241,18 @@ func MakeWindowAndMix(cfg *config.Config) {
 	gl.Uniform1iv(texUniform, numTextures, &textures[0])
 
 	// Create extra framebuffers as rendertargets
-	numTargets := 1
-	frameBufferName := make([]uint32, numTargets)
-	gl.GenFramebuffers(int32(numTargets), &frameBufferName[0])
-	gl.BindFramebuffer(gl.FRAMEBUFFER, frameBufferName[0])
-	
-	renderTargetTexture := make([]uint32, numTargets)
-	gl.GenTextures(int32(numTargets), &renderTargetTexture[0])
+	nonWindowStages := theatre.NonWindowStageList
 
-	for i := range numTargets {
-		gl.BindTexture(gl.TEXTURE_2D, renderTargetTexture[i])
-		gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB, int32(cfg.Window.W), int32(cfg.Window.H), 0, gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(nil))
-		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	for _, stage := range nonWindowStages {
+		stage.Sink.Frames().SetupTextures()
+		stage.Sink.Frames().UseAsFramebuffer()
 	}
-	gl.FramebufferTexture(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, renderTargetTexture[0], 0)
-
-	if gl.CheckFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE {
-		panic("Framebuffer failed")
-	}
-
-	// Bind the renderTarget texture to the shader used for screen blitting
-	//renderedTextureUniform := gl.GetUniformLocation(blitProgram, gl.Str("renderedTexture\x00"))
 
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
 
 	firstFrame := true
 	for !window.ShouldClose() {
-		gl.BindFramebuffer(gl.FRAMEBUFFER, frameBufferName[0])
+		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
 		// Render
@@ -296,7 +273,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 				continue
 			}
 
-			rendering.SendFrameToGPU(rf, layers[i].TextureIDs, int(i))
+			rendering.SendFrameToGPU(rf, layers[i].Frames().TextureIDs, int(i))
 
 			layerPos[(i*4)+0] = layers[i].Position.X
 			layerPos[(i*4)+1] = layers[i].Position.Y
@@ -311,86 +288,26 @@ func MakeWindowAndMix(cfg *config.Config) {
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
-		target := make([]uint8, cfg.Window.W * cfg.Window.H * 3)
-		gl.ReadPixels(0, 0, int32(cfg.Window.W), int32(cfg.Window.H), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(target))
 
-		// Put the rendering in the currently bound framebuffer
-		gl.Viewport(0, 0, int32(cfg.Window.W), int32(cfg.Window.H))
+		// // Switch to the framebuffer connected to the window
+		// gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+		// gl.Viewport(0, 0, int32(cfg.Window.W), int32(cfg.Window.H))
+		// gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		// Switch to the framebuffer connected to the window
-		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-		gl.Viewport(0, 0, int32(cfg.Window.W), int32(cfg.Window.H))
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+		// //gl.UseProgram(blitProgram)
+		// //gl.ActiveTexture(uint32(gl.TEXTURE0+numTextures-1))
 
-		
-		//gl.UseProgram(blitProgram)
-		//gl.ActiveTexture(uint32(gl.TEXTURE0+numTextures-1))
-
-		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+		// gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+		// target := make([]uint8, cfg.Window.W*cfg.Window.H*3)
+		// gl.ReadPixels(0, 0, int32(cfg.Window.W), int32(cfg.Window.H), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(target))
 
 		// Maintenance
 		window.SwapBuffers()
 		glfw.PollEvents()
 		firstFrame = false
 
-
 		if theApi != nil {
 			theApi.FrameCounter++
 		}
 	}
-}
-
-func makeTheatre(cfg *config.Config) *theatre.Theatre {
-	enabledSources := make(map[string]struct{})
-	for _, layerStateMap := range cfg.Scenes {
-		for name := range layerStateMap {
-			if _, ok := cfg.Sources[name]; ok {
-				enabledSources[name] = struct{}{}
-			} else {
-				log.Fatalf("no such source: %s", name)
-			}
-		}
-	}
-
-	var sortedSourceNames []string
-	for name := range enabledSources {
-		sortedSourceNames = append(sortedSourceNames, name)
-	}
-
-	sort.Slice(sortedSourceNames, func(i, j int) bool {
-		ni := sortedSourceNames[i]
-		nj := sortedSourceNames[j]
-		return cfg.Sources[ni].Z < cfg.Sources[nj].Z
-	})
-
-	var sources []layer.Source
-	for _, srcName := range sortedSourceNames {
-		srcCfg := cfg.Sources[srcName]
-
-		log.Printf("adding source: %s\n", srcName)
-
-		switch sc := srcCfg.Cfg.(type) {
-		case *config.FFmpegSourceCfg:
-			sources = append(sources, ffmpegsource.New(srcName, sc))
-		case *config.ImgSourceCfg:
-			sources = append(sources, imgsource.New(srcName, sc))
-		case *config.V4LSourceCfg:
-			sources = append(sources, v4lsource.New(srcName, sc))
-		default:
-			panic(fmt.Sprintf("unhandled source type: %+v", srcCfg.Cfg))
-		}
-	}
-
-	scenes := make(map[string]*theatre.Scene)
-	for sceneName, layerStateMap := range cfg.Scenes {
-		layerStates := make([]*layer.LayerState, len(sources))
-		for i, src := range sources {
-			layerStates[i] = layerStateMap[src.Name()]
-		}
-		scenes[sceneName] = &theatre.Scene{
-			Name:        sceneName,
-			LayerStates: layerStates,
-		}
-	}
-	return theatre.New(sources, scenes, cfg.Window.W, cfg.Window.H)
 }

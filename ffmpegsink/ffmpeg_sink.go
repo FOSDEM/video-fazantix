@@ -14,7 +14,6 @@ import (
 )
 
 type FFmpegSink struct {
-	name     string
 	shellCmd string
 	cmd      *exec.Cmd
 	stdout   io.ReadCloser
@@ -25,13 +24,8 @@ type FFmpegSink struct {
 
 func New(name string, cfg *config.FFmpegSinkCfg) *FFmpegSink {
 	f := &FFmpegSink{shellCmd: cfg.Cmd}
-	f.name = name
-	f.frames.Init(encdec.RGBFrames, []uint8{}, cfg.W, cfg.H)
+	f.frames.Init(name, encdec.YUV422Frames, []uint8{}, cfg.W, cfg.H)
 	return f
-}
-
-func (f *FFmpegSink) Name() string {
-	return f.name
 }
 
 func (f *FFmpegSink) Start() bool {
@@ -39,7 +33,7 @@ func (f *FFmpegSink) Start() bool {
 
 	err = f.setupCmd()
 	if err != nil {
-		log.Printf("could not setup ffmpeg command: %s", err)
+		f.log("could not setup ffmpeg command: %s", err)
 		return false
 	}
 
@@ -71,17 +65,17 @@ func (f *FFmpegSink) setupCmd() error {
 
 func (f *FFmpegSink) runFFmpeg() {
 	for {
-		log.Printf("starting ffmpeg")
+		f.log("starting ffmpeg")
 
 		err := f.cmd.Run()
 		if err != nil {
-			log.Printf("ffmpeg error: %s\n", err)
+			f.log("ffmpeg error: %s", err)
 		}
 
-		log.Printf("ffmpeg died")
+		f.log("ffmpeg died")
 		err = f.setupCmd()
 		if err != nil {
-			log.Printf("could not setup ffmpeg command: %s\n", err)
+			f.log("could not setup ffmpeg command: %s", err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -92,7 +86,7 @@ func (f *FFmpegSink) runFFmpeg() {
 func (f *FFmpegSink) processStderr() {
 	scanner := bufio.NewScanner(f.stderr)
 	for scanner.Scan() {
-		log.Printf("[ffmpeg] %s", scanner.Text())
+		f.log("[ffmpeg] %s", scanner.Text())
 	}
 }
 
@@ -104,12 +98,13 @@ func (f *FFmpegSink) processStdout() {
 }
 
 func (f *FFmpegSink) processStdin() {
+	panic("wtf are you doing")
 	for {
 		frame := f.frames.GetBlankFrame()
 		encdec.PrepareYUYV422p(frame)
 		_, err := io.ReadFull(f.stdout, frame.Data)
 		if err != nil {
-			log.Printf("could not read from ffmpeg's output: %s\n", err)
+			f.log("could not read from ffmpeg's output: %s", err)
 			return
 		}
 
@@ -119,4 +114,8 @@ func (f *FFmpegSink) processStdin() {
 
 func (f *FFmpegSink) Frames() *layer.FrameForwarder {
 	return &f.frames
+}
+
+func (f *FFmpegSink) log(msg string, args ...interface{}) {
+	f.Frames().Log(msg, args...)
 }

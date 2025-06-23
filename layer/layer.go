@@ -2,9 +2,6 @@ package layer
 
 import (
 	"math"
-
-	"github.com/fosdem/fazantix/encdec"
-	"github.com/fosdem/fazantix/rendering"
 )
 
 type Coordinate struct {
@@ -32,8 +29,6 @@ type Layer struct {
 
 	Source Source
 
-	TextureIDs [3]uint32
-
 	targetState *LayerState
 }
 
@@ -47,7 +42,10 @@ type LayerState struct {
 type Source interface {
 	Frames() *FrameForwarder
 	Start() bool
-	Name() string
+}
+
+type Sink interface {
+	Frames() *FrameForwarder
 }
 
 func New(src Source, width int, height int) *Layer {
@@ -67,7 +65,7 @@ func New(src Source, width int, height int) *Layer {
 }
 
 func (s *Layer) Name() string {
-	return s.Source.Name()
+	return s.Source.Frames().Name
 }
 
 func (s *Layer) ApplyState(state *LayerState) {
@@ -99,20 +97,6 @@ func (s *Layer) Animate() {
 	s.Size.X = ramp(s.Size.X, s.targetState.Scale, 0.01)
 	s.Size.Y = ramp(s.Size.Y, s.targetState.Scale/s.Squeeze, 0.01)
 	s.Opacity = ramp(s.Opacity, s.targetState.Opacity, 0.01)
-}
-
-func (s *Layer) SetupTextures() {
-	width := s.Source.Frames().Width
-	height := s.Source.Frames().Height
-
-	switch s.Frames().FrameType {
-	case encdec.YUV422Frames:
-		s.TextureIDs[0] = rendering.SetupYUVTexture(width, height)
-		s.TextureIDs[1] = rendering.SetupYUVTexture(width/2, height)
-		s.TextureIDs[2] = rendering.SetupYUVTexture(width/2, height)
-	case encdec.RGBFrames:
-		s.TextureIDs[0] = rendering.SetupRGBTexture(width, height, s.Frames().PixFmt)
-	}
 }
 
 func (s *Layer) Frames() *FrameForwarder {

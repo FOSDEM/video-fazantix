@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"os/exec"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 )
 
 type FFmpegSource struct {
-	name     string
 	shellCmd string
 	cmd      *exec.Cmd
 	stdout   io.ReadCloser
@@ -24,13 +22,8 @@ type FFmpegSource struct {
 
 func New(name string, cfg *config.FFmpegSourceCfg) *FFmpegSource {
 	f := &FFmpegSource{shellCmd: cfg.Cmd}
-	f.name = name
-	f.frames.Init(encdec.YUV422Frames, []uint8{}, cfg.W, cfg.H)
+	f.frames.Init(name, encdec.YUV422Frames, []uint8{}, cfg.W, cfg.H)
 	return f
-}
-
-func (f *FFmpegSource) Name() string {
-	return f.name
 }
 
 func (f *FFmpegSource) Start() bool {
@@ -38,7 +31,7 @@ func (f *FFmpegSource) Start() bool {
 
 	err = f.setupCmd()
 	if err != nil {
-		log.Printf("could not setup ffmpeg command: %s", err)
+		f.log("could not setup ffmpeg command: %s", err)
 		return false
 	}
 
@@ -55,28 +48,28 @@ func (f *FFmpegSource) setupCmd() error {
 	var err error
 	f.stdout, err = f.cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("could not get ffmpeg stdout: %s\n", err)
+		return fmt.Errorf("could not get ffmpeg stdout: %s", err)
 	}
 	f.stderr, err = f.cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("could not get ffmpeg stderr: %s\n", err)
+		return fmt.Errorf("could not get ffmpeg stderr: %s", err)
 	}
 	return nil
 }
 
 func (f *FFmpegSource) runFFmpeg() {
 	for {
-		log.Printf("starting ffmpeg")
+		f.log("starting ffmpeg")
 
 		err := f.cmd.Run()
 		if err != nil {
-			log.Printf("ffmpeg error: %s\n", err)
+			f.log("ffmpeg error: %s", err)
 		}
 
-		log.Printf("ffmpeg died")
+		f.log("ffmpeg died")
 		err = f.setupCmd()
 		if err != nil {
-			log.Printf("could not setup ffmpeg command: %s\n", err)
+			f.log("could not setup ffmpeg command: %s", err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -87,7 +80,7 @@ func (f *FFmpegSource) runFFmpeg() {
 func (f *FFmpegSource) processStderr() {
 	scanner := bufio.NewScanner(f.stderr)
 	for scanner.Scan() {
-		log.Printf("[ffmpeg] %s", scanner.Text())
+		f.log("[ffmpeg] %s", scanner.Text())
 	}
 }
 
@@ -97,7 +90,7 @@ func (f *FFmpegSource) processStdout() {
 		encdec.PrepareYUYV422p(frame)
 		_, err := io.ReadFull(f.stdout, frame.Data)
 		if err != nil {
-			log.Printf("could not read from ffmpeg's output: %s\n", err)
+			f.log("could not read from ffmpeg's output: %s", err)
 			return
 		}
 
@@ -107,4 +100,8 @@ func (f *FFmpegSource) processStdout() {
 
 func (f *FFmpegSource) Frames() *layer.FrameForwarder {
 	return &f.frames
+}
+
+func (f *FFmpegSource) log(msg string, args ...interface{}) {
+	f.Frames().Log(msg, args...)
 }

@@ -4,9 +4,9 @@ in vec2 UV;
 
 out vec4 color;
 
-uniform sampler2D tex[{{ .NumLayers }} * 3];
-uniform vec4 layerPosition[{{ .NumLayers }}];
-uniform vec4 layerData[{{ .NumLayers }}];
+uniform sampler2D tex[{{ .NumSources }} * 3];
+uniform vec4 layerPosition[{{ .NumSources }}];
+uniform vec4 layerData[{{ .NumSources }}];
 
 vec4 sampleLayerYUV422(int layer, vec4 dve, vec4 data) {
 	vec2 tpos = (UV / dve.z) - (dve.xy / dve.zw);
@@ -38,8 +38,8 @@ vec4 sampleLayerRGB(int layer, vec4 dve, vec4 data) {
 
 void main() {
     vec4 composite;
-    {{ range $i, $layer := .Layers }}
-        vec4 layer_{{ $i }} = sampleLayer{{ $layer.Frames.FrameType.String }}({{ $i }}, layerPosition[{{ $i }}], layerData[{{ $i }}]);
+    {{ range $i, $source := .Sources }}
+        vec4 layer_{{ $i }} = sampleLayer{{ $source.Frames.FrameType.String }}({{ $i }}, layerPosition[{{ $i }}], layerData[{{ $i }}]);
 
         {{ if eq $i 0 }}
             composite = layer_{{ $i }};

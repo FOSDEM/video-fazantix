@@ -2,7 +2,6 @@ package v4lsource
 
 import (
 	"context"
-	"log"
 	"strings"
 
 	"image"
@@ -25,16 +24,14 @@ type V4LSource struct {
 
 	frames layer.FrameForwarder
 
-	name string
-
 	requestedWidth  int
 	requestedHeight int
 }
 
 func New(name string, cfg *config.V4LSourceCfg) *V4LSource {
 	s := &V4LSource{}
-	s.name = name
 	s.path = cfg.Path
+	s.frames.Name = name
 
 	s.Format = cfg.Fmt
 
@@ -48,10 +45,6 @@ func (s *V4LSource) Frames() *layer.FrameForwarder {
 	return &s.frames
 }
 
-func (s *V4LSource) Name() string {
-	return s.name
-}
-
 func (s *V4LSource) Start() bool {
 	pixfmt := v4l2.PixelFmtYUYV
 	switch strings.ToLower(s.Format) {
@@ -61,49 +54,54 @@ func (s *V4LSource) Start() bool {
 		pixfmt = v4l2.PixelFmtYUYV
 	}
 
-	log.Printf("[%s] Loading v4l2 device %s", s.name, s.path)
+	s.log("Loading v4l2 device %s", s.path)
 
 	camera, err := device.Open(
 		s.path,
 		device.WithPixFormat(v4l2.PixFormat{PixelFormat: pixfmt, Width: uint32(s.requestedWidth), Height: uint32(s.requestedHeight)}),
 	)
 	if err != nil {
-		log.Printf("[%s] Failed to open device: %s", s.name, err)
+		s.log("Failed to open device: %s", err)
 		return false
 	}
-	log.Printf("[%s] Opened device at %dx%d", s.name, s.requestedWidth, s.requestedHeight)
+	s.log("Opened device at %dx%d", s.requestedWidth, s.requestedHeight)
 
 	fps, err := camera.GetFrameRate()
 	if err != nil {
-		log.Printf("[%s] Failed to get framerate: %s", s.name, err)
+		s.log("Failed to get framerate: %s", err)
 	}
-	log.Printf("[%s] framerate: %d", s.name, fps)
+	s.log("framerate: %d", fps)
 
 	if err := camera.Start(context.TODO()); err != nil {
-		log.Fatalf("[%s] camera start: %s", s.name, err)
+		s.log("camera start: %s", err)
 	}
 	s.rawCamFrames = camera.GetOutput()
 	s.Device = camera
 	// TODO: Wait until the device is actually streaming
 
-	log.Printf("[%s] Got first frame", s.name)
+	s.log("Got first frame")
 
 	format, err := s.Device.GetPixFormat()
 	if err != nil {
-		log.Printf("[%s] Could not get pixfmt: %s", s.name, err)
+		s.log("Could not get pixfmt: %s", err)
 	}
 
-	log.Printf("[%s] format: %s", s.name, format)
+	s.log("format: %s", format)
 
 	switch strings.ToLower(s.Format) {
 	case "mjpeg":
 		dummyImg := image.NewNRGBA(image.Rect(0, 0, 1, 1))
 		s.frames.Init(
+			s.frames.Name,
 			encdec.RGBFrames, dummyImg.Pix,
 			int(format.Width), int(format.Height),
 		)
 	case "yuyv":
-		s.frames.Init(encdec.YUV422Frames, []uint8{}, int(format.Width), int(format.Height))
+		s.frames.Init(
+			s.frames.Name,
+			encdec.YUV422Frames, []uint8{},
+			int(format.Width), int(format.Height),
+		)
 	}
 
 	go s.decodeFrames()
@@ -129,7 +127,7 @@ func (s *V4LSource) decodeFramesJPEG() {
 		frame := s.frames.GetBlankFrame()
 		err := encdec.DecodeRGBfromImage(rawFrame, frame)
 		if err != nil {
-			log.Printf("[%s] Could not decode frame: %s", s.name, err)
+			s.log("Could not decode frame: %s", err)
 			continue
 		}
 		s.frames.IsReady = true
@@ -142,7 +140,7 @@ func (s *V4LSource) decodeFrames422p() {
 		frame := s.frames.GetBlankFrame()
 		err := encdec.DecodeYUYV422(rawFrame, frame)
 		if err != nil {
-			log.Printf("[%s] Could not decode frame: %s", s.name, err)
+			s.log("Could not decode frame: %s", err)
 			continue
 		}
 		s.frames.IsReady = true
@@ -152,4 +150,8 @@ func (s *V4LSource) decodeFrames422p() {
 
 func (s *V4LSource) PixFmt() []uint8 {
 	panic("why do you want this")
+}
+
+func (s *V4LSource) log(msg string, args ...interface{}) {
+	s.Frames().Log(msg, args...)
 }
