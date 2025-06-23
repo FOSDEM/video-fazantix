@@ -29,6 +29,12 @@ sources:
     h: 1080
     z: 8
 
+sinks:
+  windowsink:
+    type: ffmpeg_stdin
+    cmd: 'ffmpeg'
+    w: 1920
+    h: 1080
 
 scenes:
   side-by-side:
@@ -95,7 +101,7 @@ scenes:
       y: 0.049
       scale: 0.79
       opacity: 1
-    test2:
+    video0:
       x: 0.75
       y: 0.6
       scale: 0.2

@@ -11,6 +11,7 @@ import (
 	"github.com/fosdem/fazantix/api"
 	"github.com/fosdem/fazantix/config"
 	"github.com/fosdem/fazantix/ffmpegsource"
+	"github.com/fosdem/fazantix/ffmpegsink"
 	"github.com/fosdem/fazantix/imgsource"
 	"github.com/fosdem/fazantix/layer"
 	"github.com/fosdem/fazantix/rendering"
@@ -72,7 +73,8 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 	shader := gl.CreateShader(shaderType)
 
 	csources, free := gl.Strs(source)
-	gl.ShaderSource(shader, 1, csources, nil)
+	size := int32(len(source))
+	gl.ShaderSource(shader, 1, csources, &size)
 	free()
 	gl.CompileShader(shader)
 
@@ -91,10 +93,16 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
+var shaderCache map[string]uint32
+
 func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
-	vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
-	if err != nil {
-		return 0, err
+	vertexShader, ok := shaderCache[vertexShaderSource]
+	if !ok {
+		compiled, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+		if err != nil {
+			return 0, err
+		}
+		vertexShader = compiled
 	}
 
 	fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
@@ -144,6 +152,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 	theatre := makeTheatre(cfg)
 	layers := theatre.Layers
 
+	testsink.Init()
+	
 	var theApi *api.Api
 	if cfg.Api != nil {
 		theApi = api.New(cfg.Api, theatre)
@@ -173,14 +183,24 @@ func MakeWindowAndMix(cfg *config.Config) {
 	if err != nil {
 		log.Fatalf("Could not get vertex shader: %s", err)
 	}
+	
+	fragmentBlitShader, err := shaderer.GetShaderSource("blit.frag")
+	if err != nil {
+		log.Fatalf("Could not get fragment shader: %s", err)
+	}
 
 	writeFileDebug("/tmp/shader.vert", vertexShader)
 	writeFileDebug("/tmp/shader.frag", fragmentShader)
+	writeFileDebug("/tmp/blit.frag", fragmentBlitShader)
 
 	program, err := newProgram(vertexShader, fragmentShader)
 	if err != nil {
 		log.Fatalf("Could not init shader: %s", err)
 	}
+	//blitProgram, err := newProgram(vertexShader, fragmentBlitShader)
+	//if err != nil {
+	//	log.Fatalf("Could not init blit shader: %s", err)
+	//}
 
 	theatre.Start()
 	err = theatre.SetScene("default")
@@ -217,6 +237,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 	layerDataUniform := gl.GetUniformLocation(program, gl.Str("layerData\x00"))
 	gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
 
+
 	// Allocate 3 textures for every layer in case of planar YUV
 	numTextures := numLayers * 3
 	textures := make([]int32, numTextures)
@@ -226,10 +247,35 @@ func MakeWindowAndMix(cfg *config.Config) {
 	texUniform := gl.GetUniformLocation(program, gl.Str("tex\x00"))
 	gl.Uniform1iv(texUniform, numTextures, &textures[0])
 
+	// Create extra framebuffers as rendertargets
+	numTargets := 1
+	frameBufferName := make([]uint32, numTargets)
+	gl.GenFramebuffers(int32(numTargets), &frameBufferName[0])
+	gl.BindFramebuffer(gl.FRAMEBUFFER, frameBufferName[0])
+	
+	renderTargetTexture := make([]uint32, numTargets)
+	gl.GenTextures(int32(numTargets), &renderTargetTexture[0])
+
+	for i := range numTargets {
+		gl.BindTexture(gl.TEXTURE_2D, renderTargetTexture[i])
+		gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB, int32(cfg.Window.W), int32(cfg.Window.H), 0, gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(nil))
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	}
+	gl.FramebufferTexture(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, renderTargetTexture[0], 0)
+
+	if gl.CheckFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE {
+		panic("Framebuffer failed")
+	}
+
+	// Bind the renderTarget texture to the shader used for screen blitting
+	//renderedTextureUniform := gl.GetUniformLocation(blitProgram, gl.Str("renderedTexture\x00"))
+
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
 
 	firstFrame := true
 	for !window.ShouldClose() {
+		gl.BindFramebuffer(gl.FRAMEBUFFER, frameBufferName[0])
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
 		// Render
@@ -265,11 +311,28 @@ func MakeWindowAndMix(cfg *config.Config) {
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+		target := make([]uint8, cfg.Window.W * cfg.Window.H * 3)
+		gl.ReadPixels(0, 0, int32(cfg.Window.W), int32(cfg.Window.H), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(target))
+
+		// Put the rendering in the currently bound framebuffer
+		gl.Viewport(0, 0, int32(cfg.Window.W), int32(cfg.Window.H))
+
+		// Switch to the framebuffer connected to the window
+		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+		gl.Viewport(0, 0, int32(cfg.Window.W), int32(cfg.Window.H))
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		
+		//gl.UseProgram(blitProgram)
+		//gl.ActiveTexture(uint32(gl.TEXTURE0+numTextures-1))
+
+		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
 
 		// Maintenance
 		window.SwapBuffers()
 		glfw.PollEvents()
 		firstFrame = false
+
 
 		if theApi != nil {
 			theApi.FrameCounter++

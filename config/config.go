@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	Sources map[string]*SourceCfg
+	Sinks   map[string]*SinkCfg
 	Scenes  map[string]map[string]*layer.LayerState
 	Window  *WindowCfg
 	Api     *ApiCfg
@@ -38,12 +39,26 @@ type SourceCfg struct {
 	Cfg interface{}
 }
 
+type SinkCfgStub struct {
+	Type string
+}
+
+type SinkCfg struct {
+	SinkCfgStub
+	Cfg interface{}
+}
+
 type WindowCfg struct {
 	W int
 	H int
 }
 
 type FFmpegSourceCfg struct {
+	W   int
+	H   int
+	Cmd string
+}
+type FFmpegSinkCfg struct {
 	W   int
 	H   int
 	Cmd string
@@ -77,6 +92,22 @@ func (s *SourceCfg) UnmarshalYAML(b []byte) error {
 		return yaml.Unmarshal(b, &cfg)
 	case "v4l":
 		cfg := V4LSourceCfg{}
+		s.Cfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	default:
+		return fmt.Errorf("unknown source type: %s", s.Type)
+	}
+}
+
+func (s *SinkCfg) UnmarshalYAML(b []byte) error {
+	err := yaml.Unmarshal(b, &s.SinkCfgStub)
+	if err != nil {
+		return err
+	}
+
+	switch s.Type {
+	case "ffmpeg_stdin":
+		cfg := FFmpegSinkCfg{}
 		s.Cfg = &cfg
 		return yaml.Unmarshal(b, &cfg)
 	default:
