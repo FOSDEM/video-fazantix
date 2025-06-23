@@ -38,7 +38,11 @@ func (f *FrameForwarder) Init(name string, ft encdec.FrameType, pf []uint8, widt
 }
 
 func (f *FrameForwarder) SendFrame(frame *encdec.ImageData) {
+	oldLastFrame := f.LastFrame
 	f.LastFrame = frame
+	if oldLastFrame != nil {
+		f.recycleFrame(oldLastFrame)
+	}
 }
 
 func (f *FrameForwarder) GetBlankFrame() *encdec.ImageData {
@@ -53,7 +57,7 @@ func (f *FrameForwarder) GetBlankFrame() *encdec.ImageData {
 	return fr
 }
 
-func (f *FrameForwarder) RecycleFrame(frame *encdec.ImageData) {
+func (f *FrameForwarder) recycleFrame(frame *encdec.ImageData) {
 	f.Lock()
 	defer f.Unlock()
 	f.recycledFrames = append(f.recycledFrames, frame)

@@ -280,8 +280,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 			layerPos[(i*4)+2] = layers[i].Size.X
 			layerPos[(i*4)+3] = layers[i].Size.Y
 			layerData[(i*4)+0] = layers[i].Opacity
-
-			layers[i].Frames().RecycleFrame(rf)
 		}
 		theatre.Animate()
 		gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
