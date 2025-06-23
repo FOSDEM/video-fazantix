@@ -11,7 +11,7 @@ import (
 type Config struct {
 	Sources map[string]*SourceCfg
 	Scenes  map[string]map[string]*layer.LayerState
-	Window  *WindowCfg
+	Stages  map[string]*StageCfg
 	Api     *ApiCfg
 }
 
@@ -33,6 +33,17 @@ type SourceCfgStub struct {
 	Z    float32
 }
 
+type StageCfgStub struct {
+	Type string
+	W    int
+	H    int
+}
+
+type StageCfg struct {
+	StageCfgStub
+	SinkCfg interface{}
+}
+
 type SourceCfg struct {
 	SourceCfgStub
 	Cfg interface{}
@@ -47,6 +58,17 @@ type FFmpegSourceCfg struct {
 	W   int
 	H   int
 	Cmd string
+}
+
+type FFmpegSinkCfg struct {
+	Cmd string
+	W   int
+	H   int
+}
+
+type WindowSinkCfg struct {
+	W int
+	H int
 }
 
 type ImgSourceCfg struct {
@@ -81,6 +103,26 @@ func (s *SourceCfg) UnmarshalYAML(b []byte) error {
 		return yaml.Unmarshal(b, &cfg)
 	default:
 		return fmt.Errorf("unknown source type: %s", s.Type)
+	}
+}
+
+func (s *StageCfg) UnmarshalYAML(b []byte) error {
+	err := yaml.Unmarshal(b, &s.StageCfgStub)
+	if err != nil {
+		return err
+	}
+
+	switch s.Type {
+	case "ffmpeg_stdin":
+		cfg := FFmpegSinkCfg{}
+		s.SinkCfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	case "window":
+		cfg := WindowSinkCfg{}
+		s.SinkCfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	default:
+		return fmt.Errorf("unknown stage sink type: %s", s.Type)
 	}
 }
 

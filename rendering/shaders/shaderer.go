@@ -14,26 +14,30 @@ var templateDir embed.FS
 
 type Shaderer struct {
 	templates *template.Template
-	theatre   *theatre.Theatre
 
 	VertexShader   uint32
 	FragmentShader uint32
 }
 
-func NewShaderer(theatre *theatre.Theatre) (*Shaderer, error) {
+func NewShaderer() (*Shaderer, error) {
 	s := &Shaderer{}
 
 	var err error
 
-	s.theatre = theatre
 	s.templates, err = template.ParseFS(templateDir, "*.frag", "*.vert")
 
 	return s, err
 }
 
-func (s *Shaderer) GetShaderSource(name string) (string, error) {
+// ShaderData contains stuff that gets passed to the shader
+type ShaderData struct {
+	Stage      *theatre.Stage
+	NumSources int
+}
+
+func (s *Shaderer) GetShaderSource(name string, data *ShaderData) (string, error) {
 	var b bytes.Buffer
-	err := s.templates.ExecuteTemplate(&b, name, s.theatre)
+	err := s.templates.ExecuteTemplate(&b, name, data)
 	if err != nil {
 		return "", fmt.Errorf("error while rendering template: %s", err)
 	}

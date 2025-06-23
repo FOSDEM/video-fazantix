@@ -43,7 +43,8 @@ func (a *Api) Serve() error {
 }
 
 type SceneReq struct {
-	Name string
+	Scene string
+	Stage string
 }
 
 func (a *Api) handleScene(w http.ResponseWriter, req *http.Request) {
@@ -54,7 +55,7 @@ func (a *Api) handleScene(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = a.theatre.SetScene(sceneReq.Name)
+	err = a.theatre.SetScene(sceneReq.Stage, sceneReq.Scene)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not set scene: %s", err), http.StatusForbidden)
 		return

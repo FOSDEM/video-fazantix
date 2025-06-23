@@ -5,18 +5,14 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"sort"
 	"strings"
 
 	"github.com/fosdem/fazantix/api"
 	"github.com/fosdem/fazantix/config"
-	"github.com/fosdem/fazantix/ffmpegsource"
-	"github.com/fosdem/fazantix/imgsource"
-	"github.com/fosdem/fazantix/layer"
 	"github.com/fosdem/fazantix/rendering"
 	"github.com/fosdem/fazantix/rendering/shaders"
 	"github.com/fosdem/fazantix/theatre"
-	"github.com/fosdem/fazantix/v4lsource"
+	"github.com/fosdem/fazantix/windowsink"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -39,7 +35,7 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func makeWindow(cfg *config.WindowCfg) *glfw.Window {
+func makeWindow(sink *windowsink.WindowSink) *glfw.Window {
 	log.Println("Initializing window")
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
@@ -51,7 +47,7 @@ func makeWindow(cfg *config.WindowCfg) *glfw.Window {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(cfg.W, cfg.H, "OpenGL", nil, nil)
+	window, err := glfw.CreateWindow(sink.Frames().Width, sink.Frames().Height, sink.Frames().Name, nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -138,11 +134,17 @@ func writeFileDebug(filename string, content string) {
 }
 
 func MakeWindowAndMix(cfg *config.Config) {
-	window := makeWindow(cfg.Window)
+	theatre, err := theatre.New(cfg)
+	if err != nil {
+		log.Fatalf("could not build theatre: %s", err)
+	}
+
+	// assume a single sink called "projector" of type "window" for now
+	stage := theatre.Stages["projector"]
+	window := makeWindow(stage.Sink.(*windowsink.WindowSink))
 	initGL()
 
-	theatre := makeTheatre(cfg)
-	layers := theatre.Layers
+	layers := stage.Layers
 
 	var theApi *api.Api
 	if cfg.Api != nil {
@@ -157,19 +159,24 @@ func MakeWindowAndMix(cfg *config.Config) {
 		}()
 	}
 
+	shaderData := &shaders.ShaderData{
+		NumSources: theatre.NumSources(),
+		Stage:      stage,
+	}
+
 	numLayers := int32(len(layers))
 
-	shaderer, err := shaders.NewShaderer(theatre)
+	shaderer, err := shaders.NewShaderer()
 	if err != nil {
 		log.Fatalf("Could not get shaders: %s", err)
 	}
 
-	vertexShader, err := shaderer.GetShaderSource("screen.vert")
+	vertexShader, err := shaderer.GetShaderSource("screen.vert", shaderData)
 	if err != nil {
 		log.Fatalf("Could not get vertex shader: %s", err)
 	}
 
-	fragmentShader, err := shaderer.GetShaderSource("composite.frag")
+	fragmentShader, err := shaderer.GetShaderSource("composite.frag", shaderData)
 	if err != nil {
 		log.Fatalf("Could not get vertex shader: %s", err)
 	}
@@ -183,7 +190,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 	}
 
 	theatre.Start()
-	err = theatre.SetScene("default")
+	err = theatre.SetScene("projector", "default")
 	if err != nil {
 		log.Fatalf("Could not apply default scene")
 	}
@@ -250,7 +257,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 				continue
 			}
 
-			rendering.SendFrameToGPU(rf, layers[i].TextureIDs, int(i))
+			rendering.SendFrameToGPU(rf, layers[i].Frames().TextureIDs, int(i))
 
 			layerPos[(i*4)+0] = layers[i].Position.X
 			layerPos[(i*4)+1] = layers[i].Position.Y
@@ -275,59 +282,4 @@ func MakeWindowAndMix(cfg *config.Config) {
 			theApi.FrameCounter++
 		}
 	}
-}
-
-func makeTheatre(cfg *config.Config) *theatre.Theatre {
-	enabledSources := make(map[string]struct{})
-	for _, layerStateMap := range cfg.Scenes {
-		for name := range layerStateMap {
-			if _, ok := cfg.Sources[name]; ok {
-				enabledSources[name] = struct{}{}
-			} else {
-				log.Fatalf("no such source: %s", name)
-			}
-		}
-	}
-
-	var sortedSourceNames []string
-	for name := range enabledSources {
-		sortedSourceNames = append(sortedSourceNames, name)
-	}
-
-	sort.Slice(sortedSourceNames, func(i, j int) bool {
-		ni := sortedSourceNames[i]
-		nj := sortedSourceNames[j]
-		return cfg.Sources[ni].Z < cfg.Sources[nj].Z
-	})
-
-	var sources []layer.Source
-	for _, srcName := range sortedSourceNames {
-		srcCfg := cfg.Sources[srcName]
-
-		log.Printf("adding source: %s\n", srcName)
-
-		switch sc := srcCfg.Cfg.(type) {
-		case *config.FFmpegSourceCfg:
-			sources = append(sources, ffmpegsource.New(srcName, sc))
-		case *config.ImgSourceCfg:
-			sources = append(sources, imgsource.New(srcName, sc))
-		case *config.V4LSourceCfg:
-			sources = append(sources, v4lsource.New(srcName, sc))
-		default:
-			panic(fmt.Sprintf("unhandled source type: %+v", srcCfg.Cfg))
-		}
-	}
-
-	scenes := make(map[string]*theatre.Scene)
-	for sceneName, layerStateMap := range cfg.Scenes {
-		layerStates := make([]*layer.LayerState, len(sources))
-		for i, src := range sources {
-			layerStates[i] = layerStateMap[src.Frames().Name]
-		}
-		scenes[sceneName] = &theatre.Scene{
-			Name:        sceneName,
-			LayerStates: layerStates,
-		}
-	}
-	return theatre.New(sources, scenes, cfg.Window.W, cfg.Window.H)
 }

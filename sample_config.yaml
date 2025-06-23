@@ -105,9 +105,11 @@ scenes:
       scale: 0.2
       opacity: 1
 
-window:
-  w: 1920
-  h: 1080
+stages:
+  projector:
+    type: window
+    w: 1920
+    h: 1080
 
 api:
   bind: ':6666'

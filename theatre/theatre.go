@@ -2,27 +2,138 @@ package theatre
 
 import (
 	"fmt"
+	"log"
+	"sort"
 
+	"github.com/fosdem/fazantix/config"
+	"github.com/fosdem/fazantix/ffmpegsink"
+	"github.com/fosdem/fazantix/ffmpegsource"
+	"github.com/fosdem/fazantix/imgsource"
 	"github.com/fosdem/fazantix/layer"
+	"github.com/fosdem/fazantix/v4lsource"
+	"github.com/fosdem/fazantix/windowsink"
 )
 
 type Theatre struct {
-	Layers []*layer.Layer
-	Scenes map[string]*Scene
+	Sources    map[string]layer.Source
+	SourceList []layer.Source
+	Scenes     map[string]*Scene
+	Stages     map[string]*Stage
 }
 
-func New(sources []layer.Source, scenes map[string]*Scene, windowWidth int, windowHeight int) *Theatre {
-	t := &Theatre{}
+type Stage struct {
+	Layers []*layer.Layer
+	W      int
+	H      int
+	Sink   layer.Sink
+}
 
-	t.Layers = make([]*layer.Layer, len(sources))
+func New(cfg *config.Config) (*Theatre, error) {
+	sourceList, err := buildSourceList(cfg)
+	if err != nil {
+		return nil, err
+	}
+	sourceMap := buildSourceMap(sourceList)
+	sceneMap := buildSceneMap(cfg, sourceList)
+	stageMap := buildStageMap(cfg, sourceList)
 
-	for i, src := range sources {
-		t.Layers[i] = layer.New(src, windowWidth, windowHeight)
+	return &Theatre{
+		Sources:    sourceMap,
+		SourceList: sourceList,
+		Scenes:     sceneMap,
+		Stages:     stageMap,
+	}, nil
+}
+
+func buildStageMap(cfg *config.Config, sources []layer.Source) map[string]*Stage {
+	stages := make(map[string]*Stage)
+	for stageName, stageCfg := range cfg.Stages {
+		stage := &Stage{W: stageCfg.W, H: stageCfg.H}
+		stage.Layers = make([]*layer.Layer, len(sources))
+
+		for i, src := range sources {
+			stage.Layers[i] = layer.New(src, stage.W, stage.H)
+		}
+
+		switch sc := stageCfg.SinkCfg.(type) {
+		case *config.FFmpegSinkCfg:
+			stage.Sink = ffmpegsink.New(stageName, sc)
+		case *config.WindowSinkCfg:
+			stage.Sink = windowsink.New(stageName, sc)
+		default:
+			panic(fmt.Sprintf("unhandled sink type: %+v", stageCfg.SinkCfg))
+		}
+
+		stages[stageName] = stage
+	}
+	return stages
+}
+
+func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene {
+	scenes := make(map[string]*Scene)
+	for sceneName, layerStateMap := range cfg.Scenes {
+		layerStates := make([]*layer.LayerState, len(sources))
+		for i, src := range sources {
+			layerStates[i] = layerStateMap[src.Frames().Name]
+		}
+		scenes[sceneName] = &Scene{
+			Name:        sceneName,
+			LayerStates: layerStates,
+		}
+	}
+	return scenes
+}
+
+func buildSourceList(cfg *config.Config) ([]layer.Source, error) {
+	enabledSources := make(map[string]struct{})
+	for _, layerStateMap := range cfg.Scenes {
+		for name := range layerStateMap {
+			if _, ok := cfg.Sources[name]; ok {
+				enabledSources[name] = struct{}{}
+			} else {
+				return nil, fmt.Errorf("no such source: %s", name)
+			}
+		}
 	}
 
-	t.Scenes = scenes
+	var sortedSourceNames []string
+	for name := range enabledSources {
+		sortedSourceNames = append(sortedSourceNames, name)
+	}
 
-	return t
+	sort.Slice(sortedSourceNames, func(i, j int) bool {
+		ni := sortedSourceNames[i]
+		nj := sortedSourceNames[j]
+		return cfg.Sources[ni].Z < cfg.Sources[nj].Z
+	})
+
+	var sources []layer.Source
+	for _, srcName := range sortedSourceNames {
+		srcCfg := cfg.Sources[srcName]
+
+		log.Printf("adding source: %s\n", srcName)
+
+		switch sc := srcCfg.Cfg.(type) {
+		case *config.FFmpegSourceCfg:
+			sources = append(sources, ffmpegsource.New(srcName, sc))
+		case *config.ImgSourceCfg:
+			sources = append(sources, imgsource.New(srcName, sc))
+		case *config.V4LSourceCfg:
+			sources = append(sources, v4lsource.New(srcName, sc))
+		default:
+			panic(fmt.Sprintf("unhandled source type: %+v", srcCfg.Cfg))
+		}
+	}
+
+	return sources, nil
+}
+
+func buildSourceMap(sources []layer.Source) map[string]layer.Source {
+	sm := make(map[string]layer.Source)
+	for _, src := range sources {
+		sm[src.Frames().Name] = src
+	}
+	return sm
 }
 
 type Scene struct {
@@ -31,31 +142,45 @@ type Scene struct {
 }
 
 func (t *Theatre) NumLayers() int {
-	return len(t.Layers)
+	return len(t.Sources) * len(t.Scenes)
+}
+
+func (t *Theatre) NumSources() int {
+	return len(t.Sources)
 }
 
 func (t *Theatre) Start() {
-	for _, l := range t.Layers {
-		if l.Source.Start() {
-			l.SetupTextures()
+	for _, src := range t.Sources {
+		if src.Start() {
+			src.Frames().SetupTextures()
 		}
 	}
 }
 
 func (t *Theatre) Animate() {
 	// todo: use delta-t
-	for _, l := range t.Layers {
-		l.Animate()
+	for _, s := range t.Stages {
+		for _, l := range s.Layers {
+			l.Animate()
+		}
 	}
 }
 
-func (t *Theatre) SetScene(name string) error {
-	if scene, ok := t.Scenes[name]; ok {
-		for i, l := range t.Layers {
-			l.ApplyState(scene.LayerStates[i])
+func (t *Theatre) SetScene(stageName string, sceneName string) error {
+	if stage, ok := t.Stages[stageName]; ok {
+		if scene, ok := t.Scenes[sceneName]; ok {
+			for i, l := range stage.Layers {
+				l.ApplyState(scene.LayerStates[i])
+			}
+			return nil
+		} else {
+			return fmt.Errorf("no such scene: %s", sceneName)
 		}
-		return nil
 	} else {
-		return fmt.Errorf("no such scene: %s", name)
+		return fmt.Errorf("no such stage: %s", stageName)
 	}
+}
+
+func (t *Theatre) ProjectorStage() *Stage {
+	return t.Stages["projector"]
 }
