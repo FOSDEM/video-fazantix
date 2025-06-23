@@ -98,18 +98,7 @@ func (f *FFmpegSink) processStdout() {
 }
 
 func (f *FFmpegSink) processStdin() {
-	panic("wtf are you doing")
-	for {
-		frame := f.frames.GetBlankFrame()
-		encdec.PrepareYUYV422p(frame)
-		_, err := io.ReadFull(f.stdout, frame.Data)
-		if err != nil {
-			f.log("could not read from ffmpeg's output: %s", err)
-			return
-		}
 
-		f.frames.SendFrame(frame)
-	}
 }
 
 func (f *FFmpegSink) Frames() *layer.FrameForwarder {

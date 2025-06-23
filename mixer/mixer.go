@@ -287,17 +287,18 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
 
-		// // Switch to the framebuffer connected to the window
-		// gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-		// gl.Viewport(0, 0, int32(cfg.Window.W), int32(cfg.Window.H))
-		// gl.Clear(gl.COLOR_BUFFER_BIT)
+		for _, stage := range nonWindowStages {
+			// Switch to the framebuffer connected to the window
+			frames := stage.Sink.Frames()
+			gl.BindFramebuffer(gl.FRAMEBUFFER, frames.FramebufferID)
+			gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
+			gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		// //gl.UseProgram(blitProgram)
-		// //gl.ActiveTexture(uint32(gl.TEXTURE0+numTextures-1))
-
-		// gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
-		// target := make([]uint8, cfg.Window.W*cfg.Window.H*3)
-		// gl.ReadPixels(0, 0, int32(cfg.Window.W), int32(cfg.Window.H), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(target))
+			gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+			frame := frames.GetBlankFrame()
+			gl.ReadPixels(0, 0, int32(frames.Width), int32(frames.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
+			frames.SendFrame(frame)
+		}
 
 		// Maintenance
 		window.SwapBuffers()
