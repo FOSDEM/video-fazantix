@@ -29,6 +29,7 @@ type Layer struct {
 	Squeeze      float32
 
 	Opacity float32
+	Border float32
 
 	Source Source
 
@@ -55,6 +56,7 @@ func New(src Source, width int, height int) *Layer {
 	s.Size = Coordinate{X: 1.0, Y: 1.0}
 	s.Source = src
 	s.Squeeze = 1.0
+	s.Border = 0.01
 	s.OutputWidth = width
 	s.OutputHeight = height
 	s.Position = Coordinate{X: 0.5, Y: 0.5}

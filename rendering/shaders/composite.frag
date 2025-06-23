@@ -26,12 +26,22 @@ vec4 sampleLayerYUV422(int layer, vec4 dve, vec4 data) {
 	if(tpos.y < 0 || tpos.y > 1.0) {
 		a = 0.0;
 	}
+	float border = data.y/(1/dve.w);
+	if(a == 0 && tpos.x > 0-(border*dve.w*2) && tpos.x < 1.0+(border*dve.w*2) && tpos.y > 0-border && tpos.y < 1.0+border) {
+		col = vec3(1,1,1);
+		a = 1.0;
+	}
 	a *= data.x;
 	return vec4(col.r, col.g, col.b, a);
 }
 
 vec4 sampleLayerRGB(int layer, vec4 dve, vec4 data) {
 	vec4 col = texture(tex[layer*3], (UV / dve.z) - (dve.xy / dve.zw));
+	float border = data.y*(1/dve.w);
+	vec2 bpos = (UV / dve.z) - (dve.xy / (dve.zw));
+	if(col.a == 0 && bpos.x > 0-(border*dve.w*2) && bpos.x < 1.0+(border*dve.w*2) && bpos.y > 0-border && bpos.y < 1.0+border) {
+		col = vec4(1,1,1,1);
+	}
 	col.a *= data.x;
 	return col;
 }

@@ -17,7 +17,7 @@ sources:
     z: 3
   video0:
     type: v4l
-    path: /dev/video0
+    path: /dev/video2
     fmt: yuyv
     w: 1920
     h: 1080
@@ -90,7 +90,7 @@ scenes:
       y: 0
       scale: 1
       opacity: 1
-    test1:
+    video0:
       x: 0.025
       y: 0.049
       scale: 0.79
