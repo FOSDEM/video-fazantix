@@ -35,9 +35,10 @@ func (a *Api) Serve() error {
 	a.start = time.Now()
 	if a.cfg.EnableProfiler {
 		a.mux.HandleFunc("/prof", a.profileCPU)
-		a.mux.HandleFunc("/stats", a.stats)
-		a.mux.HandleFunc("/scene", a.handleScene)
 	}
+	a.mux.HandleFunc("/stats", a.stats)
+	a.mux.HandleFunc("/scene", a.handleScene)
+	a.mux.HandleFunc("/scene/{stage}/{scene}", a.handleScene)
 
 	return a.srv.ListenAndServe()
 }
@@ -49,13 +50,18 @@ type SceneReq struct {
 
 func (a *Api) handleScene(w http.ResponseWriter, req *http.Request) {
 	var sceneReq SceneReq
-	err := json.NewDecoder(req.Body).Decode(&sceneReq)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("could not decode json request: %s", err), http.StatusBadRequest)
-		return
+	if req.PathValue("scene") == "" && req.PathValue("stage") == "" {
+		err := json.NewDecoder(req.Body).Decode(&sceneReq)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("could not decode json request: %s", err), http.StatusBadRequest)
+			return
+		}
+	} else {
+		sceneReq.Scene = req.PathValue("scene")
+		sceneReq.Stage = req.PathValue("stage")
 	}
 
-	err = a.theatre.SetScene(sceneReq.Stage, sceneReq.Scene)
+	err := a.theatre.SetScene(sceneReq.Stage, sceneReq.Scene)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not set scene: %s", err), http.StatusForbidden)
 		return
