@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/fosdem/fazantix/theatre"
+	"github.com/fosdem/fazantix/layer"
 )
 
 //go:embed *.frag *.vert
@@ -31,7 +31,7 @@ func NewShaderer() (*Shaderer, error) {
 
 // ShaderData contains stuff that gets passed to the shader
 type ShaderData struct {
-	Stage      *theatre.Stage
+	Sources    []layer.Source
 	NumSources int
 }
 

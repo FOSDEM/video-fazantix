@@ -68,7 +68,8 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 	shader := gl.CreateShader(shaderType)
 
 	csources, free := gl.Strs(source)
-	gl.ShaderSource(shader, 1, csources, nil)
+	size := int32(len(source))
+	gl.ShaderSource(shader, 1, csources, &size)
 	free()
 	gl.CompileShader(shader)
 
@@ -87,10 +88,16 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
+var shaderCache map[string]uint32
+
 func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
-	vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
-	if err != nil {
-		return 0, err
+	vertexShader, ok := shaderCache[vertexShaderSource]
+	if !ok {
+		compiled, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+		if err != nil {
+			return 0, err
+		}
+		vertexShader = compiled
 	}
 
 	fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
@@ -140,11 +147,11 @@ func MakeWindowAndMix(cfg *config.Config) {
 	}
 
 	// assume a single sink called "projector" of type "window" for now
-	stage := theatre.Stages["projector"]
-	window := makeWindow(stage.Sink.(*windowsink.WindowSink))
+	windowStage := theatre.GetTheSingleWindowStage()
+	window := makeWindow(windowStage.Sink.(*windowsink.WindowSink))
 	initGL()
 
-	layers := stage.Layers
+	layers := windowStage.Layers
 
 	var theApi *api.Api
 	if cfg.Api != nil {
@@ -161,7 +168,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	shaderData := &shaders.ShaderData{
 		NumSources: theatre.NumSources(),
-		Stage:      stage,
+		Sources:    theatre.SourceList,
 	}
 
 	numLayers := int32(len(layers))
@@ -233,10 +240,19 @@ func MakeWindowAndMix(cfg *config.Config) {
 	texUniform := gl.GetUniformLocation(program, gl.Str("tex\x00"))
 	gl.Uniform1iv(texUniform, numTextures, &textures[0])
 
+	// Create extra framebuffers as rendertargets
+	nonWindowStages := theatre.NonWindowStageList
+
+	for _, stage := range nonWindowStages {
+		stage.Sink.Frames().SetupTextures()
+		stage.Sink.Frames().UseAsFramebuffer()
+	}
+
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
 
 	firstFrame := true
 	for !window.ShouldClose() {
+		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
 		// Render
@@ -264,14 +280,25 @@ func MakeWindowAndMix(cfg *config.Config) {
 			layerPos[(i*4)+2] = layers[i].Size.X
 			layerPos[(i*4)+3] = layers[i].Size.Y
 			layerData[(i*4)+0] = layers[i].Opacity
-
-			layers[i].Frames().RecycleFrame(rf)
 		}
 		theatre.Animate()
 		gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+
+		for _, stage := range nonWindowStages {
+			// Switch to the framebuffer connected to the window
+			frames := stage.Sink.Frames()
+			gl.BindFramebuffer(gl.FRAMEBUFFER, frames.FramebufferID)
+			gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
+			gl.Clear(gl.COLOR_BUFFER_BIT)
+
+			gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+			frame := frames.GetBlankFrame()
+			gl.ReadPixels(0, 0, int32(frames.Width), int32(frames.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
+			frames.SendFrame(frame)
+		}
 
 		// Maintenance
 		window.SwapBuffers()

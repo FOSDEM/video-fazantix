@@ -12,7 +12,7 @@ type WindowSink struct {
 
 func New(name string, cfg *config.WindowSinkCfg) *WindowSink {
 	w := &WindowSink{}
-	w.frames.Init(name, encdec.YUV422Frames, []uint8{}, cfg.W, cfg.H)
+	w.frames.Init(name, encdec.RGBFrames, []uint8{}, cfg.W, cfg.H)
 	return w
 }
 

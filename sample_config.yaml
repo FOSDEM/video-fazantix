@@ -19,7 +19,7 @@ sources:
     z: 2
   video0_ffmpeg:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -vf scale=1920:1080 -f rawvideo -r 60 -'
     w: 1920
     h: 1080
     z: 3
@@ -54,6 +54,12 @@ sources:
     h: 1080
     z: 8
 
+sinks:
+  windowsink:
+    type: ffmpeg_stdin
+    cmd: 'ffmpeg'
+    w: 1920
+    h: 1080
 
 scenes:
 #  dedo:
@@ -83,7 +89,7 @@ scenes:
       y: 0.049
       scale: 0.79
       opacity: 1
-    video0:
+    video0_ffmpeg:
       x: 0.75
       y: 0.6
       scale: 0.2
@@ -94,7 +100,7 @@ scenes:
       y: 0
       scale: 1
       opacity: 1
-    video0:
+    video0_ffmpeg:
       x: 0.025
       y: 0.049
       scale: 0.79
@@ -108,8 +114,8 @@ scenes:
 stages:
   projector:
     type: window
-    w: 1920
-    h: 1080
+    w: 1280
+    h: 720
 
 api:
   bind: ':6666'

@@ -38,8 +38,8 @@ vec4 sampleLayerRGB(int layer, vec4 dve, vec4 data) {
 
 void main() {
     vec4 composite;
-    {{ range $i, $layer := .Stage.Layers }}
-        vec4 layer_{{ $i }} = sampleLayer{{ $layer.Frames.FrameType.String }}({{ $i }}, layerPosition[{{ $i }}], layerData[{{ $i }}]);
+    {{ range $i, $source := .Sources }}
+        vec4 layer_{{ $i }} = sampleLayer{{ $source.Frames.FrameType.String }}({{ $i }}, layerPosition[{{ $i }}], layerData[{{ $i }}]);
 
         {{ if eq $i 0 }}
             composite = layer_{{ $i }};

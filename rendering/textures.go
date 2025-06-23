@@ -62,6 +62,19 @@ func SetupRGBTexture(width int, height int, texture []byte) uint32 {
 	return id
 }
 
+func UseTextureAsFramebuffer(textureID uint32) uint32 {
+	gl.FramebufferTexture(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, textureID, 0)
+
+	if gl.CheckFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE {
+		panic("Framebuffer failed")
+	}
+
+	framebufferID := uint32(0)
+	gl.GenFramebuffers(1, &framebufferID)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, framebufferID)
+	return framebufferID
+}
+
 var TextureUploadCounter uint64
 
 func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32, data []byte) {

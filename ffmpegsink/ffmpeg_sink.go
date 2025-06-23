@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os/exec"
 	"time"
 
@@ -17,6 +18,7 @@ type FFmpegSink struct {
 	cmd      *exec.Cmd
 	stdout   io.ReadCloser
 	stderr   io.ReadCloser
+	stdin    io.WriteCloser
 	frames   layer.FrameForwarder
 }
 
@@ -46,13 +48,17 @@ func (f *FFmpegSink) Start() bool {
 func (f *FFmpegSink) setupCmd() error {
 	f.cmd = exec.Command("bash", "-c", f.shellCmd)
 	var err error
+	f.stdin, err = f.cmd.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("could not get ffmpeg stdin: %s\n", err)
+	}
 	f.stdout, err = f.cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("could not get ffmpeg stdout: %s", err)
+		return fmt.Errorf("could not get ffmpeg stdout: %s\n", err)
 	}
 	f.stderr, err = f.cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("could not get ffmpeg stderr: %s", err)
+		return fmt.Errorf("could not get ffmpeg stderr: %s\n", err)
 	}
 	return nil
 }
@@ -85,18 +91,14 @@ func (f *FFmpegSink) processStderr() {
 }
 
 func (f *FFmpegSink) processStdout() {
-	panic("wtf are you doing")
-	for {
-		frame := f.frames.GetBlankFrame()
-		encdec.PrepareYUYV422p(frame)
-		_, err := io.ReadFull(f.stdout, frame.Data)
-		if err != nil {
-			f.log("could not read from ffmpeg's output: %s", err)
-			return
-		}
-
-		f.frames.SendFrame(frame)
+	scanner := bufio.NewScanner(f.stdout)
+	for scanner.Scan() {
+		log.Printf("[ffmpeg] %s", scanner.Text())
 	}
+}
+
+func (f *FFmpegSink) processStdin() {
+
 }
 
 func (f *FFmpegSink) Frames() *layer.FrameForwarder {

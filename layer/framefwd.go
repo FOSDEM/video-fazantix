@@ -25,6 +25,8 @@ type FrameForwarder struct {
 
 	recycledFrames []*encdec.ImageData
 	sync.Mutex
+
+	FramebufferID uint32
 }
 
 func (f *FrameForwarder) Init(name string, ft encdec.FrameType, pf []uint8, width int, height int) {
@@ -36,7 +38,11 @@ func (f *FrameForwarder) Init(name string, ft encdec.FrameType, pf []uint8, widt
 }
 
 func (f *FrameForwarder) SendFrame(frame *encdec.ImageData) {
+	oldLastFrame := f.LastFrame
 	f.LastFrame = frame
+	if oldLastFrame != nil {
+		f.recycleFrame(oldLastFrame)
+	}
 }
 
 func (f *FrameForwarder) GetBlankFrame() *encdec.ImageData {
@@ -51,7 +57,7 @@ func (f *FrameForwarder) GetBlankFrame() *encdec.ImageData {
 	return fr
 }
 
-func (f *FrameForwarder) RecycleFrame(frame *encdec.ImageData) {
+func (f *FrameForwarder) recycleFrame(frame *encdec.ImageData) {
 	f.Lock()
 	defer f.Unlock()
 	f.recycledFrames = append(f.recycledFrames, frame)
@@ -73,4 +79,11 @@ func (f *FrameForwarder) SetupTextures() {
 	case encdec.RGBFrames:
 		f.TextureIDs[0] = rendering.SetupRGBTexture(width, height, f.PixFmt)
 	}
+}
+
+func (f *FrameForwarder) UseAsFramebuffer() {
+	if f.FrameType != encdec.RGBFrames {
+		panic("trying to use a non-rgb frame forwarder as a framebuffer")
+	}
+	f.FramebufferID = rendering.UseTextureAsFramebuffer(f.TextureIDs[0])
 }

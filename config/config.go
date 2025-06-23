@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	Sources map[string]*SourceCfg
+	Sinks   map[string]*SinkCfg
 	Scenes  map[string]map[string]*layer.LayerState
 	Stages  map[string]*StageCfg
 	Api     *ApiCfg
@@ -49,6 +50,15 @@ type SourceCfg struct {
 	Cfg interface{}
 }
 
+type SinkCfgStub struct {
+	Type string
+}
+
+type SinkCfg struct {
+	SinkCfgStub
+	Cfg interface{}
+}
+
 type WindowCfg struct {
 	W int
 	H int
@@ -59,11 +69,10 @@ type FFmpegSourceCfg struct {
 	H   int
 	Cmd string
 }
-
 type FFmpegSinkCfg struct {
-	Cmd string
 	W   int
 	H   int
+	Cmd string
 }
 
 type WindowSinkCfg struct {

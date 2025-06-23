@@ -15,10 +15,12 @@ import (
 )
 
 type Theatre struct {
-	Sources    map[string]layer.Source
-	SourceList []layer.Source
-	Scenes     map[string]*Scene
-	Stages     map[string]*Stage
+	Sources            map[string]layer.Source
+	SourceList         []layer.Source
+	Scenes             map[string]*Scene
+	Stages             map[string]*Stage
+	WindowStageList    []*Stage
+	NonWindowStageList []*Stage
 }
 
 type Stage struct {
@@ -36,12 +38,25 @@ func New(cfg *config.Config) (*Theatre, error) {
 	sourceMap := buildSourceMap(sourceList)
 	sceneMap := buildSceneMap(cfg, sourceList)
 	stageMap := buildStageMap(cfg, sourceList)
+	var windowStageList []*Stage
+	var nonWindowStageList []*Stage
+
+	for _, stage := range stageMap {
+		switch stage.Sink.(type) {
+		case *windowsink.WindowSink:
+			windowStageList = append(windowStageList, stage)
+		default:
+			nonWindowStageList = append(nonWindowStageList, stage)
+		}
+	}
 
 	return &Theatre{
-		Sources:    sourceMap,
-		SourceList: sourceList,
-		Scenes:     sceneMap,
-		Stages:     stageMap,
+		Sources:            sourceMap,
+		SourceList:         sourceList,
+		Scenes:             sceneMap,
+		Stages:             stageMap,
+		WindowStageList:    windowStageList,
+		NonWindowStageList: nonWindowStageList,
 	}, nil
 }
 
@@ -181,6 +196,9 @@ func (t *Theatre) SetScene(stageName string, sceneName string) error {
 	}
 }
 
-func (t *Theatre) ProjectorStage() *Stage {
-	return t.Stages["projector"]
+func (t *Theatre) GetTheSingleWindowStage() *Stage {
+	if len(t.WindowStageList) != 1 {
+		panic("we still don't support multiple window-type sinks :(")
+	}
+	return t.WindowStageList[0]
 }
