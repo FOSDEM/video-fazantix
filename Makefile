@@ -1,6 +1,6 @@
 CONFIG=imagesource.yaml
 
-fazant:
+fazantix:
 	go build -o fazantix 'github.com/fosdem/fazantix/cmd/mixer'
 
 run:
