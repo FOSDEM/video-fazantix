@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<style>
+body, html {
+	height: 100%;
+	padding: 0;
+	margin: 0;
+}
+* {
+	box-sizing: border-box;
+}
+body {
+	background: #202020;
+	color: #eee;
+}
+body, td, th {
+	font-family: sans-serif;
+	font-size: 10pt;
+}
+h1 {
+	padding: 0;
+	margin: 0;
+	border-bottom: 2px solid #aa18be;
+}
+
+section#stages {
+	display: flex;
+}
+section#stages > section {
+	padding: 15px;
+	margin: 15px;
+	border: 1px solid #555;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+}
+section#stages > section > header {
+	border-bottom: 1px solid #555;
+	margin: -15px;
+	margin-bottom: 0;
+	padding: 5px 15px;
+}
+section#stages > section > button {
+	display: block;
+	padding: 10px;
+	margin-top: 10px;
+	width: 100%;
+}
+</style>
+<header>
+	<h1>Fazantix</h1>
+</header>
+<main>
+	<section id="stages"></section>
+</main>
+<script>
+function switchScene(stage, scene) {
+	console.log("Switching to", scene, "on stage", stage);
+	fetch("/api/scene/"+stage+"/"+scene).then();
+}
+function makeButtons() {
+	const stages = document.getElementById("stages");
+	fetch('/api/config').then(response => response.json()).then(response => {
+		response.stages.forEach(function(stage){
+			const stageBox = document.createElement("section");
+			stageBox.dataset.stage = stage;
+			stages.appendChild(stageBox);
+
+			const stageHeader = document.createElement("header");
+			stageHeader.innerText = stage;
+			stageBox.appendChild(stageHeader);
+
+			response.scenes.forEach(function(scene){
+				const button = document.createElement("button");
+				button.innerText = scene;
+				button.dataset.stage = stage;
+				button.dataset.scene = scene;
+				stageBox.appendChild(button);
+
+				button.addEventListener("click", function() {
+					switchScene(stage, scene);
+				});
+			});
+		});
+		console.log(response)
+        })
+    	.catch(err => console.error(err))
+}
+document.addEventListener("DOMContentLoaded", function() {
+	makeButtons();
+});
+</script>

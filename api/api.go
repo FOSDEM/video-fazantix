@@ -6,11 +6,19 @@ import (
 	"net/http"
 	"runtime/pprof"
 	"time"
+	"embed"
+	"io/fs"
+	"maps"
+	"slices"
 
 	"github.com/fosdem/fazantix/config"
 	"github.com/fosdem/fazantix/rendering"
 	"github.com/fosdem/fazantix/theatre"
 )
+
+//go:embed static/*
+var content embed.FS
+var contentFS, _ = fs.Sub(content, "static")
 
 type Api struct {
 	srv          http.Server
@@ -39,7 +47,8 @@ func (a *Api) Serve() error {
 	a.mux.HandleFunc("/api/stats", a.stats)
 	a.mux.HandleFunc("/api/scene", a.handleScene)
 	a.mux.HandleFunc("/api/scene/{stage}/{scene}", a.handleScene)
-
+	a.mux.HandleFunc("/api/config", a.handleConfig)
+	a.mux.Handle("/", http.FileServer(http.FS(contentFS)))
 	return a.srv.ListenAndServe()
 }
 
@@ -102,3 +111,22 @@ func (a *Api) stats(w http.ResponseWriter, req *http.Request) {
 	}
 	fmt.Fprintf(w, "\n")
 }
+
+type Config struct {
+	Stages []string `json:"stages"`
+	Scenes []string `json:"scenes"`
+}
+
+func (a *Api) handleConfig(w http.ResponseWriter, req *http.Request) {
+	result := &Config{
+		Stages: slices.Collect(maps.Keys(a.theatre.Stages)),
+		Scenes: slices.Collect(maps.Keys(a.theatre.Scenes)),
+	}
+	encoder := json.NewEncoder(w)
+	err := encoder.Encode(result)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("couldn't encode config: %s", err), http.StatusForbidden)
+		return
+	}
+}
+
