@@ -27,6 +27,8 @@ type Stage struct {
 	Layers []*layer.Layer
 	W      int
 	H      int
+	HFlip  bool
+	VFlip  bool
 	Sink   layer.Sink
 }
 
@@ -46,6 +48,7 @@ func New(cfg *config.Config) (*Theatre, error) {
 		case *windowsink.WindowSink:
 			windowStageList = append(windowStageList, stage)
 		default:
+			stage.HFlip = true
 			nonWindowStageList = append(nonWindowStageList, stage)
 		}
 	}
@@ -204,4 +207,15 @@ func (t *Theatre) GetTheSingleWindowStage() *Stage {
 		panic("we still don't support multiple window-type sinks :(")
 	}
 	return t.WindowStageList[0]
+}
+
+func (s *Stage) StageData() uint32 {
+	data := uint32(0)
+	if s.HFlip {
+		data += 1
+	}
+	if s.VFlip {
+		data += 2
+	}
+	return data
 }

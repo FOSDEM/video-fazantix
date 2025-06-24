@@ -4,12 +4,13 @@ in vec2 UV;
 
 out vec4 color;
 
+uniform uint stageData;
 uniform sampler2D tex[{{ .NumSources }} * 3];
 uniform vec4 layerPosition[{{ .NumSources }}];
 uniform vec4 layerData[{{ .NumSources }}];
 
-vec4 sampleLayerYUV422(int layer, vec4 dve, vec4 data) {
-	vec2 tpos = (UV / dve.z) - (dve.xy / dve.zw);
+vec4 sampleLayerYUV422(vec2 uv, int layer, vec4 dve, vec4 data) {
+	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
 	float Y = texture(tex[layer*3], tpos).r;
 	float Cb = texture(tex[layer*3+2], tpos).r - 0.5;
 	float Cr = texture(tex[layer*3+1], tpos).r - 0.5;
@@ -30,16 +31,23 @@ vec4 sampleLayerYUV422(int layer, vec4 dve, vec4 data) {
 	return vec4(col.r, col.g, col.b, a);
 }
 
-vec4 sampleLayerRGBA(int layer, vec4 dve, vec4 data) {
-	vec4 col = texture(tex[layer*3], (UV / dve.z) - (dve.xy / dve.zw));
+vec4 sampleLayerRGBA(vec2 uv, int layer, vec4 dve, vec4 data) {
+	vec4 col = texture(tex[layer*3], (uv / dve.z) - (dve.xy / dve.zw));
 	col.a *= data.x;
 	return col;
 }
 
 void main() {
+    vec2 uv = UV;
+    if ((stageData & 1) != 0) {
+        uv = vec2(uv.x, 1-uv.y);
+    }
+    if ((stageData & 2) != 0) {
+        uv = vec2(1-uv.x, uv.y);
+    }
     vec4 composite;
     {{ range $i, $source := .Sources }}
-        vec4 layer_{{ $i }} = sampleLayer{{ $source.Frames.FrameType.String }}({{ $i }}, layerPosition[{{ $i }}], layerData[{{ $i }}]);
+        vec4 layer_{{ $i }} = sampleLayer{{ $source.Frames.FrameType.String }}(uv, {{ $i }}, layerPosition[{{ $i }}], layerData[{{ $i }}]);
 
         {{ if eq $i 0 }}
             composite = layer_{{ $i }};

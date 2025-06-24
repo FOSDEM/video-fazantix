@@ -231,6 +231,9 @@ func MakeWindowAndMix(cfg *config.Config) {
 	layerDataUniform := gl.GetUniformLocation(program, gl.Str("layerData\x00"))
 	gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
 
+	stageDataUniform := gl.GetUniformLocation(program, gl.Str("stageData\x00"))
+	gl.Uniform1ui(stageDataUniform, 0)
+
 	// Allocate 3 textures for every layer in case of planar YUV
 	numTextures := numLayers * 3
 	textures := make([]int32, numTextures)
@@ -253,6 +256,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 	firstFrame := true
 	for !window.ShouldClose() {
 		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+		gl.Viewport(0, 0, int32(windowStage.Sink.Frames().Width), int32(windowStage.Sink.Frames().Height))
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
 		// Render
@@ -261,6 +265,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		gl.BindVertexArray(vao)
 
 		gl.Uniform1iv(texUniform, numTextures, &textures[0])
+		gl.Uniform1ui(stageDataUniform, windowStage.StageData())
 		layers = windowStage.Layers
 		for i := range numLayers {
 			if layers[i].Frames().IsStill && !firstFrame {
@@ -295,6 +300,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 			gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
 			gl.Clear(gl.COLOR_BUFFER_BIT)
 			layers = stage.Layers
+			gl.Uniform1ui(stageDataUniform, stage.StageData())
 			for i := range numLayers {
 				layerPos[(i*4)+0] = layers[i].Position.X
 				layerPos[(i*4)+1] = layers[i].Position.Y
