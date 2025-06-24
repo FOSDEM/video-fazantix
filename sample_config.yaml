@@ -54,13 +54,6 @@ sources:
     h: 1080
     z: 8
 
-sinks:
-  windowsink:
-    type: ffmpeg_stdin
-    cmd: 'ffmpeg'
-    w: 1920
-    h: 1080
-
 scenes:
 #  dedo:
 #    pheasant:
@@ -118,5 +111,5 @@ stages:
     h: 720
 
 api:
-  bind: ':6666'
+  bind: ':8000'
   enable_profiler: true

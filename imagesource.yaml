@@ -1,0 +1,113 @@
+sources:
+  background:
+    type: image
+    path: background.png
+    z: 0
+  test1:
+    type: image
+    path: testsrc1.png
+    z: 1
+  test2:
+    type: image
+    path: testsrc2.png
+    z: 2
+  test3:
+    type: image
+    path: testsrc3.png
+    z: 3
+  video0:
+    type: v4l
+    path: /dev/video0
+    fmt: yuyv
+    w: 1920
+    h: 1080
+    z: 1
+  video_listen:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+    z: 8
+
+
+scenes:
+  side-by-side:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    test1:
+      x: 0.03
+      y: 0.25
+      scale: 0.45
+      opacity: 1
+    test2:
+      x: 0.52
+      y: 0.25
+      scale: 0.45
+      opacity: 1
+  full-1:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    test1:
+      x: 0.03
+      y: 0.03
+      scale: 0.93
+      opacity: 1
+    test2:
+      opacity: 0
+  full-3:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    test3:
+      x: 0.03
+      y: 0.03
+      scale: 0.93
+      opacity: 1
+  full-2:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    test2:
+      x: 0.03
+      y: 0.03
+      scale: 0.93
+      opacity: 1
+    test1:
+      opacity: 0
+  default:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    test1:
+      x: 0.025
+      y: 0.049
+      scale: 0.79
+      opacity: 1
+    test2:
+      x: 0.75
+      y: 0.6
+      scale: 0.2
+      opacity: 1
+
+stages:
+  projector:
+    type: window
+    w: 1280
+    h: 720
+
+api:
+  bind: ':8000'
+  enable_profiler: true
+

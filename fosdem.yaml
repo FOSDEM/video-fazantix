@@ -1,0 +1,112 @@
+sources:
+  background:
+    type: image
+    path: background.png
+    z: 0
+  test1:
+    type: image
+    path: testsrc1.png
+    z: 1
+  presentation:
+    type: v4l
+    path: /dev/video0
+    fmt: yuyv
+    w: 1920
+    h: 1080
+    z: 1
+  camera:
+    type: v4l
+    path: /dev/video2
+    fmt: yuyv
+    w: 1920
+    h: 1080
+    z: 2
+  presentation_ffmpeg:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -vf scale=1920:1080 -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+    z: 3
+  camera_ffmpeg:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video2 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+    z: 4
+  video_listen:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+    z: 8
+
+scenes:
+  side-by-side:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    presentation_ffmpeg:
+      x: 0.03
+      y: 0.25
+      scale: 0.45
+      opacity: 1
+    camera_ffmpeg:
+      x: 0.52
+      y: 0.25
+      scale: 0.45
+      opacity: 1
+  presentation:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    presentation_ffmpeg:
+      x: 0.03
+      y: 0.03
+      scale: 0.93
+      opacity: 1
+    camera_ffmpeg:
+      opacity: 0
+  camera:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    camera_ffmpeg:
+      x: 0.03
+      y: 0.03
+      scale: 0.93
+      opacity: 1
+    presentation_ffmpeg:
+      opacity: 0
+  default:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    presentation_ffmpeg:
+      x: 0.025
+      y: 0.049
+      scale: 0.79
+      opacity: 1
+    camera_ffmpeg:
+      x: 0.75
+      y: 0.6
+      scale: 0.2
+      opacity: 1
+
+stages:
+  projector:
+    type: window
+    w: 1920
+    h: 1080
+
+api:
+  bind: ':8000'
+  enable_profiler: true
+

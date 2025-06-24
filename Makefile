@@ -1,14 +1,16 @@
+CONFIG=imagesource.yaml
+
 fazant:
-	go build -o fazant 'github.com/fosdem/fazantix/cmd/mixer'
+	go build -o fazantix 'github.com/fosdem/fazantix/cmd/mixer'
 
 run:
-	go run 'github.com/fosdem/fazantix/cmd/mixer' sample_config.yaml
+	go run 'github.com/fosdem/fazantix/cmd/mixer' $(CONFIG)
 
 clean:
 	rm mixer
 
-all: fazant
+all: fazantix
 
-build: fazant
+build: fazantix
 
-.PHONY: clean run fazant
+.PHONY: clean run fazantix
