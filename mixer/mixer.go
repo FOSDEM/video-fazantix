@@ -261,6 +261,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		gl.BindVertexArray(vao)
 
 		gl.Uniform1iv(texUniform, numTextures, &textures[0])
+		layers = windowStage.Layers
 		for i := range numLayers {
 			if layers[i].Frames().IsStill && !firstFrame {
 				continue
@@ -293,6 +294,16 @@ func MakeWindowAndMix(cfg *config.Config) {
 			gl.BindFramebuffer(gl.FRAMEBUFFER, frames.FramebufferID)
 			gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
 			gl.Clear(gl.COLOR_BUFFER_BIT)
+			layers = stage.Layers
+			for i := range numLayers {
+				layerPos[(i*4)+0] = layers[i].Position.X
+				layerPos[(i*4)+1] = layers[i].Position.Y
+				layerPos[(i*4)+2] = layers[i].Size.X
+				layerPos[(i*4)+3] = layers[i].Size.Y
+				layerData[(i*4)+0] = layers[i].Opacity
+			}
+			gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
+			gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 			gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
 			frame := frames.GetBlankFrame()
