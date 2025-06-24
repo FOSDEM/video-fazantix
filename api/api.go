@@ -36,9 +36,9 @@ func (a *Api) Serve() error {
 	if a.cfg.EnableProfiler {
 		a.mux.HandleFunc("/prof", a.profileCPU)
 	}
-	a.mux.HandleFunc("/stats", a.stats)
-	a.mux.HandleFunc("/scene", a.handleScene)
-	a.mux.HandleFunc("/scene/{stage}/{scene}", a.handleScene)
+	a.mux.HandleFunc("/api/stats", a.stats)
+	a.mux.HandleFunc("/api/scene", a.handleScene)
+	a.mux.HandleFunc("/api/scene/{stage}/{scene}", a.handleScene)
 
 	return a.srv.ListenAndServe()
 }
