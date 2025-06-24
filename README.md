@@ -20,3 +20,10 @@ $ make run
 or
 $ make run CONFIG=fosdem.yaml
 ```
+
+## Control
+
+```shell-session
+Switch to the side-by-side scene on the projector stage
+$ curl http://localhost:8000/api/scene/projector/side-by-side
+```
