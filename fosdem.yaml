@@ -105,6 +105,11 @@ stages:
     type: window
     w: 1920
     h: 1080
+  stream:
+    type: ffmpeg_stdin
+    cmd: "ffmpeg -f rawvideo -video_size 1920x1080 -pixel_format rgb24 -framerate 60 -i - -c:v libx264 -preset fast -pix_fmt yuv420p -f mpegts tcp://0.0.0.0:2000?listen"
+    w: 1920
+    h: 1080
 
 api:
   bind: ':8000'

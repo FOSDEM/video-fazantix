@@ -93,7 +93,7 @@ func (s *V4LSource) Start() bool {
 		dummyImg := image.NewNRGBA(image.Rect(0, 0, 1, 1))
 		s.frames.Init(
 			s.frames.Name,
-			encdec.RGBFrames, dummyImg.Pix,
+			encdec.RGBAFrames, dummyImg.Pix,
 			int(format.Width), int(format.Height),
 		)
 	case "yuyv":

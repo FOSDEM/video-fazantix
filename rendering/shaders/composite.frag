@@ -30,7 +30,7 @@ vec4 sampleLayerYUV422(int layer, vec4 dve, vec4 data) {
 	return vec4(col.r, col.g, col.b, a);
 }
 
-vec4 sampleLayerRGB(int layer, vec4 dve, vec4 data) {
+vec4 sampleLayerRGBA(int layer, vec4 dve, vec4 data) {
 	vec4 col = texture(tex[layer*3], (UV / dve.z) - (dve.xy / dve.zw));
 	col.a *= data.x;
 	return col;

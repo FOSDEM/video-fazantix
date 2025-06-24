@@ -36,7 +36,7 @@ func SetupYUVTexture(width int, height int) uint32 {
 	return id
 }
 
-func SetupRGBTexture(width int, height int, texture []byte) uint32 {
+func SetupRGBATexture(width int, height int) uint32 {
 	var id uint32
 	gl.GenTextures(1, &id)
 	gl.ActiveTexture(gl.TEXTURE0)
@@ -48,6 +48,7 @@ func SetupRGBTexture(width int, height int, texture []byte) uint32 {
 	gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &borderColor[0])
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
+	buf := make([]uint8, width*height*4)
 	gl.TexImage2D(
 		gl.TEXTURE_2D,
 		0,
@@ -57,21 +58,53 @@ func SetupRGBTexture(width int, height int, texture []byte) uint32 {
 		0,
 		gl.RGBA,
 		gl.UNSIGNED_BYTE,
-		gl.Ptr(texture),
+		gl.Ptr(&buf[0]),
 	)
 	return id
 }
 
+func SetupRGBTexture(width int, height int) uint32 {
+	var id uint32
+	gl.GenTextures(1, &id)
+	gl.BindTexture(gl.TEXTURE_2D, id)
+	gl.TexImage2D(
+		gl.TEXTURE_2D,
+		0,
+		gl.RGB,
+		int32(width),
+		int32(height),
+		0,
+		gl.RGB,
+		gl.UNSIGNED_BYTE,
+		gl.Ptr(nil),
+	)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	return id
+}
+
 func UseTextureAsFramebuffer(textureID uint32) uint32 {
-	gl.FramebufferTexture(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, textureID, 0)
-
-	if gl.CheckFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE {
-		panic("Framebuffer failed")
-	}
-
 	framebufferID := uint32(0)
 	gl.GenFramebuffers(1, &framebufferID)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, framebufferID)
+
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
+	gl.FramebufferTexture(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, textureID, 0)
+
+	switch gl.CheckFramebufferStatus(gl.FRAMEBUFFER) {
+	case gl.FRAMEBUFFER_COMPLETE:
+	case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+		panic("Framebuffer incomplete attachment")
+	case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+		panic("FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT")
+	case gl.FRAMEBUFFER_UNSUPPORTED:
+		panic("FRAMEBUFFER_UNSUPPORTED")
+	case gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+		panic("FRAMEBUFFER_INCOMPLETE_MULTISAMPLE")
+	default:
+		panic("UNKNOWN FRAMEBUFFER ISSUE")
+	}
+
 	return framebufferID
 }
 
@@ -91,7 +124,7 @@ func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32
 
 func SendFrameToGPU(frame *encdec.ImageData, textureIDs [3]uint32, offset int) {
 	channelType := uint32(gl.RED)
-	if frame.Type == encdec.RGBFrames {
+	if frame.Type == encdec.RGBAFrames {
 		channelType = gl.RGBA
 	}
 

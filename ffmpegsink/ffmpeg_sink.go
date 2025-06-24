@@ -24,7 +24,7 @@ type FFmpegSink struct {
 
 func New(name string, cfg *config.FFmpegSinkCfg) *FFmpegSink {
 	f := &FFmpegSink{shellCmd: cfg.Cmd}
-	f.frames.Init(name, encdec.YUV422Frames, []uint8{}, cfg.W, cfg.H)
+	f.frames.Init(name, encdec.RGBFrames, []uint8{}, cfg.W, cfg.H)
 	return f
 }
 
@@ -40,6 +40,7 @@ func (f *FFmpegSink) Start() bool {
 	go f.runFFmpeg()
 	go f.processStdout()
 	go f.processStderr()
+	go f.processStdin()
 
 	f.frames.IsReady = true
 	return true
@@ -98,7 +99,12 @@ func (f *FFmpegSink) processStdout() {
 }
 
 func (f *FFmpegSink) processStdin() {
-
+	for {
+		frame := f.Frames().LastFrame
+		if frame != nil {
+			f.stdin.Write(frame.Data)
+		}
+	}
 }
 
 func (f *FFmpegSink) Frames() *layer.FrameForwarder {

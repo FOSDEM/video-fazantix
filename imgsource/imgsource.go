@@ -42,7 +42,7 @@ func New(name string, cfg *config.ImgSourceCfg) *ImgSource {
 
 	s.frames.Init(
 		name,
-		encdec.RGBFrames, s.rgba.Pix,
+		encdec.RGBAFrames, s.rgba.Pix,
 		s.rgba.Rect.Size().X, s.rgba.Rect.Size().Y,
 	)
 
@@ -67,7 +67,7 @@ func (s *ImgSource) Start() bool {
 	s.frames.IsReady = true
 	s.frames.IsStill = true
 
-	frame := encdec.NewFrame(encdec.RGBFrames, w, h)
+	frame := encdec.NewFrame(encdec.RGBAFrames, w, h)
 	err := encdec.FrameFromImage(s.img, frame)
 	if err != nil {
 		s.log("Decode error: %s", err)

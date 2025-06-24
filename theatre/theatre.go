@@ -170,6 +170,9 @@ func (t *Theatre) Start() {
 			src.Frames().SetupTextures()
 		}
 	}
+	for _, sink := range t.Stages {
+		sink.Sink.Start()
+	}
 }
 
 func (t *Theatre) Animate() {

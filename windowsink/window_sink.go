@@ -16,6 +16,10 @@ func New(name string, cfg *config.WindowSinkCfg) *WindowSink {
 	return w
 }
 
+func (w *WindowSink) Start() bool {
+	return true
+}
+
 func (w *WindowSink) Frames() *layer.FrameForwarder {
 	return &w.frames
 }

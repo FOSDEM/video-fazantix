@@ -76,8 +76,10 @@ func (f *FrameForwarder) SetupTextures() {
 		f.TextureIDs[0] = rendering.SetupYUVTexture(width, height)
 		f.TextureIDs[1] = rendering.SetupYUVTexture(width/2, height)
 		f.TextureIDs[2] = rendering.SetupYUVTexture(width/2, height)
+	case encdec.RGBAFrames:
+		f.TextureIDs[0] = rendering.SetupRGBATexture(width, height)
 	case encdec.RGBFrames:
-		f.TextureIDs[0] = rendering.SetupRGBTexture(width, height, f.PixFmt)
+		f.TextureIDs[0] = rendering.SetupRGBTexture(width, height)
 	}
 }
 

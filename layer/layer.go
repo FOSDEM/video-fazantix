@@ -46,6 +46,7 @@ type Source interface {
 
 type Sink interface {
 	Frames() *FrameForwarder
+	Start() bool
 }
 
 func New(src Source, width int, height int) *Layer {

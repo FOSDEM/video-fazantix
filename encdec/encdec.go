@@ -11,6 +11,7 @@ type FrameType int
 
 const (
 	YUV422Frames FrameType = iota
+	RGBAFrames
 	RGBFrames
 )
 
@@ -30,8 +31,10 @@ func NewFrame(t FrameType, w int, h int) *ImageData {
 	switch t {
 	case YUV422Frames:
 		return makeFrame(t, w*h*2, w, h)
-	case RGBFrames:
+	case RGBAFrames:
 		return makeFrame(t, w*h*4, w, h)
+	case RGBFrames:
+		return makeFrame(t, w*h*3, w, h)
 	default:
 		panic("unknown frame type")
 	}
@@ -147,8 +150,8 @@ func (f FrameType) String() string {
 	switch f {
 	case YUV422Frames:
 		return "YUV422"
-	case RGBFrames:
-		return "RGB"
+	case RGBAFrames:
+		return "RGBA"
 	default:
 		panic("unknown frame type")
 	}
