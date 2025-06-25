@@ -272,6 +272,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		gl.Uniform1ui(stageDataUniform, windowStage.StageData())
 		layers = windowStage.Layers
 		for i := range numLayers {
+			layers[i].Frames().FrameAge += 1
 			if layers[i].Frames().IsStill && !firstFrame {
 				continue
 			}
@@ -290,6 +291,9 @@ func MakeWindowAndMix(cfg *config.Config) {
 			layerPos[(i*4)+2] = layers[i].Size.X
 			layerPos[(i*4)+3] = layers[i].Size.Y
 			layerData[(i*4)+0] = layers[i].Opacity
+			if layers[i].Frames().FrameAge > 10 {
+				layerData[(i*4)+0] = 0.5
+			}
 		}
 		theatre.Animate()
 		gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])

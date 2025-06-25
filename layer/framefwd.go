@@ -20,6 +20,7 @@ type FrameForwarder struct {
 	IsStill bool
 
 	LastFrame *encdec.ImageData
+	FrameAge int
 
 	TextureIDs [3]uint32
 
@@ -35,11 +36,13 @@ func (f *FrameForwarder) Init(name string, ft encdec.FrameType, pf []uint8, widt
 	f.PixFmt = pf
 	f.Width = width
 	f.Height = height
+	f.FrameAge = 0
 }
 
 func (f *FrameForwarder) SendFrame(frame *encdec.ImageData) {
 	oldLastFrame := f.LastFrame
 	f.LastFrame = frame
+	f.FrameAge = 0
 	if oldLastFrame != nil {
 		f.recycleFrame(oldLastFrame)
 	}
