@@ -251,6 +251,10 @@ func MakeWindowAndMix(cfg *config.Config) {
 		stage.Sink.Frames().UseAsFramebuffer()
 	}
 
+	for name := range theatre.Stages {
+		theatre.SetScene(name, "default")
+	}
+
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
 
 	firstFrame := true
