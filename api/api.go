@@ -1,15 +1,15 @@
 package api
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"runtime/pprof"
-	"time"
-	"embed"
 	"io/fs"
 	"maps"
+	"net/http"
+	"runtime/pprof"
 	"slices"
+	"time"
 
 	"github.com/gorilla/websocket"
 
@@ -30,7 +30,7 @@ type Api struct {
 	start        time.Time
 	FrameCounter uint64
 
-	wsClients    map[*websocket.Conn]bool
+	wsClients map[*websocket.Conn]bool
 }
 
 func New(cfg *config.ApiCfg, theatre *theatre.Theatre) *Api {
@@ -145,24 +145,24 @@ var upgrader = websocket.Upgrader{
 }
 
 func (a *Api) handleWebsocket(w http.ResponseWriter, req *http.Request) {
-    ws, err := upgrader.Upgrade(w, req, nil)
-    if err != nil {
-	    http.Error(w, fmt.Sprintf("couldn't make websocket: %s",err), 400)
-        return
-    }
-    defer ws.Close()
-    a.wsClients[ws] = true
+	ws, err := upgrader.Upgrade(w, req, nil)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("couldn't make websocket: %s", err), 400)
+		return
+	}
+	defer ws.Close()
+	a.wsClients[ws] = true
 
-    go a.websocketWriter(ws)
+	go a.websocketWriter(ws)
 
-    for {
-        _, msg, err := ws.ReadMessage()
-        if err != nil {
-		delete(a.wsClients, ws)
-		break
-        }
-        fmt.Printf("Received: %s\n", msg)
-    }
+	for {
+		_, msg, err := ws.ReadMessage()
+		if err != nil {
+			delete(a.wsClients, ws)
+			break
+		}
+		fmt.Printf("Received: %s\n", msg)
+	}
 }
 
 func (a *Api) websocketWriter(ws *websocket.Conn) {
@@ -174,24 +174,24 @@ func (a *Api) websocketWriter(ws *websocket.Conn) {
 	timeout := 10 * time.Second
 	for {
 		select {
-			case <- pingTicker.C:
-				uptime := float64(time.Since(a.start).Nanoseconds()) / 1e9
-				stats := &Stats{
-					Uptime:             uptime,
-					TextureUpload:      rendering.TextureUploadCounter,
-					TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
-					TotalFrames:        a.FrameCounter,
-					FPS:                float64(a.FrameCounter) / uptime,
-					WsClients:          len(a.wsClients),
-				}
-				packet, err := json.Marshal(stats)
-				if err != nil {
-					return
-				}
-				ws.SetWriteDeadline(time.Now().Add(timeout))
-				if err := ws.WriteMessage(websocket.TextMessage, packet); err != nil {
-					return
-				}
+		case <-pingTicker.C:
+			uptime := float64(time.Since(a.start).Nanoseconds()) / 1e9
+			stats := &Stats{
+				Uptime:             uptime,
+				TextureUpload:      rendering.TextureUploadCounter,
+				TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
+				TotalFrames:        a.FrameCounter,
+				FPS:                float64(a.FrameCounter) / uptime,
+				WsClients:          len(a.wsClients),
+			}
+			packet, err := json.Marshal(stats)
+			if err != nil {
+				return
+			}
+			ws.SetWriteDeadline(time.Now().Add(timeout))
+			if err := ws.WriteMessage(websocket.TextMessage, packet); err != nil {
+				return
+			}
 		}
 	}
 }
