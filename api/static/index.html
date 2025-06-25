@@ -23,6 +23,7 @@ body > header > h1 {
 	padding: 0 15px;
 	margin: 0;
 	display: inline-block;
+	color: orange;
 }
 body > header > span {
 	padding: 0 15px;
@@ -53,7 +54,7 @@ section#stages > section > button {
 }
 </style>
 <header>
-	<h1>Fazantix</h1>
+	<h1 id="logo">Fazantix</h1>
 	<span>
 		FPS:
 		<span id="stat-fps">N/A</span>
@@ -102,8 +103,9 @@ function makeButtons() {
 function makeWebsocket() {
 	var socketUrl = window.location.protocol === "https:" ? "wss://" : "ws://";
 	socketUrl += window.location.host + "/api/ws";
-        let socket = new WebSocket(socketUrl);
+        socket = new WebSocket(socketUrl);
         socket.onopen = function(event) {
+		document.getElementById("logo").style.color = "white";
 		console.log("Connected to websocket");
         };
 
@@ -121,6 +123,10 @@ function makeWebsocket() {
 
         socket.onclose = function(event) {
 		console.error("Websocket disconnected");
+		document.getElementById("logo").style.color = "red";
+		setTimeout(()=>{
+			makeWebsocket();
+		}, 2000);
         };
 
         function sendMessage() {
@@ -128,13 +134,12 @@ function makeWebsocket() {
             socket.send(message);
             document.getElementById("messageInput").value = "";
         }
-	return socket;
 }
 
 let socket;
 document.addEventListener("DOMContentLoaded", function() {
 	makeButtons();
-	socket = makeWebsocket();
+	makeWebsocket();
 });
 
 </script>
