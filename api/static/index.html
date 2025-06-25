@@ -16,10 +16,17 @@ body, td, th {
 	font-family: sans-serif;
 	font-size: 10pt;
 }
-h1 {
-	padding: 0;
-	margin: 0;
+body > header {
 	border-bottom: 2px solid #aa18be;
+}
+body > header > h1 {
+	padding: 0 15px;
+	margin: 0;
+	display: inline-block;
+}
+body > header > span {
+	padding: 0 15px;
+	display: inline-block;
 }
 
 section#stages {
@@ -47,6 +54,14 @@ section#stages > section > button {
 </style>
 <header>
 	<h1>Fazantix</h1>
+	<span>
+		FPS:
+		<span id="stat-fps">N/A</span>
+	</span>
+	<span>
+		Clients:
+		<span id="stat-clients">N/A</span>
+	</span>
 </header>
 <main>
 	<section id="stages"></section>
@@ -84,7 +99,42 @@ function makeButtons() {
         })
     	.catch(err => console.error(err))
 }
+function makeWebsocket() {
+	var socketUrl = window.location.protocol === "https:" ? "wss://" : "ws://";
+	socketUrl += window.location.host + "/api/ws";
+        let socket = new WebSocket(socketUrl);
+        socket.onopen = function(event) {
+		console.log("Connected to websocket");
+        };
+
+        socket.onmessage = function(event) {
+		const message = JSON.parse(event.data);
+		if ("fps" in message) {
+			const fpsElem = document.getElementById("stat-fps");
+			fpsElem.innerText = Math.round(message["fps"] * 10) / 10;
+		}
+		if ("ws_clients" in message) {
+			const clientsElem = document.getElementById("stat-clients");
+			clientsElem.innerText = message["ws_clients"];
+		}
+        };
+
+        socket.onclose = function(event) {
+		console.error("Websocket disconnected");
+        };
+
+        function sendMessage() {
+            let message = document.getElementById("messageInput").value;
+            socket.send(message);
+            document.getElementById("messageInput").value = "";
+        }
+	return socket;
+}
+
+let socket;
 document.addEventListener("DOMContentLoaded", function() {
 	makeButtons();
+	socket = makeWebsocket();
 });
+
 </script>

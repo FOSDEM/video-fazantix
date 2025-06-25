@@ -11,6 +11,8 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/gorilla/websocket"
+
 	"github.com/fosdem/fazantix/config"
 	"github.com/fosdem/fazantix/rendering"
 	"github.com/fosdem/fazantix/theatre"
@@ -27,6 +29,8 @@ type Api struct {
 	theatre      *theatre.Theatre
 	start        time.Time
 	FrameCounter uint64
+
+	wsClients    map[*websocket.Conn]bool
 }
 
 func New(cfg *config.ApiCfg, theatre *theatre.Theatre) *Api {
@@ -36,6 +40,7 @@ func New(cfg *config.ApiCfg, theatre *theatre.Theatre) *Api {
 	a.theatre = theatre
 	a.srv.Addr = cfg.Bind
 	a.srv.Handler = a.mux
+	a.wsClients = make(map[*websocket.Conn]bool)
 	return a
 }
 
@@ -48,6 +53,7 @@ func (a *Api) Serve() error {
 	a.mux.HandleFunc("/api/scene", a.handleScene)
 	a.mux.HandleFunc("/api/scene/{stage}/{scene}", a.handleScene)
 	a.mux.HandleFunc("/api/config", a.handleConfig)
+	a.mux.HandleFunc("/api/ws", a.handleWebsocket)
 	a.mux.Handle("/", http.FileServer(http.FS(contentFS)))
 	return a.srv.ListenAndServe()
 }
@@ -91,6 +97,7 @@ type Stats struct {
 	Uptime             float64 `json:"uptime"`
 	TotalFrames        uint64  `json:"total_frames"`
 	FPS                float64 `json:"fps"`
+	WsClients          int     `json:"ws_clients"`
 }
 
 func (a *Api) stats(w http.ResponseWriter, req *http.Request) {
@@ -101,6 +108,7 @@ func (a *Api) stats(w http.ResponseWriter, req *http.Request) {
 		TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
 		TotalFrames:        a.FrameCounter,
 		FPS:                float64(a.FrameCounter) / uptime,
+		WsClients:          len(a.wsClients),
 	}
 
 	encoder := json.NewEncoder(w)
@@ -130,3 +138,60 @@ func (a *Api) handleConfig(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(req *http.Request) bool {
+		return true
+	},
+}
+
+func (a *Api) handleWebsocket(w http.ResponseWriter, req *http.Request) {
+    ws, err := upgrader.Upgrade(w, req, nil)
+    if err != nil {
+	    http.Error(w, fmt.Sprintf("couldn't make websocket: %s",err), 400)
+        return
+    }
+    defer ws.Close()
+    a.wsClients[ws] = true
+
+    go a.websocketWriter(ws)
+
+    for {
+        _, msg, err := ws.ReadMessage()
+        if err != nil {
+		delete(a.wsClients, ws)
+		break
+        }
+        fmt.Printf("Received: %s\n", msg)
+    }
+}
+
+func (a *Api) websocketWriter(ws *websocket.Conn) {
+	pingTicker := time.NewTicker(2 * time.Second)
+	defer func() {
+		pingTicker.Stop()
+		ws.Close()
+	}()
+	timeout := 10 * time.Second
+	for {
+		select {
+			case <- pingTicker.C:
+				uptime := float64(time.Since(a.start).Nanoseconds()) / 1e9
+				stats := &Stats{
+					Uptime:             uptime,
+					TextureUpload:      rendering.TextureUploadCounter,
+					TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
+					TotalFrames:        a.FrameCounter,
+					FPS:                float64(a.FrameCounter) / uptime,
+					WsClients:          len(a.wsClients),
+				}
+				packet, err := json.Marshal(stats)
+				if err != nil {
+					return
+				}
+				ws.SetWriteDeadline(time.Now().Add(timeout))
+				if err := ws.WriteMessage(websocket.TextMessage, packet); err != nil {
+					return
+				}
+		}
+	}
+}
