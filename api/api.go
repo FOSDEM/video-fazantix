@@ -28,7 +28,7 @@ type Api struct {
 	cfg          *config.ApiCfg
 	theatre      *theatre.Theatre
 	start        time.Time
-	FrameCounter uint64
+	FPS          int
 
 	wsClients map[*websocket.Conn]bool
 }
@@ -95,8 +95,7 @@ type Stats struct {
 	TextureUpload      uint64  `json:"texture_upload"`
 	TextureUploadAvgGb float64 `json:"texture_upload_avg_gb"`
 	Uptime             float64 `json:"uptime"`
-	TotalFrames        uint64  `json:"total_frames"`
-	FPS                float64 `json:"fps"`
+	FPS                int     `json:"fps"`
 	WsClients          int     `json:"ws_clients"`
 }
 
@@ -106,8 +105,7 @@ func (a *Api) stats(w http.ResponseWriter, req *http.Request) {
 		Uptime:             uptime,
 		TextureUpload:      rendering.TextureUploadCounter,
 		TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
-		TotalFrames:        a.FrameCounter,
-		FPS:                float64(a.FrameCounter) / uptime,
+		FPS:                a.FPS,
 		WsClients:          len(a.wsClients),
 	}
 
@@ -180,8 +178,7 @@ func (a *Api) websocketWriter(ws *websocket.Conn) {
 				Uptime:             uptime,
 				TextureUpload:      rendering.TextureUploadCounter,
 				TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
-				TotalFrames:        a.FrameCounter,
-				FPS:                float64(a.FrameCounter) / uptime,
+				FPS:                a.FPS,
 				WsClients:          len(a.wsClients),
 			}
 			packet, err := json.Marshal(stats)

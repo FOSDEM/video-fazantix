@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/fosdem/fazantix/api"
 	"github.com/fosdem/fazantix/config"
@@ -257,6 +258,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
 
+	frameCounter := 0
+	frameTimer := time.Now()
 	firstFrame := true
 	for !window.ShouldClose() {
 		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
@@ -327,11 +330,15 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 		// Maintenance
 		window.SwapBuffers()
+		frameCounter++
+		if (time.Now().Sub(frameTimer) > 1 * time.Second) {
+			if theApi != nil {
+				theApi.FPS = frameCounter
+			}
+			frameCounter = 0
+			frameTimer = time.Now()
+		}
 		glfw.PollEvents()
 		firstFrame = false
-
-		if theApi != nil {
-			theApi.FrameCounter++
-		}
 	}
 }
