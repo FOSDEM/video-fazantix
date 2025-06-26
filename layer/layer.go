@@ -105,6 +105,6 @@ func (s *Layer) Frames() *FrameForwarder {
 }
 
 func ramp(x float32, tgt float32, delta float32) float32 {
-	speed := float64(0.1)
-	return x + (tgt-x)*(1-float32(math.Exp(-speed)))
+	speed := float32(10)
+	return x + (tgt-x)*(1-float32(math.Exp(float64(-speed*delta))))
 }
