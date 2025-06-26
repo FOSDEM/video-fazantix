@@ -10,7 +10,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatal("Usage: %s <config file>", os.Args[0])
+		log.Fatalf("Usage: %s <config file>", os.Args[0])
 	}
 	cfg, err := config.Parse(os.Args[1])
 	if err != nil {

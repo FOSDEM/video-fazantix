@@ -80,10 +80,10 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 		var logLength int32
 		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
 
-		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
+		clog := strings.Repeat("\x00", int(logLength+1))
+		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(clog))
 
-		return 0, fmt.Errorf("failed to compile %v: %v", source, log)
+		return 0, fmt.Errorf("failed to compile %v: %v", source, clog)
 	}
 
 	return shader, nil
@@ -253,7 +253,10 @@ func MakeWindowAndMix(cfg *config.Config) {
 	}
 
 	for name := range theatre.Stages {
-		theatre.SetScene(name, "default")
+		err := theatre.SetScene(name, "default")
+		if err != nil {
+			log.Fatalf("Could not apply default scene: %s", err)
+		}
 	}
 
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
@@ -330,7 +333,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		// Maintenance
 		window.SwapBuffers()
 		frameCounter++
-		if (time.Now().Sub(frameTimer) > 1 * time.Second) {
+		if time.Now().Sub(frameTimer) > 1*time.Second {
 			if theApi != nil {
 				theApi.FPS = frameCounter
 			}

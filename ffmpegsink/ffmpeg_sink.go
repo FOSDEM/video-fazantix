@@ -102,7 +102,11 @@ func (f *FFmpegSink) processStdin() {
 	for {
 		frame := f.Frames().LastFrame
 		if frame != nil {
-			f.stdin.Write(frame.Data)
+			_, err := f.stdin.Write(frame.Data)
+			if err != nil {
+				f.log("Could not write to ffmpeg stdin")
+				return
+			}
 		}
 	}
 }

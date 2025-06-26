@@ -87,8 +87,12 @@ func (f *FFmpegSource) processStderr() {
 func (f *FFmpegSource) processStdout() {
 	for {
 		frame := f.frames.GetBlankFrame()
-		encdec.PrepareYUYV422p(frame)
-		_, err := io.ReadFull(f.stdout, frame.Data)
+		err := encdec.PrepareYUYV422p(frame)
+		if err != nil {
+			f.log("Could not prepare YUV422 buffer: %s", err)
+			return
+		}
+		_, err = io.ReadFull(f.stdout, frame.Data)
 		if err != nil {
 			f.log("could not read from ffmpeg's output: %s", err)
 			return
