@@ -263,6 +263,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	frameCounter := 0
 	frameTimer := time.Now()
+	deltaTimer := time.Now()
 	firstFrame := true
 	for !window.ShouldClose() {
 		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
@@ -300,7 +301,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 			rendering.SendFrameToGPU(rf, layers[i].Frames().TextureIDs, int(i))
 		}
-		theatre.Animate()
+		theatre.Animate(float32(time.Since(deltaTimer).Milliseconds()))
+		deltaTimer = time.Now()
 		gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 

@@ -88,16 +88,16 @@ func (s *Layer) ApplyState(state *LayerState) {
 	s.targetState = state
 }
 
-func (s *Layer) Animate() {
+func (s *Layer) Animate(delta float32) {
 	if s.targetState == nil {
 		return
 	}
 	s.Squeeze = (float32(s.OutputWidth) / float32(s.OutputHeight)) / (float32(s.Source.Frames().Width) / float32(s.Source.Frames().Height))
-	s.Position.X = ramp(s.Position.X, s.targetState.X, 0.01)
-	s.Position.Y = ramp(s.Position.Y, s.targetState.Y, 0.01)
-	s.Size.X = ramp(s.Size.X, s.targetState.Scale, 0.01)
-	s.Size.Y = ramp(s.Size.Y, s.targetState.Scale/s.Squeeze, 0.01)
-	s.Opacity = ramp(s.Opacity, s.targetState.Opacity, 0.01)
+	s.Position.X = ramp(s.Position.X, s.targetState.X, delta)
+	s.Position.Y = ramp(s.Position.Y, s.targetState.Y, delta)
+	s.Size.X = ramp(s.Size.X, s.targetState.Scale, delta)
+	s.Size.Y = ramp(s.Size.Y, s.targetState.Scale/s.Squeeze, delta)
+	s.Opacity = ramp(s.Opacity, s.targetState.Opacity, delta)
 }
 
 func (s *Layer) Frames() *FrameForwarder {
@@ -105,6 +105,6 @@ func (s *Layer) Frames() *FrameForwarder {
 }
 
 func ramp(x float32, tgt float32, delta float32) float32 {
-	speed := float32(10)
+	speed := float32(0.007)
 	return x + (tgt-x)*(1-float32(math.Exp(float64(-speed*delta))))
 }

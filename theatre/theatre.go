@@ -178,11 +178,11 @@ func (t *Theatre) Start() {
 	}
 }
 
-func (t *Theatre) Animate() {
+func (t *Theatre) Animate(delta float32) {
 	// todo: use delta-t
 	for _, s := range t.Stages {
 		for _, l := range s.Layers {
-			l.Animate()
+			l.Animate(delta)
 		}
 	}
 }
