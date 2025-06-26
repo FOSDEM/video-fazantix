@@ -275,10 +275,18 @@ func MakeWindowAndMix(cfg *config.Config) {
 		gl.Uniform1ui(stageDataUniform, windowStage.StageData())
 		layers = windowStage.Layers
 		for i := range numLayers {
-			layers[i].Frames().FrameAge += 1
+			layerPos[(i*4)+0] = layers[i].Position.X
+			layerPos[(i*4)+1] = layers[i].Position.Y
+			layerPos[(i*4)+2] = layers[i].Size.X
+			layerPos[(i*4)+3] = layers[i].Size.Y
+			layerData[(i*4)+0] = layers[i].Opacity
+			if layers[i].Frames().FrameAge > 10 {
+				layerData[(i*4)+0] = 0.5
+			}
 			if layers[i].Frames().IsStill && !firstFrame {
 				continue
 			}
+			layers[i].Frames().FrameAge += 1
 			if !layers[i].Frames().IsReady {
 				continue
 			}
@@ -288,15 +296,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 			}
 
 			rendering.SendFrameToGPU(rf, layers[i].Frames().TextureIDs, int(i))
-
-			layerPos[(i*4)+0] = layers[i].Position.X
-			layerPos[(i*4)+1] = layers[i].Position.Y
-			layerPos[(i*4)+2] = layers[i].Size.X
-			layerPos[(i*4)+3] = layers[i].Size.Y
-			layerData[(i*4)+0] = layers[i].Opacity
-			if layers[i].Frames().FrameAge > 10 {
-				layerData[(i*4)+0] = 0.5
-			}
 		}
 		theatre.Animate()
 		gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
