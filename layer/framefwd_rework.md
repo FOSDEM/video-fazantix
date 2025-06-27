@@ -16,6 +16,7 @@
     - try getting a frame from the recycle bin
     - if no frame was available return nil and allow the caller to framedrop
         - log a framedrop
+    - update the frame's identifier (random number, may be consecutive - used in the render loop to test if a new frame was produced)
     - unmark the frame for recycling and return it
 
 - FinishedWriting should:
