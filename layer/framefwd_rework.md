@@ -1,3 +1,8 @@
+#### at startup:
+- each frame forwarder has a number N, the number of buffered frames
+- allocate N black frames using the PBO allocator
+- prefill the recycle bin with N-1 of these frames and use the other one as a "reading frame"
+
 #### low-latency framedropping mode:
 - GetFrameForReading should:
     - quickly return the current reading frame
@@ -8,9 +13,8 @@
     - if it is zero and the frame is marked for recycling, move it to the recycle bin
 
 - GetFrameForWriting should:
-    - quickly try getting a frame from the recycle bin
-    - if no frame was available, create a frame by depleting the frame budget
-    - if the frame budget is exhausted, return nil and allow the caller to framedrop
+    - try getting a frame from the recycle bin
+    - if no frame was available return nil and allow the caller to framedrop
         - log a framedrop
     - unmark the frame for recycling and return it
 
@@ -25,15 +29,14 @@
 - FinishedReading should:
     - push to the recycle bin
 - GetFrameForWriting should:
-    - quickly try getting a frame from the recycle bin
-    - if no frame was available, create a frame by depleting the frame budget
-    - if the frame budget is exhausted, it should return nil and allow the caller to framedrop
+    - try getting a frame from the recycle bin
+    - if no frame was available return nil and allow the caller to framedrop
         - log a framedrop
     - unmark the frame for recycling and return it
 - FinishedWriting should:
     - push to the frame queue
 
 #### misc
-* the frame queue size should be the same as the frame budget, so that writes never block
-* all of these operations should be atomic
+* the frame queue size should be N, so that writes never block
+* all of these operations should be atomic (one mutex for the frame forwarder for all operations, and also handle the number of readers field with atomic intrinsics
 * frame budget never gets increased
