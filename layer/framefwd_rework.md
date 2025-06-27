@@ -2,24 +2,22 @@
 - GetFrameForReading should:
     - quickly return the current reading frame
     - increment its readers field
-    - sets its "ever read" flag to true
 
 - FinishedReading should:
     - decrement the frame's readers field
-    - if it is zero, move the frame to the recycle bin
+    - if it is zero and the frame is marked for recycling, move it to the recycle bin
 
 - GetFrameForWriting should:
     - quickly try getting a frame from the recycle bin
     - if no frame was available, create a frame by depleting the frame budget
-    - if the frame budget is exhausted, it should return nil and allow the caller to framedrop
+    - if the frame budget is exhausted, return nil and allow the caller to framedrop
         - log a framedrop
-    - frame budget never gets increased
-    - reset the frame's "ever read" flag
+    - unmark the frame for recycling and return it
 
 - FinishedWriting should:
-    - see if the current reading frame has ever been read
-        - if not, log a framedrop and move it to the recycle bin
-    - replace the current reading frame pointer
+    - if the current reading frame's readers field is nonzero, mark the frame for recycling
+    - otherwise, instantly recycle it
+    - replace the current reading frame pointer with the given frame
 
 #### buffered mode (for recording, etc):
 - GetFrameForReading should:
@@ -31,11 +29,11 @@
     - if no frame was available, create a frame by depleting the frame budget
     - if the frame budget is exhausted, it should return nil and allow the caller to framedrop
         - log a framedrop
-    - frame budget never gets increased
-    - reset the frame's "ever read" flag
+    - unmark the frame for recycling and return it
 - FinishedWriting should:
     - push to the frame queue
 
 #### misc
 * the frame queue size should be the same as the frame budget, so that writes never block
-* all of these should be atomic
+* all of these operations should be atomic
+* frame budget never gets increased
