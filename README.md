@@ -5,7 +5,7 @@ Fazant Fazant Fazant
 ## Building
 
 ```shell-session
-$ apt install libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libglx-dev libgl-dev libxxf86vm-dev
+$ apt install golang libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libglx-dev libgl-dev libxxf86vm-dev
 $ make
 ```
 
