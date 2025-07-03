@@ -101,9 +101,7 @@ function makeButtons() {
     	.catch(err => console.error(err))
 }
 function makeWebsocket() {
-	var socketUrl = window.location.protocol === "https:" ? "wss://" : "ws://";
-	socketUrl += window.location.host + "/api/ws";
-        socket = new WebSocket(socketUrl);
+        socket = new WebSocket("/api/ws");
         socket.onopen = function(event) {
 		document.getElementById("logo").style.color = "white";
 		console.log("Connected to websocket");
