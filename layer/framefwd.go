@@ -10,17 +10,16 @@ import (
 )
 
 type FrameForwarder struct {
-	FrameType encdec.FrameType
-	PixFmt    []uint8
-	Width     int
-	Height    int
+	encdec.FrameInfo
 
-	Name    string
+	Name      string
+	Allocator encdec.FrameAllocator
+
 	IsReady bool
 	IsStill bool
 
 	LastFrame *encdec.Frame
-	FrameAge int
+	FrameAge  int
 
 	TextureIDs [3]uint32
 
@@ -30,12 +29,10 @@ type FrameForwarder struct {
 	FramebufferID uint32
 }
 
-func (f *FrameForwarder) Init(name string, ft encdec.FrameType, pf []uint8, width int, height int) {
+func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.FrameAllocator) {
 	f.Name = name
-	f.FrameType = ft
-	f.PixFmt = pf
-	f.Width = width
-	f.Height = height
+	f.Allocator = alloc
+	f.FrameInfo = *info
 	f.FrameAge = 0
 }
 
@@ -53,7 +50,7 @@ func (f *FrameForwarder) GetBlankFrame() *encdec.Frame {
 	defer f.Unlock()
 
 	if len(f.recycledFrames) == 0 {
-		return encdec.NewFrame(f.FrameType, f.Width, f.Height)
+		return f.Allocator.NewFrame(&f.FrameInfo)
 	}
 	fr := f.recycledFrames[0]
 	f.recycledFrames = f.recycledFrames[1:]

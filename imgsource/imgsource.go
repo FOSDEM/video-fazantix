@@ -21,7 +21,7 @@ type ImgSource struct {
 	frames layer.FrameForwarder
 }
 
-func New(name string, cfg *config.ImgSourceCfg) *ImgSource {
+func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *ImgSource {
 	s := &ImgSource{}
 
 	s.path = cfg.Path
@@ -42,8 +42,13 @@ func New(name string, cfg *config.ImgSourceCfg) *ImgSource {
 
 	s.frames.Init(
 		name,
-		encdec.RGBAFrames, s.rgba.Pix,
-		s.rgba.Rect.Size().X, s.rgba.Rect.Size().Y,
+		&encdec.FrameInfo{
+			FrameType: encdec.RGBAFrames,
+			PixFmt:    s.rgba.Pix,
+			Width:     s.rgba.Rect.Size().X,
+			Height:    s.rgba.Rect.Size().Y,
+		},
+		alloc,
 	)
 
 	if s.rgba.Stride != s.frames.Width*4 {
@@ -67,7 +72,12 @@ func (s *ImgSource) Start() bool {
 	s.frames.IsReady = true
 	s.frames.IsStill = true
 
-	frame := encdec.NewFrame(encdec.RGBAFrames, w, h)
+	frame := s.frames.Allocator.NewFrame(&encdec.FrameInfo{
+		FrameType: encdec.RGBAFrames,
+		PixFmt:    s.rgba.Pix,
+		Width:     w,
+		Height:    h,
+	})
 	err := encdec.FrameFromImage(s.img, frame)
 	if err != nil {
 		s.log("Decode error: %s", err)

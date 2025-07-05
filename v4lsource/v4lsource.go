@@ -23,15 +23,17 @@ type V4LSource struct {
 	rawCamFrames <-chan []byte
 
 	frames layer.FrameForwarder
+	alloc  encdec.FrameAllocator
 
 	requestedWidth  int
 	requestedHeight int
 }
 
-func New(name string, cfg *config.V4LSourceCfg) *V4LSource {
+func New(name string, cfg *config.V4LSourceCfg, alloc encdec.FrameAllocator) *V4LSource {
 	s := &V4LSource{}
 	s.path = cfg.Path
 	s.frames.Name = name
+	s.alloc = alloc
 
 	s.Format = cfg.Fmt
 
@@ -93,14 +95,24 @@ func (s *V4LSource) Start() bool {
 		dummyImg := image.NewNRGBA(image.Rect(0, 0, 1, 1))
 		s.frames.Init(
 			s.frames.Name,
-			encdec.RGBAFrames, dummyImg.Pix,
-			int(format.Width), int(format.Height),
+			&encdec.FrameInfo{
+				FrameType: encdec.RGBAFrames,
+				PixFmt:    dummyImg.Pix,
+				Width:     int(format.Width),
+				Height:    int(format.Height),
+			},
+			s.alloc,
 		)
 	case "yuyv":
 		s.frames.Init(
 			s.frames.Name,
-			encdec.YUV422Frames, []uint8{},
-			int(format.Width), int(format.Height),
+			&encdec.FrameInfo{
+				FrameType: encdec.RGBAFrames,
+				PixFmt:    []uint8{},
+				Width:     int(format.Width),
+				Height:    int(format.Height),
+			},
+			s.alloc,
 		)
 	}
 

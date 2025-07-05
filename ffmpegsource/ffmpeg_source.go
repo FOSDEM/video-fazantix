@@ -20,9 +20,18 @@ type FFmpegSource struct {
 	frames   layer.FrameForwarder
 }
 
-func New(name string, cfg *config.FFmpegSourceCfg) *FFmpegSource {
+func New(name string, cfg *config.FFmpegSourceCfg, alloc encdec.FrameAllocator) *FFmpegSource {
 	f := &FFmpegSource{shellCmd: cfg.Cmd}
-	f.frames.Init(name, encdec.YUV422Frames, []uint8{}, cfg.W, cfg.H)
+	f.frames.Init(
+		name,
+		&encdec.FrameInfo{
+			FrameType: encdec.YUV422Frames,
+			PixFmt:    []uint8{},
+			Width:     cfg.W,
+			Height:    cfg.H,
+		},
+		alloc,
+	)
 	return f
 }
 

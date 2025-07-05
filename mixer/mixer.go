@@ -10,6 +10,7 @@ import (
 
 	"github.com/fosdem/fazantix/api"
 	"github.com/fosdem/fazantix/config"
+	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/rendering"
 	"github.com/fosdem/fazantix/rendering/shaders"
 	"github.com/fosdem/fazantix/theatre"
@@ -142,7 +143,8 @@ func writeFileDebug(filename string, content string) {
 }
 
 func MakeWindowAndMix(cfg *config.Config) {
-	theatre, err := theatre.New(cfg)
+	alloc := &encdec.DumbFrameAllocator{}
+	theatre, err := theatre.New(cfg, alloc)
 	if err != nil {
 		log.Fatalf("could not build theatre: %s", err)
 	}

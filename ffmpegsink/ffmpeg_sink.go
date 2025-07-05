@@ -22,9 +22,17 @@ type FFmpegSink struct {
 	frames   layer.FrameForwarder
 }
 
-func New(name string, cfg *config.FFmpegSinkCfg) *FFmpegSink {
+func New(name string, cfg *config.FFmpegSinkCfg, alloc encdec.FrameAllocator) *FFmpegSink {
 	f := &FFmpegSink{shellCmd: cfg.Cmd}
-	f.frames.Init(name, encdec.RGBFrames, []uint8{}, cfg.W, cfg.H)
+	f.frames.Init(
+		name,
+		&encdec.FrameInfo{
+			FrameType: encdec.RGBFrames,
+			Width:     cfg.W,
+			Height:    cfg.H,
+		},
+		alloc,
+	)
 	return f
 }
 

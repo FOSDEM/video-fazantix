@@ -10,9 +10,18 @@ type WindowSink struct {
 	frames layer.FrameForwarder
 }
 
-func New(name string, cfg *config.WindowSinkCfg) *WindowSink {
+func New(name string, cfg *config.WindowSinkCfg, alloc encdec.FrameAllocator) *WindowSink {
 	w := &WindowSink{}
-	w.frames.Init(name, encdec.RGBFrames, []uint8{}, cfg.W, cfg.H)
+	w.frames.Init(
+		name,
+		&encdec.FrameInfo{
+			FrameType: encdec.RGBFrames,
+			PixFmt:    []uint8{},
+			Width:     cfg.W,
+			Height:    cfg.H,
+		},
+		alloc,
+	)
 	return w
 }
 

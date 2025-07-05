@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/fosdem/fazantix/config"
+	"github.com/fosdem/fazantix/encdec"
 	"github.com/fosdem/fazantix/ffmpegsink"
 	"github.com/fosdem/fazantix/ffmpegsource"
 	"github.com/fosdem/fazantix/imgsource"
@@ -32,14 +33,14 @@ type Stage struct {
 	Sink   layer.Sink
 }
 
-func New(cfg *config.Config) (*Theatre, error) {
-	sourceList, err := buildSourceList(cfg)
+func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
+	sourceList, err := buildSourceList(cfg, alloc)
 	if err != nil {
 		return nil, err
 	}
 	sourceMap := buildSourceMap(sourceList)
 	sceneMap := buildSceneMap(cfg, sourceList)
-	stageMap := buildStageMap(cfg, sourceList)
+	stageMap := buildStageMap(cfg, sourceList, alloc)
 	var windowStageList []*Stage
 	var nonWindowStageList []*Stage
 
@@ -63,7 +64,7 @@ func New(cfg *config.Config) (*Theatre, error) {
 	}, nil
 }
 
-func buildStageMap(cfg *config.Config, sources []layer.Source) map[string]*Stage {
+func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.FrameAllocator) map[string]*Stage {
 	stages := make(map[string]*Stage)
 	for stageName, stageCfg := range cfg.Stages {
 		stage := &Stage{W: stageCfg.W, H: stageCfg.H}
@@ -75,9 +76,9 @@ func buildStageMap(cfg *config.Config, sources []layer.Source) map[string]*Stage
 
 		switch sc := stageCfg.SinkCfg.(type) {
 		case *config.FFmpegSinkCfg:
-			stage.Sink = ffmpegsink.New(stageName, sc)
+			stage.Sink = ffmpegsink.New(stageName, sc, alloc)
 		case *config.WindowSinkCfg:
-			stage.Sink = windowsink.New(stageName, sc)
+			stage.Sink = windowsink.New(stageName, sc, alloc)
 		default:
 			panic(fmt.Sprintf("unhandled sink type: %+v", stageCfg.SinkCfg))
 		}
@@ -102,7 +103,7 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 	return scenes
 }
 
-func buildSourceList(cfg *config.Config) ([]layer.Source, error) {
+func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.Source, error) {
 	enabledSources := make(map[string]struct{})
 	for _, layerStateMap := range cfg.Scenes {
 		for name := range layerStateMap {
@@ -133,11 +134,11 @@ func buildSourceList(cfg *config.Config) ([]layer.Source, error) {
 
 		switch sc := srcCfg.Cfg.(type) {
 		case *config.FFmpegSourceCfg:
-			sources = append(sources, ffmpegsource.New(srcName, sc))
+			sources = append(sources, ffmpegsource.New(srcName, sc, alloc))
 		case *config.ImgSourceCfg:
-			sources = append(sources, imgsource.New(srcName, sc))
+			sources = append(sources, imgsource.New(srcName, sc, alloc))
 		case *config.V4LSourceCfg:
-			sources = append(sources, v4lsource.New(srcName, sc))
+			sources = append(sources, v4lsource.New(srcName, sc, alloc))
 		default:
 			panic(fmt.Sprintf("unhandled source type: %+v", srcCfg.Cfg))
 		}
@@ -179,7 +180,6 @@ func (t *Theatre) Start() {
 }
 
 func (t *Theatre) Animate(delta float32) {
-	// todo: use delta-t
 	for _, s := range t.Stages {
 		for _, l := range s.Layers {
 			l.Animate(delta)

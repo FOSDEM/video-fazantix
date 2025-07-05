@@ -27,31 +27,9 @@ type Frame struct {
 	Type           FrameType
 }
 
-func NewFrame(t FrameType, w int, h int) *Frame {
-	switch t {
-	case YUV422Frames:
-		return makeFrame(t, w*h*2, w, h)
-	case RGBAFrames:
-		return makeFrame(t, w*h*4, w, h)
-	case RGBFrames:
-		return makeFrame(t, w*h*3, w, h)
-	default:
-		panic("unknown frame type")
-	}
-}
-
 func (i *Frame) Clear() {
 	i.NumTextures = 0
 	i.LastOffset = 0
-}
-
-func makeFrame(t FrameType, n int, w int, h int) *Frame {
-	return &Frame{
-		Data:   make([]byte, n),
-		Width:  w,
-		Height: h,
-		Type:   t,
-	}
 }
 
 func (i *Frame) MakeTexture(n int, w int, h int) []uint8 {
