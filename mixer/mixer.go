@@ -36,6 +36,17 @@ func init() {
 	runtime.LockOSThread()
 }
 
+func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	if action == glfw.Release {
+		if key == glfw.KeyQ &&
+			mods&glfw.ModControl != 0 &&
+			mods&glfw.ModShift != 0 {
+			log.Println("told to quit, exiting")
+			w.SetShouldClose(true)
+		}
+	}
+}
+
 func makeWindow(sink *windowsink.WindowSink) *glfw.Window {
 	log.Println("Initializing window")
 	if err := glfw.Init(); err != nil {
@@ -52,6 +63,8 @@ func makeWindow(sink *windowsink.WindowSink) *glfw.Window {
 	if err != nil {
 		panic(err)
 	}
+
+	window.SetKeyCallback(keyCallback)
 	window.MakeContextCurrent()
 	return window
 }

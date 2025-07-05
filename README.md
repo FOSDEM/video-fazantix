@@ -21,6 +21,8 @@ or
 $ make run CONFIG=fosdem.yaml
 ```
 
+To quit, press Ctrl+Shift+Q.
+
 ## Control
 
 ```shell-session
