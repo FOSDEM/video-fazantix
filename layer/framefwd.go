@@ -19,12 +19,12 @@ type FrameForwarder struct {
 	IsReady bool
 	IsStill bool
 
-	LastFrame *encdec.ImageData
+	LastFrame *encdec.Frame
 	FrameAge int
 
 	TextureIDs [3]uint32
 
-	recycledFrames []*encdec.ImageData
+	recycledFrames []*encdec.Frame
 	sync.Mutex
 
 	FramebufferID uint32
@@ -39,7 +39,7 @@ func (f *FrameForwarder) Init(name string, ft encdec.FrameType, pf []uint8, widt
 	f.FrameAge = 0
 }
 
-func (f *FrameForwarder) SendFrame(frame *encdec.ImageData) {
+func (f *FrameForwarder) SendFrame(frame *encdec.Frame) {
 	oldLastFrame := f.LastFrame
 	f.LastFrame = frame
 	f.FrameAge = 0
@@ -48,7 +48,7 @@ func (f *FrameForwarder) SendFrame(frame *encdec.ImageData) {
 	}
 }
 
-func (f *FrameForwarder) GetBlankFrame() *encdec.ImageData {
+func (f *FrameForwarder) GetBlankFrame() *encdec.Frame {
 	f.Lock()
 	defer f.Unlock()
 
@@ -60,7 +60,7 @@ func (f *FrameForwarder) GetBlankFrame() *encdec.ImageData {
 	return fr
 }
 
-func (f *FrameForwarder) recycleFrame(frame *encdec.ImageData) {
+func (f *FrameForwarder) recycleFrame(frame *encdec.Frame) {
 	f.Lock()
 	defer f.Unlock()
 	f.recycledFrames = append(f.recycledFrames, frame)

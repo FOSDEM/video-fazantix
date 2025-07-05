@@ -15,7 +15,7 @@ const (
 	RGBFrames
 )
 
-type ImageData struct {
+type Frame struct {
 	Data           []byte
 	TextureOffsets [3][2]int
 	NumTextures    int
@@ -27,7 +27,7 @@ type ImageData struct {
 	Type           FrameType
 }
 
-func NewFrame(t FrameType, w int, h int) *ImageData {
+func NewFrame(t FrameType, w int, h int) *Frame {
 	switch t {
 	case YUV422Frames:
 		return makeFrame(t, w*h*2, w, h)
@@ -40,13 +40,13 @@ func NewFrame(t FrameType, w int, h int) *ImageData {
 	}
 }
 
-func (i *ImageData) Clear() {
+func (i *Frame) Clear() {
 	i.NumTextures = 0
 	i.LastOffset = 0
 }
 
-func makeFrame(t FrameType, n int, w int, h int) *ImageData {
-	return &ImageData{
+func makeFrame(t FrameType, n int, w int, h int) *Frame {
+	return &Frame{
 		Data:   make([]byte, n),
 		Width:  w,
 		Height: h,
@@ -54,7 +54,7 @@ func makeFrame(t FrameType, n int, w int, h int) *ImageData {
 	}
 }
 
-func (i *ImageData) MakeTexture(n int, w int, h int) []uint8 {
+func (i *Frame) MakeTexture(n int, w int, h int) []uint8 {
 	newOffset := i.LastOffset + n
 	i.TextureOffsets[i.NumTextures][0] = i.LastOffset
 	i.TextureOffsets[i.NumTextures][1] = newOffset
@@ -68,7 +68,7 @@ func (i *ImageData) MakeTexture(n int, w int, h int) []uint8 {
 	return texture
 }
 
-func (i *ImageData) Texture(idx int) ([]byte, int, int) {
+func (i *Frame) Texture(idx int) ([]byte, int, int) {
 	start := i.TextureOffsets[idx][0]
 	upto := i.TextureOffsets[idx][1]
 
@@ -78,7 +78,7 @@ func (i *ImageData) Texture(idx int) ([]byte, int, int) {
 	return ptr, w, h
 }
 
-func DecodeYUYV422(buf []byte, into *ImageData) error {
+func DecodeYUYV422(buf []byte, into *Frame) error {
 	into.Clear()
 
 	numPixels := len(buf) / 2
@@ -102,7 +102,7 @@ func DecodeYUYV422(buf []byte, into *ImageData) error {
 	return nil
 }
 
-func PrepareYUYV422p(into *ImageData) error {
+func PrepareYUYV422p(into *Frame) error {
 	into.Clear()
 
 	numPixels := into.Width * into.Height
@@ -115,7 +115,7 @@ func PrepareYUYV422p(into *ImageData) error {
 	return nil
 }
 
-func DecodeRGBfromImage(buf []byte, into *ImageData) error {
+func DecodeRGBfromImage(buf []byte, into *Frame) error {
 	into.Clear()
 
 	img, _, err := image.Decode(bytes.NewReader(buf))
@@ -126,7 +126,7 @@ func DecodeRGBfromImage(buf []byte, into *ImageData) error {
 	return FrameFromImage(img, into)
 }
 
-func FrameFromImage(img image.Image, into *ImageData) error {
+func FrameFromImage(img image.Image, into *Frame) error {
 	w := img.Bounds().Dx()
 	h := img.Bounds().Dy()
 
