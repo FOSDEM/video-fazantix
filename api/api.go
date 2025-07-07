@@ -23,12 +23,12 @@ var content embed.FS
 var contentFS, _ = fs.Sub(content, "static")
 
 type Api struct {
-	srv          http.Server
-	mux          *http.ServeMux
-	cfg          *config.ApiCfg
-	theatre      *theatre.Theatre
-	start        time.Time
-	FPS          int
+	srv     http.Server
+	mux     *http.ServeMux
+	cfg     *config.ApiCfg
+	theatre *theatre.Theatre
+	start   time.Time
+	FPS     int
 
 	wsClients map[*websocket.Conn]bool
 }
