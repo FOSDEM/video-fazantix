@@ -349,7 +349,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		// Maintenance
 		window.SwapBuffers()
 		frameCounter++
-		if time.Now().Sub(frameTimer) > 1*time.Second {
+		if time.Since(frameTimer) > 1*time.Second {
 			if theApi != nil {
 				theApi.FPS = frameCounter
 			}
