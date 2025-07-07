@@ -170,25 +170,22 @@ func (a *Api) websocketWriter(ws *websocket.Conn) {
 		ws.Close()
 	}()
 	timeout := 10 * time.Second
-	for {
-		select {
-		case <-pingTicker.C:
-			uptime := float64(time.Since(a.start).Nanoseconds()) / 1e9
-			stats := &Stats{
-				Uptime:             uptime,
-				TextureUpload:      rendering.TextureUploadCounter,
-				TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
-				FPS:                a.FPS,
-				WsClients:          len(a.wsClients),
-			}
-			packet, err := json.Marshal(stats)
-			if err != nil {
-				return
-			}
-			ws.SetWriteDeadline(time.Now().Add(timeout))
-			if err := ws.WriteMessage(websocket.TextMessage, packet); err != nil {
-				return
-			}
+	for range pingTicker.C {
+		uptime := float64(time.Since(a.start).Nanoseconds()) / 1e9
+		stats := &Stats{
+			Uptime:             uptime,
+			TextureUpload:      rendering.TextureUploadCounter,
+			TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
+			FPS:                a.FPS,
+			WsClients:          len(a.wsClients),
+		}
+		packet, err := json.Marshal(stats)
+		if err != nil {
+			return
+		}
+		ws.SetWriteDeadline(time.Now().Add(timeout))
+		if err := ws.WriteMessage(websocket.TextMessage, packet); err != nil {
+			return
 		}
 	}
 }
