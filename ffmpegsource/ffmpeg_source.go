@@ -36,9 +36,7 @@ func New(name string, cfg *config.FFmpegSourceCfg, alloc encdec.FrameAllocator) 
 }
 
 func (f *FFmpegSource) Start() bool {
-	var err error
-
-	err = f.setupCmd()
+	err := f.setupCmd()
 	if err != nil {
 		f.log("could not setup ffmpeg command: %s", err)
 		return false

@@ -37,9 +37,7 @@ func New(name string, cfg *config.FFmpegSinkCfg, alloc encdec.FrameAllocator) *F
 }
 
 func (f *FFmpegSink) Start() bool {
-	var err error
-
-	err = f.setupCmd()
+	err := f.setupCmd()
 	if err != nil {
 		f.log("could not setup ffmpeg command: %s", err)
 		return false

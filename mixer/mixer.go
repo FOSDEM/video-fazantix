@@ -228,8 +228,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*f32, gl.Ptr(vertices), gl.STATIC_DRAW)
 
-	var stride int32
-	stride = 4 * f32
+	stride := int32(4 * f32)
 
 	vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("position\x00")))
 	gl.EnableVertexAttribArray(vertAttrib)
