@@ -39,6 +39,12 @@ sources:
     w: 1920
     h: 1080
     z: 8
+  pheasant:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    w: 1920
+    h: 1080
+    z: 4
 
 scenes:
   side-by-side:
@@ -52,7 +58,7 @@ scenes:
       y: 0.25
       scale: 0.45
       opacity: 1
-    camera_ffmpeg:
+    camera:
       x: 0.52
       y: 0.25
       scale: 0.45
@@ -68,7 +74,7 @@ scenes:
       y: 0.03
       scale: 0.93
       opacity: 1
-    camera_ffmpeg:
+    camera:
       opacity: 0
   camera:
     background:
@@ -76,26 +82,42 @@ scenes:
       y: 0
       scale: 1
       opacity: 1
-    camera_ffmpeg:
+    camera:
       x: 0.03
       y: 0.03
       scale: 0.93
       opacity: 1
     presentation_ffmpeg:
       opacity: 0
+  fazant:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    pheasant:
+      x: 0.025
+      y: 0.049
+      scale: 0.75
+      opacity: 1
+    camera:
+      x: 0.8
+      y: 0.6
+      scale: 0.2
+      opacity: 1
   default:
     background:
       x: 0
       y: 0
       scale: 1
       opacity: 1
-    presentation_ffmpeg:
+    camera:
       x: 0.025
       y: 0.049
-      scale: 0.79
+      scale: 0.75
       opacity: 1
-    camera_ffmpeg:
-      x: 0.75
+    presentation_ffmpeg:
+      x: 0.8
       y: 0.6
       scale: 0.2
       opacity: 1
