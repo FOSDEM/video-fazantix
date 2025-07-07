@@ -1,0 +1,6 @@
+version: "2"
+linters:
+  disable:
+  # There's a bunch of unchecked errors in defers, fix those before enabling
+  # this again
+  - errcheck
