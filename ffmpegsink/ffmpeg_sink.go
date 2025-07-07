@@ -57,15 +57,15 @@ func (f *FFmpegSink) setupCmd() error {
 	var err error
 	f.stdin, err = f.cmd.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("could not get ffmpeg stdin: %s\n", err)
+		return fmt.Errorf("could not get ffmpeg stdin: %s", err)
 	}
 	f.stdout, err = f.cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("could not get ffmpeg stdout: %s\n", err)
+		return fmt.Errorf("could not get ffmpeg stdout: %s", err)
 	}
 	f.stderr, err = f.cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("could not get ffmpeg stderr: %s\n", err)
+		return fmt.Errorf("could not get ffmpeg stderr: %s", err)
 	}
 	return nil
 }
