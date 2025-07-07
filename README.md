@@ -4,9 +4,17 @@ Fazant Fazant Fazant
 
 ## Building
 
+### Debian
+
 ```shell-session
 $ apt install golang libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libglx-dev libgl-dev libxxf86vm-dev
 $ make
+```
+
+### NixOS
+
+```shell-session
+$ nix develop -c make fazantix-wayland
 ```
 
 ## Running
