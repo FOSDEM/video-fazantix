@@ -15,6 +15,10 @@ run-wayland: fazantix-wayland
 run-cage: fazantix-wayland
 	cage -- ./fazantix $(CONFIG)
 
+lint:
+	golangci-lint run
+	golangci-lint fmt
+
 clean:
 	rm -f fazantix fazantix-wayland
 
@@ -22,4 +26,4 @@ all: fazantix
 
 build: fazantix
 
-.PHONY: clean run fazantix
+.PHONY: clean run lint fazantix fazantix-wayland
