@@ -3,8 +3,10 @@ package mixer
 import (
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -20,6 +22,8 @@ import (
 )
 
 const f32 = 4
+
+var currentTheatre *theatre.Theatre
 
 var vertices = []float32{
 	//  X, Y,  U, V
@@ -44,6 +48,27 @@ func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 			mods&glfw.ModShift != 0 {
 			log.Println("told to quit, exiting")
 			w.SetShouldClose(true)
+		}
+	}
+	if action == glfw.Press {
+		if key >= glfw.Key0 && key <= glfw.Key9 {
+			selected := int(key - glfw.Key0)
+			if selected > len(currentTheatre.Scenes)-1 {
+				log.Printf("Scene %d out of range\n", selected)
+				return
+			}
+			log.Println("Scene ", selected)
+			scenes := slices.Sorted(maps.Keys(currentTheatre.Scenes))
+			names := make([]string, len(currentTheatre.Scenes))
+			for i, n := range scenes {
+				names[i] = n
+			}
+			log.Printf("set scene %s\n", names[selected])
+			err := currentTheatre.SetScene("projector", names[selected])
+			if err != nil {
+				log.Println(err)
+				return
+			}
 		}
 	}
 }
@@ -166,13 +191,14 @@ func writeFileDebug(filename string, content string) {
 
 func MakeWindowAndMix(cfg *config.Config) {
 	alloc := &encdec.DumbFrameAllocator{}
-	theatre, err := theatre.New(cfg, alloc)
+	var err error
+	currentTheatre, err = theatre.New(cfg, alloc)
 	if err != nil {
 		log.Fatalf("could not build theatre: %s", err)
 	}
 
 	// assume a single sink called "projector" of type "window" for now
-	windowStage := theatre.GetTheSingleWindowStage()
+	windowStage := currentTheatre.GetTheSingleWindowStage()
 	window := makeWindow(windowStage.Sink.(*windowsink.WindowSink))
 	initGL()
 
@@ -180,7 +206,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	var theApi *api.Api
 	if cfg.Api != nil {
-		theApi = api.New(cfg.Api, theatre)
+		theApi = api.New(cfg.Api, currentTheatre)
 
 		log.Printf("starting web server\n")
 		go func() {
@@ -192,8 +218,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 	}
 
 	shaderData := &shaders.ShaderData{
-		NumSources: theatre.NumSources(),
-		Sources:    theatre.SourceList,
+		NumSources: currentTheatre.NumSources(),
+		Sources:    currentTheatre.SourceList,
 	}
 
 	numLayers := int32(len(layers))
@@ -221,8 +247,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 		log.Fatalf("Could not init shader: %s", err)
 	}
 
-	theatre.Start()
-	err = theatre.SetScene("projector", "default")
+	currentTheatre.Start()
+	err = currentTheatre.SetScene("projector", "default")
 	if err != nil {
 		log.Fatalf("Could not apply default scene")
 	}
@@ -268,15 +294,15 @@ func MakeWindowAndMix(cfg *config.Config) {
 	gl.Uniform1iv(texUniform, numTextures, &textures[0])
 
 	// Create extra framebuffers as rendertargets
-	nonWindowStages := theatre.NonWindowStageList
+	nonWindowStages := currentTheatre.NonWindowStageList
 
 	for _, stage := range nonWindowStages {
 		stage.Sink.Frames().SetupTextures()
 		stage.Sink.Frames().UseAsFramebuffer()
 	}
 
-	for name := range theatre.Stages {
-		err := theatre.SetScene(name, "default")
+	for name := range currentTheatre.Stages {
+		err := currentTheatre.SetScene(name, "default")
 		if err != nil {
 			log.Fatalf("Could not apply default scene: %s", err)
 		}
@@ -324,7 +350,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 			rendering.SendFrameToGPU(rf, layers[i].Frames().TextureIDs, int(i))
 		}
-		theatre.Animate(float32(time.Since(deltaTimer).Nanoseconds()) * 1e-9)
+		currentTheatre.Animate(float32(time.Since(deltaTimer).Nanoseconds()) * 1e-9)
 		deltaTimer = time.Now()
 		gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
