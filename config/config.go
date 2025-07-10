@@ -21,7 +21,12 @@ func Parse(filename string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not open %s: %s", filename, err)
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			_ = fmt.Errorf("could not close %s: %s", filename, err)
+		}
+	}(f)
 
 	m := yaml.NewDecoder(f)
 	cfg := &Config{}

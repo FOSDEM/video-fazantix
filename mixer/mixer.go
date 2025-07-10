@@ -150,9 +150,18 @@ func writeFileDebug(filename string, content string) {
 	if err != nil {
 		log.Fatalf("could not create debug file %s: %s", filename, err)
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			return
+		}
+	}(f)
 
-	fmt.Fprintf(f, "%s", content)
+	_, err = fmt.Fprintf(f, "%s", content)
+	if err != nil {
+		log.Printf("Could not write to debug file: %s", err)
+		return
+	}
 }
 
 func MakeWindowAndMix(cfg *config.Config) {

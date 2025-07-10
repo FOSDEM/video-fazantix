@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"log"
 	"maps"
 	"net/http"
 	"runtime/pprof"
@@ -82,11 +83,19 @@ func (a *Api) handleScene(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "\"ok\"\n")
+	_, err = fmt.Fprintf(w, "\"ok\"\n")
+	if err != nil {
+		log.Printf("could not write response: %s\n", err.Error())
+		return
+	}
 }
 
-func (a *Api) profileCPU(w http.ResponseWriter, req *http.Request) {
-	pprof.StartCPUProfile(w)
+func (a *Api) profileCPU(w http.ResponseWriter, _ *http.Request) {
+	err := pprof.StartCPUProfile(w)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not start CPU profile: %s", err), http.StatusInternalServerError)
+		return
+	}
 	time.Sleep(10 * time.Second)
 	pprof.StopCPUProfile()
 }
@@ -99,7 +108,7 @@ type Stats struct {
 	WsClients          int     `json:"ws_clients"`
 }
 
-func (a *Api) stats(w http.ResponseWriter, req *http.Request) {
+func (a *Api) stats(w http.ResponseWriter, _ *http.Request) {
 	uptime := float64(time.Since(a.start).Nanoseconds()) / 1e9
 	stats := &Stats{
 		Uptime:             uptime,
@@ -115,7 +124,11 @@ func (a *Api) stats(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, fmt.Sprintf("could encode stats: %s", err), http.StatusForbidden)
 		return
 	}
-	fmt.Fprintf(w, "\n")
+	_, err = fmt.Fprintf(w, "\n")
+	if err != nil {
+		log.Printf("could not write response: %s\n", err.Error())
+		return
+	}
 }
 
 type Config struct {
@@ -123,7 +136,7 @@ type Config struct {
 	Scenes []string `json:"scenes"`
 }
 
-func (a *Api) handleConfig(w http.ResponseWriter, req *http.Request) {
+func (a *Api) handleConfig(w http.ResponseWriter, _ *http.Request) {
 	result := &Config{
 		Stages: slices.Collect(maps.Keys(a.theatre.Stages)),
 		Scenes: slices.Collect(maps.Keys(a.theatre.Scenes)),
@@ -148,7 +161,12 @@ func (a *Api) handleWebsocket(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, fmt.Sprintf("couldn't make websocket: %s", err), 400)
 		return
 	}
-	defer ws.Close()
+	defer func(ws *websocket.Conn) {
+		err := ws.Close()
+		if err != nil {
+			log.Printf("could not close websocket: %s\n", err.Error())
+		}
+	}(ws)
 	a.wsClients[ws] = true
 
 	go a.websocketWriter(ws)
@@ -167,7 +185,11 @@ func (a *Api) websocketWriter(ws *websocket.Conn) {
 	pingTicker := time.NewTicker(2 * time.Second)
 	defer func() {
 		pingTicker.Stop()
-		ws.Close()
+		err := ws.Close()
+		if err != nil {
+			log.Printf("could not close websocket: %s\n", err.Error())
+			return
+		}
 	}()
 	timeout := 10 * time.Second
 	for range pingTicker.C {
@@ -183,7 +205,11 @@ func (a *Api) websocketWriter(ws *websocket.Conn) {
 		if err != nil {
 			return
 		}
-		ws.SetWriteDeadline(time.Now().Add(timeout))
+		err = ws.SetWriteDeadline(time.Now().Add(timeout))
+		if err != nil {
+			log.Printf("could not set write deadline: %s\n", err.Error())
+			return
+		}
 		if err := ws.WriteMessage(websocket.TextMessage, packet); err != nil {
 			return
 		}

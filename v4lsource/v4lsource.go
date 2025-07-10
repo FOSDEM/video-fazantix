@@ -2,6 +2,7 @@ package v4lsource
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"image"
@@ -121,7 +122,11 @@ func (s *V4LSource) Start() bool {
 }
 
 func (s *V4LSource) Stop() {
-	s.Device.Close()
+	err := s.Device.Close()
+	if err != nil {
+		log.Printf("Could not close device: %s", err)
+		return
+	}
 }
 
 func (s *V4LSource) decodeFrames() {
