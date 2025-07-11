@@ -19,14 +19,18 @@ sources:
     type: v4l
     path: /dev/video0
     fmt: yuyv
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 1
   video_listen:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 8
 
 
@@ -101,11 +105,14 @@ scenes:
       scale: 0.2
       opacity: 1
 
-stages:
+sinks:
   projector:
     type: window
-    w: 1280
-    h: 720
+    frames:
+      width: 1280
+      height: 720
+      num_allocated_frames: 5
+    default_scene: default
 
 api:
   bind: ':8000'

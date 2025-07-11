@@ -1,10 +1,17 @@
 package encdec
 
+import "fmt"
+
+type FrameCfg struct {
+	Width              int
+	Height             int
+	NumAllocatedFrames int `yaml:"num_allocated_frames"`
+}
+
 type FrameInfo struct {
+	FrameCfg
 	FrameType FrameType
 	PixFmt    []uint8
-	Width     int
-	Height    int
 }
 
 type FrameAllocator interface {
@@ -37,4 +44,17 @@ func (d *DumbFrameAllocator) makeFrame(t FrameType, n int, w int, h int) *Frame 
 		Height: h,
 		Type:   t,
 	}
+}
+
+func (f *FrameCfg) Validate() error {
+	if f.NumAllocatedFrames < 1 {
+		return fmt.Errorf("number of allocated frames should be at least 1")
+	}
+	if f.Width < 1 {
+		return fmt.Errorf("width should be at least 1")
+	}
+	if f.Height < 1 {
+		return fmt.Errorf("height should be at least 1")
+	}
+	return nil
 }

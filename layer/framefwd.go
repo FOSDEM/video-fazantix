@@ -23,7 +23,7 @@ type FrameForwarder struct {
 
 	TextureIDs [3]uint32
 
-	recycledFrames []*encdec.Frame
+	bin []*encdec.Frame
 	sync.Mutex
 
 	FramebufferID uint32
@@ -34,6 +34,7 @@ func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.
 	f.Allocator = alloc
 	f.FrameInfo = *info
 	f.FrameAge = 0
+	f.allocateFrames(info.NumAllocatedFrames)
 }
 
 func (f *FrameForwarder) SendFrame(frame *encdec.Frame) {
@@ -49,22 +50,36 @@ func (f *FrameForwarder) GetBlankFrame() *encdec.Frame {
 	f.Lock()
 	defer f.Unlock()
 
-	if len(f.recycledFrames) == 0 {
-		return f.Allocator.NewFrame(&f.FrameInfo)
+	if len(f.bin) == 0 {
+		// TODO: log a framedrop
+		return nil
 	}
-	fr := f.recycledFrames[0]
-	f.recycledFrames = f.recycledFrames[1:]
+	fr := f.bin[len(f.bin)-1]
+	f.bin = f.bin[:len(f.bin)-1]
 	return fr
 }
 
 func (f *FrameForwarder) recycleFrame(frame *encdec.Frame) {
 	f.Lock()
 	defer f.Unlock()
-	f.recycledFrames = append(f.recycledFrames, frame)
+	if len(f.bin) >= cap(f.bin) || cap(f.bin) != f.FrameInfo.NumAllocatedFrames {
+		panic("more frames returned than extracted??")
+	}
+	f.bin = append(f.bin, frame)
+}
+
+func (f *FrameForwarder) allocateFrames(num int) {
+	if num < 1 {
+		panic(fmt.Sprintf("[%s]: %d is an invalid number of requested allocated frames", f.Name, num))
+	}
+	f.bin = make([]*encdec.Frame, num)
+	for i := range num {
+		f.bin[i] = f.Allocator.NewFrame(&f.FrameInfo)
+	}
 }
 
 func (f *FrameForwarder) Log(msg string, args ...interface{}) {
-	log.Printf("[%s]: %s\n", f.Name, fmt.Sprintf(msg, args...))
+	log.Printf("[%s] %s\n", f.Name, fmt.Sprintf(msg, args...))
 }
 
 func (f *FrameForwarder) SetupTextures() {

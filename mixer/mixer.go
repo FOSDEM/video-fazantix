@@ -197,7 +197,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		log.Fatalf("could not build theatre: %s", err)
 	}
 
-	// assume a single sink called "projector" of type "window" for now
+	// assume exactly one window stage for now
 	windowStage := currentTheatre.GetTheSingleWindowStage()
 	window := makeWindow(windowStage.Sink.(*windowsink.WindowSink))
 	initGL()
@@ -248,10 +248,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 	}
 
 	currentTheatre.Start()
-	err = currentTheatre.SetScene("projector", "default")
-	if err != nil {
-		log.Fatalf("Could not apply default scene")
-	}
 
 	// Configure the vertex data
 	var vao uint32
@@ -301,8 +297,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 		stage.Sink.Frames().UseAsFramebuffer()
 	}
 
-	for name := range currentTheatre.Stages {
-		err := currentTheatre.SetScene(name, "default")
+	for name, stage := range currentTheatre.Stages {
+		err := currentTheatre.SetScene(name, stage.DefaultScene)
 		if err != nil {
 			log.Fatalf("Could not apply default scene: %s", err)
 		}

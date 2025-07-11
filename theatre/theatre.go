@@ -25,12 +25,11 @@ type Theatre struct {
 }
 
 type Stage struct {
-	Layers []*layer.Layer
-	W      int
-	H      int
-	HFlip  bool
-	VFlip  bool
-	Sink   layer.Sink
+	Layers       []*layer.Layer
+	HFlip        bool
+	VFlip        bool
+	Sink         layer.Sink
+	DefaultScene string
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
@@ -67,11 +66,12 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.FrameAllocator) map[string]*Stage {
 	stages := make(map[string]*Stage)
 	for stageName, stageCfg := range cfg.Stages {
-		stage := &Stage{W: stageCfg.W, H: stageCfg.H}
+		stage := &Stage{}
 		stage.Layers = make([]*layer.Layer, len(sources))
+		stage.DefaultScene = stageCfg.DefaultScene
 
 		for i, src := range sources {
-			stage.Layers[i] = layer.New(src, stage.W, stage.H)
+			stage.Layers[i] = layer.New(src, stageCfg.Width, stageCfg.Height)
 		}
 
 		switch sc := stageCfg.SinkCfg.(type) {
@@ -203,7 +203,10 @@ func (t *Theatre) SetScene(stageName string, sceneName string) error {
 }
 
 func (t *Theatre) GetTheSingleWindowStage() *Stage {
-	if len(t.WindowStageList) != 1 {
+	if len(t.WindowStageList) < 1 {
+		panic("we still don't support running without a window-type sink :(")
+	}
+	if len(t.WindowStageList) > 1 {
 		panic("we still don't support multiple window-type sinks :(")
 	}
 	return t.WindowStageList[0]

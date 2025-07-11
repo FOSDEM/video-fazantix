@@ -28,8 +28,7 @@ func New(name string, cfg *config.FFmpegSinkCfg, alloc encdec.FrameAllocator) *F
 		name,
 		&encdec.FrameInfo{
 			FrameType: encdec.RGBFrames,
-			Width:     cfg.W,
-			Height:    cfg.H,
+			FrameCfg:  cfg.FrameCfg,
 		},
 		alloc,
 	)

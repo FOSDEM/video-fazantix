@@ -1,5 +1,5 @@
 sources:
-  balloon:
+  background:
     type: image
     path: background.png
     z: 0
@@ -7,88 +7,71 @@ sources:
     type: v4l
     path: /dev/video0
     fmt: yuyv
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 1
-  video2:
-    type: v4l
-    path: /dev/video2
-    fmt: yuyv
-    w: 1920
-    h: 1080
-    z: 2
   video0_ffmpeg:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -vf scale=1920:1080 -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 3
-  video2_ffmpeg:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video2 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
-    z: 4
   pheasant:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
+    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: -1
   cows:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 6
   fazantfazantfazant:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 7
   video_listen:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 8
 
 scenes:
-#  dedo:
-#    pheasant:
-#      x: 0
-#      y: 0
-#      scale: 1
-#      opacity: 1
-#    video_listen:
-#      x: 0.085
-#      y: 0.085
-#      scale: 0.79
-#      opacity: 1
-#    video0_ffmpeg:
-#      x: 0
-#      y: 0
-#      scale: 1
-#      opacity: 1
   foo:
-    balloon:
+    background:
       x: 0
       y: 0
       scale: 1
       opacity: 1
-    fazantfazantfazant:
+    cows:
       x: 0.025
       y: 0.049
       scale: 0.79
       opacity: 1
-    video0_ffmpeg:
+    pheasant:
       x: 0.75
       y: 0.6
       scale: 0.2
       opacity: 0.8
-  default:
-    balloon:
+  bar:
+    background:
       x: 0
       y: 0
       scale: 1
@@ -103,12 +86,31 @@ scenes:
       y: 0.6
       scale: 0.2
       opacity: 1
+  baz:
+    background:
+      x: 0
+      y: 0
+      scale: 1
+      opacity: 1
+    cows:
+      x: 0.025
+      y: 0.049
+      scale: 0.79
+      opacity: 1
+    video0_ffmpeg:
+      x: 0.75
+      y: 0.6
+      scale: 0.2
+      opacity: 1
 
-stages:
-  projector:
+sinks:
+  fazant:
     type: window
-    w: 1280
-    h: 720
+    frames:
+      width: 1280
+      height: 720
+      num_allocated_frames: 5
+    default_scene: foo
 
 api:
   bind: ':8000'

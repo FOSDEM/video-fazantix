@@ -26,8 +26,7 @@ type V4LSource struct {
 	frames layer.FrameForwarder
 	alloc  encdec.FrameAllocator
 
-	requestedWidth  int
-	requestedHeight int
+	requestedFrameCfg *encdec.FrameCfg
 }
 
 func New(name string, cfg *config.V4LSourceCfg, alloc encdec.FrameAllocator) *V4LSource {
@@ -38,8 +37,7 @@ func New(name string, cfg *config.V4LSourceCfg, alloc encdec.FrameAllocator) *V4
 
 	s.Format = cfg.Fmt
 
-	s.requestedWidth = cfg.W
-	s.requestedHeight = cfg.H
+	s.requestedFrameCfg = &cfg.FrameCfg
 
 	return s
 }
@@ -61,13 +59,17 @@ func (s *V4LSource) Start() bool {
 
 	camera, err := device.Open(
 		s.path,
-		device.WithPixFormat(v4l2.PixFormat{PixelFormat: pixfmt, Width: uint32(s.requestedWidth), Height: uint32(s.requestedHeight)}),
+		device.WithPixFormat(v4l2.PixFormat{
+			PixelFormat: pixfmt,
+			Width:       uint32(s.requestedFrameCfg.Width),
+			Height:      uint32(s.requestedFrameCfg.Height),
+		}),
 	)
 	if err != nil {
 		s.log("Failed to open device: %s", err)
 		return false
 	}
-	s.log("Opened device at %dx%d", s.requestedWidth, s.requestedHeight)
+	s.log("Opened device")
 
 	fps, err := camera.GetFrameRate()
 	if err != nil {
@@ -90,6 +92,19 @@ func (s *V4LSource) Start() bool {
 	}
 
 	s.log("format: %s", format)
+	s.log(
+		"requested resolution is %dx%d, actual is %dx%d",
+		s.requestedFrameCfg.Width,
+		s.requestedFrameCfg.Height,
+		int(format.Width),
+		int(format.Height),
+	)
+
+	frameCfg := encdec.FrameCfg{
+		Width:              int(format.Width),
+		Height:             int(format.Height),
+		NumAllocatedFrames: s.requestedFrameCfg.NumAllocatedFrames,
+	}
 
 	switch strings.ToLower(s.Format) {
 	case "mjpeg":
@@ -99,8 +114,7 @@ func (s *V4LSource) Start() bool {
 			&encdec.FrameInfo{
 				FrameType: encdec.RGBAFrames,
 				PixFmt:    dummyImg.Pix,
-				Width:     int(format.Width),
-				Height:    int(format.Height),
+				FrameCfg:  frameCfg,
 			},
 			s.alloc,
 		)
@@ -110,8 +124,7 @@ func (s *V4LSource) Start() bool {
 			&encdec.FrameInfo{
 				FrameType: encdec.RGBAFrames,
 				PixFmt:    []uint8{},
-				Width:     int(format.Width),
-				Height:    int(format.Height),
+				FrameCfg:  frameCfg,
 			},
 			s.alloc,
 		)

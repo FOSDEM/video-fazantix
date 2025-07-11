@@ -23,6 +23,7 @@ type ImgSource struct {
 
 func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *ImgSource {
 	s := &ImgSource{}
+	s.frames.Name = name
 
 	s.path = cfg.Path
 	s.log("Loading")
@@ -45,8 +46,11 @@ func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *Im
 		&encdec.FrameInfo{
 			FrameType: encdec.RGBAFrames,
 			PixFmt:    s.rgba.Pix,
-			Width:     s.rgba.Rect.Size().X,
-			Height:    s.rgba.Rect.Size().Y,
+			FrameCfg: encdec.FrameCfg{
+				Width:              s.rgba.Rect.Size().X,
+				Height:             s.rgba.Rect.Size().Y,
+				NumAllocatedFrames: 1,
+			},
 		},
 		alloc,
 	)
@@ -72,12 +76,11 @@ func (s *ImgSource) Start() bool {
 	s.frames.IsReady = true
 	s.frames.IsStill = true
 
-	frame := s.frames.Allocator.NewFrame(&encdec.FrameInfo{
-		FrameType: encdec.RGBAFrames,
-		PixFmt:    s.rgba.Pix,
-		Width:     w,
-		Height:    h,
-	})
+	frame := s.frames.GetBlankFrame()
+	if frame == nil {
+		s.log("Image source dropped its one and only frame - this is probably a bug")
+		return false
+	}
 	err := encdec.FrameFromImage(s.img, frame)
 	if err != nil {
 		s.log("Decode error: %s", err)

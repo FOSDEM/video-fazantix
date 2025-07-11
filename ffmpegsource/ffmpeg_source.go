@@ -27,8 +27,7 @@ func New(name string, cfg *config.FFmpegSourceCfg, alloc encdec.FrameAllocator) 
 		&encdec.FrameInfo{
 			FrameType: encdec.YUV422Frames,
 			PixFmt:    []uint8{},
-			Width:     cfg.W,
-			Height:    cfg.H,
+			FrameCfg:  cfg.FrameCfg,
 		},
 		alloc,
 	)

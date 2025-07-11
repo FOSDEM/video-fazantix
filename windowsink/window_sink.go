@@ -17,8 +17,7 @@ func New(name string, cfg *config.WindowSinkCfg, alloc encdec.FrameAllocator) *W
 		&encdec.FrameInfo{
 			FrameType: encdec.RGBFrames,
 			PixFmt:    []uint8{},
-			Width:     cfg.W,
-			Height:    cfg.H,
+			FrameCfg:  cfg.FrameCfg,
 		},
 		alloc,
 	)

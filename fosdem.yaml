@@ -3,47 +3,55 @@ sources:
     type: image
     path: background.png
     z: 0
-  test1:
-    type: image
-    path: testsrc1.png
-    z: 1
   presentation:
     type: v4l
     path: /dev/video0
     fmt: yuyv
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 1
   camera:
     type: v4l
     path: /dev/video2
     fmt: yuyv
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 2
   presentation_ffmpeg:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -vf scale=1920:1080 -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 3
   camera_ffmpeg:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video2 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 4
   video_listen:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 8
   pheasant:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
     z: 4
 
 scenes:
@@ -76,7 +84,7 @@ scenes:
       opacity: 1
     camera:
       opacity: 0
-  camera:
+  full_cam:
     background:
       x: 0
       y: 0
@@ -122,16 +130,22 @@ scenes:
       scale: 0.2
       opacity: 1
 
-stages:
+sinks:
   projector:
     type: window
-    w: 1920
-    h: 1080
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
+    default_scene: presentation
   stream:
     type: ffmpeg_stdin
     cmd: "ffmpeg -f rawvideo -video_size 1280x720 -pixel_format rgb24 -framerate 60 -i - -c:v libx264 -preset fast -pix_fmt yuv420p -f mpegts tcp://0.0.0.0:2000?listen"
-    w: 1280
-    h: 720
+    frames:
+      width: 1280
+      height: 720
+      num_allocated_frames: 5
+    default_scene: full_cam
 
 api:
   bind: ':8000'
