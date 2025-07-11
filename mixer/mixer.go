@@ -23,8 +23,6 @@ import (
 
 const f32 = 4
 
-var currentTheatre *theatre.Theatre
-
 var vertices = []float32{
 	//  X, Y,  U, V
 	-1.0, -1.0, 0.0, 1.0,
@@ -41,39 +39,41 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	if action == glfw.Release {
-		if key == glfw.KeyQ &&
-			mods&glfw.ModControl != 0 &&
-			mods&glfw.ModShift != 0 {
-			log.Println("told to quit, exiting")
-			w.SetShouldClose(true)
-		}
+func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	scenes := slices.Sorted(maps.Keys(theatre.Scenes))
+	names := make([]string, len(theatre.Scenes))
+	for i, n := range scenes {
+		names[i] = n
 	}
-	if action == glfw.Press {
-		if key >= glfw.Key0 && key <= glfw.Key9 {
-			selected := int(key - glfw.Key0)
-			if selected > len(currentTheatre.Scenes)-1 {
-				log.Printf("Scene %d out of range\n", selected)
-				return
+
+	return func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if action == glfw.Release {
+			if key == glfw.KeyQ &&
+				mods&glfw.ModControl != 0 &&
+				mods&glfw.ModShift != 0 {
+				log.Println("told to quit, exiting")
+				w.SetShouldClose(true)
 			}
-			log.Println("Scene ", selected)
-			scenes := slices.Sorted(maps.Keys(currentTheatre.Scenes))
-			names := make([]string, len(currentTheatre.Scenes))
-			for i, n := range scenes {
-				names[i] = n
-			}
-			log.Printf("set scene %s\n", names[selected])
-			err := currentTheatre.SetScene("projector", names[selected])
-			if err != nil {
-				log.Println(err)
-				return
+		}
+		if action == glfw.Press {
+			if key >= glfw.Key0 && key <= glfw.Key9 {
+				selected := int(key - glfw.Key0)
+				if selected > len(theatre.Scenes)-1 {
+					log.Printf("Scene %d out of range\n", selected)
+					return
+				}
+				log.Printf("set scene %s\n", names[selected])
+				err := theatre.SetScene(stageName, names[selected])
+				if err != nil {
+					log.Println(err)
+					return
+				}
 			}
 		}
 	}
 }
 
-func makeWindow(sink *windowsink.WindowSink) *glfw.Window {
+func makeWindow(theatre *theatre.Theatre, sink *windowsink.WindowSink) *glfw.Window {
 	log.Println("Initializing window")
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
@@ -90,7 +90,7 @@ func makeWindow(sink *windowsink.WindowSink) *glfw.Window {
 		panic(err)
 	}
 
-	window.SetKeyCallback(keyCallback)
+	window.SetKeyCallback(keyCallback(theatre, sink.Frames().Name))
 	window.MakeContextCurrent()
 	return window
 }
@@ -191,22 +191,21 @@ func writeFileDebug(filename string, content string) {
 
 func MakeWindowAndMix(cfg *config.Config) {
 	alloc := &encdec.DumbFrameAllocator{}
-	var err error
-	currentTheatre, err = theatre.New(cfg, alloc)
+	theatre, err := theatre.New(cfg, alloc)
 	if err != nil {
 		log.Fatalf("could not build theatre: %s", err)
 	}
 
 	// assume exactly one window stage for now
-	windowStage := currentTheatre.GetTheSingleWindowStage()
-	window := makeWindow(windowStage.Sink.(*windowsink.WindowSink))
+	windowStage := theatre.GetTheSingleWindowStage()
+	window := makeWindow(theatre, windowStage.Sink.(*windowsink.WindowSink))
 	initGL()
 
 	layers := windowStage.Layers
 
 	var theApi *api.Api
 	if cfg.Api != nil {
-		theApi = api.New(cfg.Api, currentTheatre)
+		theApi = api.New(cfg.Api, theatre)
 
 		log.Printf("starting web server\n")
 		go func() {
@@ -218,8 +217,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 	}
 
 	shaderData := &shaders.ShaderData{
-		NumSources: currentTheatre.NumSources(),
-		Sources:    currentTheatre.SourceList,
+		NumSources: theatre.NumSources(),
+		Sources:    theatre.SourceList,
 	}
 
 	numLayers := int32(len(layers))
@@ -247,7 +246,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		log.Fatalf("Could not init shader: %s", err)
 	}
 
-	currentTheatre.Start()
+	theatre.Start()
 
 	// Configure the vertex data
 	var vao uint32
@@ -290,15 +289,15 @@ func MakeWindowAndMix(cfg *config.Config) {
 	gl.Uniform1iv(texUniform, numTextures, &textures[0])
 
 	// Create extra framebuffers as rendertargets
-	nonWindowStages := currentTheatre.NonWindowStageList
+	nonWindowStages := theatre.NonWindowStageList
 
 	for _, stage := range nonWindowStages {
 		stage.Sink.Frames().SetupTextures()
 		stage.Sink.Frames().UseAsFramebuffer()
 	}
 
-	for name, stage := range currentTheatre.Stages {
-		err := currentTheatre.SetScene(name, stage.DefaultScene)
+	for name, stage := range theatre.Stages {
+		err := theatre.SetScene(name, stage.DefaultScene)
 		if err != nil {
 			log.Fatalf("Could not apply default scene: %s", err)
 		}
@@ -346,7 +345,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 			rendering.SendFrameToGPU(rf, layers[i].Frames().TextureIDs, int(i))
 		}
-		currentTheatre.Animate(float32(time.Since(deltaTimer).Nanoseconds()) * 1e-9)
+		theatre.Animate(float32(time.Since(deltaTimer).Nanoseconds()) * 1e-9)
 		deltaTimer = time.Now()
 		gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
