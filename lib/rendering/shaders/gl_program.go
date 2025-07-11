@@ -15,17 +15,17 @@ var shaderCache map[string]uint32
 func BuildGLProgram(shaderData *ShaderData) (uint32, error) {
 	shaderer, err := NewShaderer()
 	if err != nil {
-		return 0, fmt.Errorf("Could not get shaders: %w", err)
+		return 0, fmt.Errorf("could not get shaders: %w", err)
 	}
 
 	vertexShader, err := shaderer.GetShaderSource("screen.vert", shaderData)
 	if err != nil {
-		return 0, fmt.Errorf("Could not get vertex shader: %w", err)
+		return 0, fmt.Errorf("could not get vertex shader: %w", err)
 	}
 
 	fragmentShader, err := shaderer.GetShaderSource("composite.frag", shaderData)
 	if err != nil {
-		return 0, fmt.Errorf("Could not get vertex shader: %w", err)
+		return 0, fmt.Errorf("could not get vertex shader: %w", err)
 	}
 
 	writeFileDebug("/tmp/shader.vert", vertexShader)
@@ -33,7 +33,7 @@ func BuildGLProgram(shaderData *ShaderData) (uint32, error) {
 
 	program, err := newProgram(vertexShader, fragmentShader)
 	if err != nil {
-		return 0, fmt.Errorf("Could not init shader: %w", err)
+		return 0, fmt.Errorf("could not init shader: %w", err)
 	}
 
 	return program, nil
