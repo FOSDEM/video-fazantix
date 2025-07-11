@@ -17,6 +17,17 @@ jobs:
     - uses: actions/setup-go@v5
       with:
         go-version: stable
+    - run: sudo apt-get update
+    - run: >
+        sudo apt-get install -y \
+          libx11-dev \
+          libxcursor-dev \
+          libxrandr-dev \
+          libxinerama-dev \
+          libxi-dev \
+          libglx-dev \
+          libgl-dev \
+          libxxf86vm-dev
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v8
       with:
