@@ -10,6 +10,7 @@ import (
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/metrics"
 )
 
 type ImgSource struct {
@@ -17,13 +18,16 @@ type ImgSource struct {
 	loaded bool
 	rgba   *image.NRGBA
 	img    image.Image
-
 	frames layer.FrameForwarder
+
+	metrics metrics.SourceMetrics
 }
 
 func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *ImgSource {
 	s := &ImgSource{}
 	s.frames.Name = name
+
+	s.metrics = metrics.NewSourceMetrics(name)
 
 	s.path = string(cfg.Path)
 	s.log("Loading")
@@ -87,6 +91,9 @@ func (s *ImgSource) Start() bool {
 		return false
 	}
 	s.frames.SendFrame(frame)
+
+	s.metrics.FramesForwarded.Inc()
+
 	return true
 }
 
