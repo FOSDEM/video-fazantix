@@ -11,6 +11,7 @@ import (
 	"github.com/fosdem/fazantix/ffmpegsource"
 	"github.com/fosdem/fazantix/imgsource"
 	"github.com/fosdem/fazantix/layer"
+	"github.com/fosdem/fazantix/rendering/shaders"
 	"github.com/fosdem/fazantix/v4lsource"
 	"github.com/fosdem/fazantix/windowsink"
 )
@@ -210,6 +211,13 @@ func (t *Theatre) GetTheSingleWindowStage() *Stage {
 		panic("we still don't support multiple window-type sinks :(")
 	}
 	return t.WindowStageList[0]
+}
+
+func (t *Theatre) ShaderData() *shaders.ShaderData {
+	return &shaders.ShaderData{
+		NumSources: t.NumSources(),
+		Sources:    t.SourceList,
+	}
 }
 
 func (s *Stage) StageData() uint32 {
