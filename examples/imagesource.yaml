@@ -1,19 +1,19 @@
 sources:
   background:
     type: image
-    path: background.png
+    path: images/background.png
     z: 0
   test1:
     type: image
-    path: testsrc1.png
+    path: images/testsrc1.png
     z: 1
   test2:
     type: image
-    path: testsrc2.png
+    path: images/testsrc2.png
     z: 2
   test3:
     type: image
-    path: testsrc3.png
+    path: images/testsrc3.png
     z: 3
   video0:
     type: v4l

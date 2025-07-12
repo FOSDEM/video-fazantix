@@ -1,7 +1,7 @@
 sources:
   background:
     type: image
-    path: background.png
+    path: images/background.png
     z: 0
   presentation:
     type: v4l

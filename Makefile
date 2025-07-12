@@ -1,29 +1,32 @@
-CONFIG=imagesource.yaml
+CONFIG=examples/imagesource.yaml
 
-fazantix:
-	go build -o fazantix 'github.com/fosdem/fazantix/cmd/mixer'
+builddir:
+	mkdir -p build
 
-fazantix-wayland:
-	go build -o fazantix -tags "wayland,vulkan" 'github.com/fosdem/fazantix/cmd/mixer'
+fazantix: builddir
+	go build -o build/fazantix 'github.com/fosdem/fazantix/cmd/mixer'
+
+fazantix-wayland: builddir
+	go build -o build/fazantix -tags "wayland,vulkan" 'github.com/fosdem/fazantix/cmd/mixer'
 
 run: fazantix
-	./fazantix $(CONFIG)
+	./build/fazantix $(CONFIG)
 
 run-wayland: fazantix-wayland
-	./fazantix $(CONFIG)
+	./build/fazantix $(CONFIG)
 
 run-cage: fazantix-wayland
-	cage -- ./fazantix $(CONFIG)
+	cage -- ./build/fazantix $(CONFIG)
 
 lint:
 	golangci-lint run
 	golangci-lint fmt
 
 clean:
-	rm -f fazantix fazantix-wayland
+	rm -rvf build
 
 all: fazantix
 
 build: fazantix
 
-.PHONY: clean run lint fazantix fazantix-wayland
+.PHONY: clean run lint fazantix fazantix-wayland builddir

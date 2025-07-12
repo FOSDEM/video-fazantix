@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
@@ -27,6 +28,12 @@ func Parse(filename string) (*Config, error) {
 			_ = fmt.Errorf("could not close %s: %s", filename, err)
 		}
 	}(f)
+
+	absFilename, err := filepath.Abs(filename)
+	if err != nil {
+		return nil, fmt.Errorf("somehow, %s is malformed: %w", filename, err)
+	}
+	UnmarshalBase = filepath.Dir(absFilename)
 
 	m := yaml.NewDecoder(f)
 	cfg := &Config{}
@@ -110,7 +117,7 @@ type WindowSinkCfg struct {
 }
 
 type ImgSourceCfg struct {
-	Path string
+	Path CfgPath
 }
 
 type V4LSourceCfg struct {

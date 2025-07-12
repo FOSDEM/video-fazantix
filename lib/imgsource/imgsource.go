@@ -25,7 +25,7 @@ func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *Im
 	s := &ImgSource{}
 	s.frames.Name = name
 
-	s.path = cfg.Path
+	s.path = string(cfg.Path)
 	s.log("Loading")
 	imgFile, err := os.Open(s.path)
 	if err != nil {
