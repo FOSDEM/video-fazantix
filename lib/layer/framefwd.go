@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/fosdem/fazantix/lib/encdec"
-	"github.com/fosdem/fazantix/lib/rendering"
 )
 
 type FrameForwarder struct {
@@ -93,29 +92,6 @@ func (f *FrameForwarder) allocateFrames(num int) {
 
 func (f *FrameForwarder) Log(msg string, args ...interface{}) {
 	log.Printf("[%s] %s\n", f.Name, fmt.Sprintf(msg, args...))
-}
-
-func (f *FrameForwarder) SetupTextures() {
-	width := f.Width
-	height := f.Height
-
-	switch f.FrameType {
-	case encdec.YUV422Frames:
-		f.TextureIDs[0] = rendering.SetupYUVTexture(width, height)
-		f.TextureIDs[1] = rendering.SetupYUVTexture(width/2, height)
-		f.TextureIDs[2] = rendering.SetupYUVTexture(width/2, height)
-	case encdec.RGBAFrames:
-		f.TextureIDs[0] = rendering.SetupRGBATexture(width, height)
-	case encdec.RGBFrames:
-		f.TextureIDs[0] = rendering.SetupRGBTexture(width, height)
-	}
-}
-
-func (f *FrameForwarder) UseAsFramebuffer() {
-	if f.FrameType != encdec.RGBFrames {
-		panic("trying to use a non-rgb frame forwarder as a framebuffer")
-	}
-	f.FramebufferID = rendering.UseTextureAsFramebuffer(f.TextureIDs[0])
 }
 
 func (f *FrameForwarder) Age(dt time.Duration) {

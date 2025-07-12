@@ -114,8 +114,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 	nonWindowStages := theatre.NonWindowStageList
 
 	for _, stage := range nonWindowStages {
-		stage.Sink.Frames().SetupTextures()
-		stage.Sink.Frames().UseAsFramebuffer()
+		rendering.SetupTextures(stage.Sink.Frames())
+		rendering.UseAsFramebuffer(stage.Sink.Frames())
 	}
 
 	for name, stage := range theatre.Stages {

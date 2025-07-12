@@ -11,6 +11,7 @@ import (
 	"github.com/fosdem/fazantix/lib/ffmpegsource"
 	"github.com/fosdem/fazantix/lib/imgsource"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/rendering"
 	"github.com/fosdem/fazantix/lib/rendering/shaders"
 	"github.com/fosdem/fazantix/lib/v4lsource"
 	"github.com/fosdem/fazantix/lib/windowsink"
@@ -175,7 +176,7 @@ func (t *Theatre) Start() {
 	}
 	for _, src := range t.Sources {
 		if src.Start() {
-			src.Frames().SetupTextures()
+			rendering.SetupTextures(src.Frames())
 		}
 	}
 	for _, stage := range t.NonWindowStageList {

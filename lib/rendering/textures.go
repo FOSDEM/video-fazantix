@@ -5,9 +5,33 @@ import (
 	_ "image/png"
 
 	"github.com/fosdem/fazantix/lib/encdec"
+	"github.com/fosdem/fazantix/lib/layer"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
+
+func SetupTextures(f *layer.FrameForwarder) {
+	width := f.Width
+	height := f.Height
+
+	switch f.FrameType {
+	case encdec.YUV422Frames:
+		f.TextureIDs[0] = SetupYUVTexture(width, height)
+		f.TextureIDs[1] = SetupYUVTexture(width/2, height)
+		f.TextureIDs[2] = SetupYUVTexture(width/2, height)
+	case encdec.RGBAFrames:
+		f.TextureIDs[0] = SetupRGBATexture(width, height)
+	case encdec.RGBFrames:
+		f.TextureIDs[0] = SetupRGBTexture(width, height)
+	}
+}
+
+func UseAsFramebuffer(f *layer.FrameForwarder) {
+	if f.FrameType != encdec.RGBFrames {
+		panic("trying to use a non-rgb frame forwarder as a framebuffer")
+	}
+	f.FramebufferID = UseTextureAsFramebuffer(f.TextureIDs[0])
+}
 
 func SetupYUVTexture(width int, height int) uint32 {
 	var id uint32
