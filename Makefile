@@ -4,10 +4,10 @@ builddir:
 	mkdir -p build
 
 fazantix: builddir
-	go build -o build/fazantix 'github.com/fosdem/fazantix/cmd/mixer'
+	go build -o build/fazantix ./cmd/fazantix
 
 fazantix-wayland: builddir
-	go build -o build/fazantix -tags "wayland,vulkan" 'github.com/fosdem/fazantix/cmd/mixer'
+	go build -o build/fazantix -tags "wayland,vulkan" ./cmd/fazantix
 
 run: fazantix
 	./build/fazantix $(CONFIG)
