@@ -47,7 +47,6 @@ func (f *FFmpegSink) Start() bool {
 	go f.processStderr()
 	go f.processStdin()
 
-	f.frames.IsReady = true
 	return true
 }
 

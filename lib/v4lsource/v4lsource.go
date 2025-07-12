@@ -160,7 +160,6 @@ func (s *V4LSource) decodeFramesJPEG() {
 			s.log("Could not decode frame: %s", err)
 			continue
 		}
-		s.frames.IsReady = true
 		s.frames.SendFrame(frame)
 	}
 }
@@ -173,7 +172,6 @@ func (s *V4LSource) decodeFrames422p() {
 			s.log("Could not decode frame: %s", err)
 			continue
 		}
-		s.frames.IsReady = true
 		s.frames.SendFrame(frame)
 	}
 }

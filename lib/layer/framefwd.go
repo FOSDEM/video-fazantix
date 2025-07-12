@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/rendering"
@@ -19,7 +20,7 @@ type FrameForwarder struct {
 	IsStill bool
 
 	LastFrame *encdec.Frame
-	FrameAge  int
+	FrameAge  time.Duration
 
 	TextureIDs [3]uint32
 
@@ -41,6 +42,7 @@ func (f *FrameForwarder) SendFrame(frame *encdec.Frame) {
 	oldLastFrame := f.LastFrame
 	f.LastFrame = frame
 	f.FrameAge = 0
+	f.IsReady = true
 	if oldLastFrame != nil {
 		f.recycleFrame(oldLastFrame)
 	}
@@ -103,4 +105,11 @@ func (f *FrameForwarder) UseAsFramebuffer() {
 		panic("trying to use a non-rgb frame forwarder as a framebuffer")
 	}
 	f.FramebufferID = rendering.UseTextureAsFramebuffer(f.TextureIDs[0])
+}
+
+func (f *FrameForwarder) Age(dt time.Duration) {
+	f.FrameAge += dt
+	if !f.IsStill && f.FrameAge > 1*time.Second {
+		f.IsReady = false
+	}
 }

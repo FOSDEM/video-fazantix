@@ -45,7 +45,6 @@ func (f *FFmpegSource) Start() bool {
 	go f.processStdout()
 	go f.processStderr()
 
-	f.frames.IsReady = true
 	return true
 }
 
