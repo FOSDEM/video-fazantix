@@ -158,12 +158,13 @@ func MakeWindowAndMix(cfg *config.Config) {
 			if layers[i].Frames().IsStill && !firstFrame {
 				continue
 			}
-			rf := layers[i].Frames().LastFrame
-			if rf == nil || !layers[i].Frames().IsReady {
+
+			frame := layers[i].Frames().GetFrameForReading()
+			if frame == nil {
 				continue
 			}
-
-			rendering.SendFrameToGPU(rf, layers[i].Frames().TextureIDs, int(i))
+			rendering.SendFrameToGPU(frame, layers[i].Frames().TextureIDs, int(i))
+			layers[i].Frames().FinishedReading(frame)
 		}
 		theatre.Animate(float32(dt.Nanoseconds()) * 1e-9)
 		gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])

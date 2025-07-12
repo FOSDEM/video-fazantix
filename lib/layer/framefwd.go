@@ -19,7 +19,7 @@ type FrameForwarder struct {
 	IsReady bool
 	IsStill bool
 
-	LastFrame *encdec.Frame
+	lastFrame *encdec.Frame
 	FrameAge  time.Duration
 
 	TextureIDs [3]uint32
@@ -38,9 +38,20 @@ func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.
 	f.allocateFrames(info.NumAllocatedFrames)
 }
 
+func (f *FrameForwarder) GetFrameForReading() *encdec.Frame {
+	if !f.IsReady {
+		return nil
+	}
+	return f.lastFrame
+}
+
+func (f *FrameForwarder) FinishedReading(frame *encdec.Frame) {
+	// TODO: implement
+}
+
 func (f *FrameForwarder) SendFrame(frame *encdec.Frame) {
-	oldLastFrame := f.LastFrame
-	f.LastFrame = frame
+	oldLastFrame := f.lastFrame
+	f.lastFrame = frame
 	f.FrameAge = 0
 	f.IsReady = true
 	if oldLastFrame != nil {
