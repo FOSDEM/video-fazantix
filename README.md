@@ -17,15 +17,29 @@ $ make
 $ nix develop -c make fazantix-wayland
 ```
 
-## Running
+or
 
 ```shell-session
+$ nix build
+```
+
+## Running
+
 Running on bare metal
+
+```shell-session
 $ xinit ./fazantix configfile.yaml
+```
 
 Running for development
+
+```shell-session
 $ make run
+```
+
 or
+
+```shell-session
 $ make run CONFIG=fosdem.yaml
 ```
 
