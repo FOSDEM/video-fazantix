@@ -157,11 +157,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 				continue
 			}
 			layers[i].Frames().FrameAge += 1
-			if !layers[i].Frames().IsReady {
-				continue
-			}
 			rf := layers[i].Frames().LastFrame
-			if rf == nil {
+			if rf == nil || !layers[i].Frames().IsReady {
 				continue
 			}
 
