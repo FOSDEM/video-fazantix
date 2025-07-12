@@ -11,6 +11,7 @@ import (
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/metrics"
 	"github.com/jhenstridge/go-inotify"
 )
 
@@ -21,13 +22,16 @@ type ImgSource struct {
 	img     image.Image
 	inotify bool
 
-	frames layer.FrameForwarder
+	frames  layer.FrameForwarder
+	metrics metrics.SourceMetrics
 }
 
 func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *ImgSource {
 	s := &ImgSource{}
 	s.frames.Name = name
 	s.inotify = cfg.Inotify
+
+	s.metrics = metrics.NewSourceMetrics(name)
 
 	err := s.LoadImage(string(cfg.Path))
 	if err != nil {
@@ -155,5 +159,6 @@ func (s *ImgSource) SetImage(newImage image.Image) error {
 		return err
 	}
 	s.frames.FinishedWriting(frame)
+	s.metrics.FramesForwarded.Inc()
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/metrics"
 )
 
 type FFmpegSource struct {
@@ -18,6 +19,8 @@ type FFmpegSource struct {
 	stdout   io.ReadCloser
 	stderr   io.ReadCloser
 	frames   layer.FrameForwarder
+
+	metrics metrics.SourceMetrics
 }
 
 func New(name string, cfg *config.FFmpegSourceCfg, alloc encdec.FrameAllocator) *FFmpegSource {
@@ -31,6 +34,7 @@ func New(name string, cfg *config.FFmpegSourceCfg, alloc encdec.FrameAllocator) 
 		},
 		alloc,
 	)
+	f.metrics = metrics.NewSourceMetrics(name)
 	return f
 }
 
@@ -111,6 +115,7 @@ func (f *FFmpegSource) processStdout() {
 		}
 
 		f.frames.FinishedWriting(frame)
+		f.metrics.FramesForwarded.Inc()
 	}
 }
 
