@@ -13,6 +13,7 @@ import (
 	"github.com/fosdem/fazantix/api"
 	"github.com/fosdem/fazantix/config"
 	"github.com/fosdem/fazantix/encdec"
+	"github.com/fosdem/fazantix/kbdctl"
 	"github.com/fosdem/fazantix/rendering"
 	"github.com/fosdem/fazantix/rendering/shaders"
 	"github.com/fosdem/fazantix/theatre"
@@ -71,28 +72,6 @@ func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window
 			}
 		}
 	}
-}
-
-func makeWindow(theatre *theatre.Theatre, sink *windowsink.WindowSink) *glfw.Window {
-	log.Println("Initializing window")
-	if err := glfw.Init(); err != nil {
-		log.Fatalln("failed to initialize glfw:", err)
-	}
-	//defer glfw.Terminate()
-
-	glfw.WindowHint(glfw.Resizable, glfw.False)
-	glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	glfw.WindowHint(glfw.ContextVersionMinor, 1)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(sink.Frames().Width, sink.Frames().Height, sink.Frames().Name, nil, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	window.SetKeyCallback(keyCallback(theatre, sink.Frames().Name))
-	window.MakeContextCurrent()
-	return window
 }
 
 func initGL() {
@@ -198,7 +177,9 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	// assume exactly one window stage for now
 	windowStage := theatre.GetTheSingleWindowStage()
-	window := makeWindow(theatre, windowStage.Sink.(*windowsink.WindowSink))
+	windowSink := windowStage.Sink.(*windowsink.WindowSink)
+	windowSink.Start()
+	kbdctl.SetupShortcutKeys(theatre, windowSink)
 	initGL()
 
 	layers := windowStage.Layers
@@ -309,7 +290,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 	frameTimer := time.Now()
 	deltaTimer := time.Now()
 	firstFrame := true
-	for !window.ShouldClose() {
+	for !windowSink.Window.ShouldClose() {
 		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 		gl.Viewport(0, 0, int32(windowStage.Sink.Frames().Width), int32(windowStage.Sink.Frames().Height))
 		gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -377,7 +358,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		}
 
 		// Maintenance
-		window.SwapBuffers()
+		windowSink.Window.SwapBuffers()
 		frameCounter++
 		if time.Since(frameTimer) > 1*time.Second {
 			if theApi != nil {
