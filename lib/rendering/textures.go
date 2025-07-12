@@ -4,7 +4,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"github.com/fosdem/fazantix/encdec"
+	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )

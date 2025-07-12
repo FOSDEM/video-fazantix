@@ -5,15 +5,15 @@ import (
 	"log"
 	"sort"
 
-	"github.com/fosdem/fazantix/config"
-	"github.com/fosdem/fazantix/encdec"
-	"github.com/fosdem/fazantix/ffmpegsink"
-	"github.com/fosdem/fazantix/ffmpegsource"
-	"github.com/fosdem/fazantix/imgsource"
-	"github.com/fosdem/fazantix/layer"
-	"github.com/fosdem/fazantix/rendering/shaders"
-	"github.com/fosdem/fazantix/v4lsource"
-	"github.com/fosdem/fazantix/windowsink"
+	"github.com/fosdem/fazantix/lib/config"
+	"github.com/fosdem/fazantix/lib/encdec"
+	"github.com/fosdem/fazantix/lib/ffmpegsink"
+	"github.com/fosdem/fazantix/lib/ffmpegsource"
+	"github.com/fosdem/fazantix/lib/imgsource"
+	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/rendering/shaders"
+	"github.com/fosdem/fazantix/lib/v4lsource"
+	"github.com/fosdem/fazantix/lib/windowsink"
 )
 
 type Theatre struct {

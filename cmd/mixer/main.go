@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/fosdem/fazantix/config"
-	"github.com/fosdem/fazantix/mixer"
+	"github.com/fosdem/fazantix/lib/config"
+	"github.com/fosdem/fazantix/lib/mixer"
 )
 
 func main() {

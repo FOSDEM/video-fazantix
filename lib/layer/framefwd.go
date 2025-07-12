@@ -5,8 +5,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/fosdem/fazantix/encdec"
-	"github.com/fosdem/fazantix/rendering"
+	"github.com/fosdem/fazantix/lib/encdec"
+	"github.com/fosdem/fazantix/lib/rendering"
 )
 
 type FrameForwarder struct {

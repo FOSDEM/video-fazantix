@@ -3,9 +3,9 @@ package windowsink
 import (
 	"log"
 
-	"github.com/fosdem/fazantix/config"
-	"github.com/fosdem/fazantix/encdec"
-	"github.com/fosdem/fazantix/layer"
+	"github.com/fosdem/fazantix/lib/config"
+	"github.com/fosdem/fazantix/lib/encdec"
+	"github.com/fosdem/fazantix/lib/layer"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 

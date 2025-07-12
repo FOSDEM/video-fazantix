@@ -5,8 +5,8 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/fosdem/fazantix/theatre"
-	"github.com/fosdem/fazantix/windowsink"
+	"github.com/fosdem/fazantix/lib/theatre"
+	"github.com/fosdem/fazantix/lib/windowsink"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 

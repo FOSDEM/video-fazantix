@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/fosdem/fazantix/layer"
+	"github.com/fosdem/fazantix/lib/layer"
 )
 
 //go:embed *.frag *.vert

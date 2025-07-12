@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fosdem/fazantix/encdec"
-	"github.com/fosdem/fazantix/layer"
+	"github.com/fosdem/fazantix/lib/encdec"
+	"github.com/fosdem/fazantix/lib/layer"
 	yaml "github.com/goccy/go-yaml"
 )
 

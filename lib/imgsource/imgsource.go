@@ -7,9 +7,9 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"github.com/fosdem/fazantix/config"
-	"github.com/fosdem/fazantix/encdec"
-	"github.com/fosdem/fazantix/layer"
+	"github.com/fosdem/fazantix/lib/config"
+	"github.com/fosdem/fazantix/lib/encdec"
+	"github.com/fosdem/fazantix/lib/layer"
 )
 
 type ImgSource struct {
