@@ -2,9 +2,7 @@ package mixer
 
 import (
 	"log"
-	"maps"
 	"runtime"
-	"slices"
 	"time"
 
 	"github.com/fosdem/fazantix/api"
@@ -37,40 +35,6 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	scenes := slices.Sorted(maps.Keys(theatre.Scenes))
-	names := make([]string, len(theatre.Scenes))
-	for i, n := range scenes {
-		names[i] = n
-	}
-
-	return func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		if action == glfw.Release {
-			if key == glfw.KeyQ &&
-				mods&glfw.ModControl != 0 &&
-				mods&glfw.ModShift != 0 {
-				log.Println("told to quit, exiting")
-				w.SetShouldClose(true)
-			}
-		}
-		if action == glfw.Press {
-			if key >= glfw.Key0 && key <= glfw.Key9 {
-				selected := int(key - glfw.Key0)
-				if selected > len(theatre.Scenes)-1 {
-					log.Printf("Scene %d out of range\n", selected)
-					return
-				}
-				log.Printf("set scene %s\n", names[selected])
-				err := theatre.SetScene(stageName, names[selected])
-				if err != nil {
-					log.Println(err)
-					return
-				}
-			}
-		}
-	}
-}
-
 func initGL() {
 	if err := gl.Init(); err != nil {
 		panic(err)
@@ -88,32 +52,20 @@ func MakeWindowAndMix(cfg *config.Config) {
 		log.Fatalf("could not build theatre: %s", err)
 	}
 
+	initGL()
 	// assume exactly one window stage for now
 	windowStage := theatre.GetTheSingleWindowStage()
 	windowSink := windowStage.Sink.(*windowsink.WindowSink)
-	windowSink.Start()
+
+	theatre.Start()
 	kbdctl.SetupShortcutKeys(theatre, windowSink)
-	initGL()
 
-	var theApi *api.Api
-	if cfg.Api != nil {
-		theApi = api.New(cfg.Api, theatre)
-
-		log.Printf("starting web server\n")
-		go func() {
-			err := theApi.Serve()
-			if err != nil {
-				log.Fatalf("could not start web server: %s", err)
-			}
-		}()
-	}
+	api := api.ServeInBackground(theatre, cfg.Api)
 
 	program, err := shaders.BuildGLProgram(theatre.ShaderData())
 	if err != nil {
 		log.Fatalf("could not init GL program: %s", err)
 	}
-
-	theatre.Start()
 
 	// Configure the vertex data
 	var vao uint32
@@ -250,8 +202,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 		windowSink.Window.SwapBuffers()
 		frameCounter++
 		if time.Since(frameTimer) > 1*time.Second {
-			if theApi != nil {
-				theApi.FPS = frameCounter
+			if api != nil {
+				api.FPS = frameCounter
 			}
 			frameCounter = 0
 			frameTimer = time.Now()

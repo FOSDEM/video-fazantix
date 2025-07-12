@@ -215,3 +215,19 @@ func (a *Api) websocketWriter(ws *websocket.Conn) {
 		}
 	}
 }
+
+func ServeInBackground(theatre *theatre.Theatre, cfg *config.ApiCfg) *Api {
+	var theApi *Api
+	if cfg != nil {
+		theApi = New(cfg, theatre)
+
+		log.Printf("starting web server\n")
+		go func() {
+			err := theApi.Serve()
+			if err != nil {
+				log.Fatalf("could not start web server: %s", err)
+			}
+		}()
+	}
+	return theApi
+}

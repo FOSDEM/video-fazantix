@@ -170,13 +170,16 @@ func (t *Theatre) NumSources() int {
 }
 
 func (t *Theatre) Start() {
+	for _, stage := range t.WindowStageList {
+		stage.Sink.Start()
+	}
 	for _, src := range t.Sources {
 		if src.Start() {
 			src.Frames().SetupTextures()
 		}
 	}
-	for _, sink := range t.Stages {
-		sink.Sink.Start()
+	for _, stage := range t.NonWindowStageList {
+		stage.Sink.Start()
 	}
 }
 
