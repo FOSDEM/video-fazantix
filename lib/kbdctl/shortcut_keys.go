@@ -15,9 +15,8 @@ func SetupShortcutKeys(theatre *theatre.Theatre, ws *windowsink.WindowSink) {
 }
 
 func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	scenes := slices.Sorted(maps.Keys(theatre.Scenes))
 	names := make([]string, len(theatre.Scenes))
-	copy(scenes, names)
+	copy(names, slices.Sorted(maps.Keys(theatre.Scenes)))
 
 	return func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Release {
@@ -35,7 +34,7 @@ func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window
 					log.Printf("Scene %d out of range\n", selected)
 					return
 				}
-				log.Printf("set scene %s\n", names[selected])
+				log.Printf("set scene %s", names[selected])
 				err := theatre.SetScene(stageName, names[selected])
 				if err != nil {
 					log.Println(err)
