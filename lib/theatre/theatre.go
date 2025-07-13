@@ -37,6 +37,7 @@ type Stage struct {
 }
 
 type EventDataSetScene struct {
+	Event string
 	Stage string
 	Scene string
 }
