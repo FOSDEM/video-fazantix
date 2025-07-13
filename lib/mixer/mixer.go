@@ -115,7 +115,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 			rendering.SendFrameToGPU(frame, layers[i].Frames().TextureIDs, int(i))
 			layers[i].Frames().FinishedReading(frame)
 		}
-		theatre.Animate(float32(dt.Nanoseconds()) * 1e-9)
 		gl.Uniform4fv(glvars.LayerDataUniform, numLayers, &glvars.LayerData[0])
 		gl.Uniform4fv(glvars.LayerPosUniform, numLayers, &glvars.LayerPos[0])
 
@@ -146,6 +145,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		}
 
 		// Maintenance
+		theatre.Animate(float32(dt.Nanoseconds()) * 1e-9)
 		windowSink.Window.SwapBuffers()
 		frameCounter++
 		if time.Since(frameTimer) > 1*time.Second {
