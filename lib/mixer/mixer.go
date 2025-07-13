@@ -17,19 +17,6 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-const f32 = 4
-
-var vertices = []float32{
-	//  X, Y,  U, V
-	-1.0, -1.0, 0.0, 1.0,
-	+1.0, -1.0, 1.0, 1.0,
-	+1.0, +1.0, 1.0, 0.0,
-
-	-1.0, -1.0, 0.0, 1.0,
-	+1.0, +1.0, 1.0, 0.0,
-	-1.0, +1.0, 0.0, 0.0,
-}
-
 func init() {
 	// The OpenGL stuff must be in one thread
 	runtime.LockOSThread()
@@ -67,48 +54,10 @@ func MakeWindowAndMix(cfg *config.Config) {
 		log.Fatalf("could not init GL program: %s", err)
 	}
 
-	// Configure the vertex data
-	var vao uint32
-	gl.GenVertexArrays(1, &vao)
-	gl.BindVertexArray(vao)
-
-	var vbo uint32
-	gl.GenBuffers(1, &vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*f32, gl.Ptr(vertices), gl.STATIC_DRAW)
-
-	stride := int32(4 * f32)
-
-	vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("position\x00")))
-	gl.EnableVertexAttribArray(vertAttrib)
-	gl.VertexAttribPointerWithOffset(vertAttrib, 2, gl.FLOAT, false, stride, 0)
-
-	texCoordAttrib := uint32(gl.GetAttribLocation(program, gl.Str("uv\x00")))
-	gl.EnableVertexAttribArray(texCoordAttrib)
-	gl.VertexAttribPointerWithOffset(texCoordAttrib, 2, gl.FLOAT, false, stride, 2*f32)
-
 	layers := windowStage.Layers
 	numLayers := int32(len(layers))
 
-	layerPos := make([]float32, numLayers*4)
-	layerPosUniform := gl.GetUniformLocation(program, gl.Str("layerPosition\x00"))
-	gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
-
-	layerData := make([]float32, numLayers*4)
-	layerDataUniform := gl.GetUniformLocation(program, gl.Str("layerData\x00"))
-	gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
-
-	stageDataUniform := gl.GetUniformLocation(program, gl.Str("stageData\x00"))
-	gl.Uniform1ui(stageDataUniform, 0)
-
-	// Allocate 3 textures for every layer in case of planar YUV
-	numTextures := numLayers * 3
-	textures := make([]int32, numTextures)
-	for i := range numTextures {
-		textures[i] = int32(i)
-	}
-	texUniform := gl.GetUniformLocation(program, gl.Str("tex\x00"))
-	gl.Uniform1iv(texUniform, numTextures, &textures[0])
+	glvars := rendering.AllocateGLVars(program, numLayers)
 
 	// Create extra framebuffers as rendertargets
 	nonWindowStages := theatre.NonWindowStageList
@@ -139,21 +88,21 @@ func MakeWindowAndMix(cfg *config.Config) {
 		// Render
 		gl.UseProgram(program)
 
-		gl.BindVertexArray(vao)
+		gl.BindVertexArray(glvars.VAO)
 
-		gl.Uniform1iv(texUniform, numTextures, &textures[0])
-		gl.Uniform1ui(stageDataUniform, windowStage.StageData())
+		gl.Uniform1iv(glvars.TexUniform, glvars.NumTextures, &glvars.Textures[0])
+		gl.Uniform1ui(glvars.StageDataUniform, windowStage.StageData())
 		layers = windowStage.Layers
 
 		dt := time.Since(deltaTimer)
 		deltaTimer = time.Now()
 
 		for i := range numLayers {
-			layerPos[(i*4)+0] = layers[i].Position.X
-			layerPos[(i*4)+1] = layers[i].Position.Y
-			layerPos[(i*4)+2] = layers[i].Size.X
-			layerPos[(i*4)+3] = layers[i].Size.Y
-			layerData[(i*4)+0] = layers[i].Opacity
+			glvars.LayerPos[(i*4)+0] = layers[i].Position.X
+			glvars.LayerPos[(i*4)+1] = layers[i].Position.Y
+			glvars.LayerPos[(i*4)+2] = layers[i].Size.X
+			glvars.LayerPos[(i*4)+3] = layers[i].Size.Y
+			glvars.LayerData[(i*4)+0] = layers[i].Opacity
 			layers[i].Frames().Age(dt)
 			if layers[i].Frames().IsStill && !firstFrame {
 				continue
@@ -167,8 +116,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 			layers[i].Frames().FinishedReading(frame)
 		}
 		theatre.Animate(float32(dt.Nanoseconds()) * 1e-9)
-		gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
-		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
+		gl.Uniform4fv(glvars.LayerDataUniform, numLayers, &glvars.LayerData[0])
+		gl.Uniform4fv(glvars.LayerPosUniform, numLayers, &glvars.LayerPos[0])
 
 		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
 
@@ -179,16 +128,16 @@ func MakeWindowAndMix(cfg *config.Config) {
 			gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
 			gl.Clear(gl.COLOR_BUFFER_BIT)
 			layers = stage.Layers
-			gl.Uniform1ui(stageDataUniform, stage.StageData())
+			gl.Uniform1ui(glvars.StageDataUniform, stage.StageData())
 			for i := range numLayers {
-				layerPos[(i*4)+0] = layers[i].Position.X
-				layerPos[(i*4)+1] = layers[i].Position.Y
-				layerPos[(i*4)+2] = layers[i].Size.X
-				layerPos[(i*4)+3] = layers[i].Size.Y
-				layerData[(i*4)+0] = layers[i].Opacity
+				glvars.LayerPos[(i*4)+0] = layers[i].Position.X
+				glvars.LayerPos[(i*4)+1] = layers[i].Position.Y
+				glvars.LayerPos[(i*4)+2] = layers[i].Size.X
+				glvars.LayerPos[(i*4)+3] = layers[i].Size.Y
+				glvars.LayerData[(i*4)+0] = layers[i].Opacity
 			}
-			gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
-			gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
+			gl.Uniform4fv(glvars.LayerDataUniform, numLayers, &glvars.LayerData[0])
+			gl.Uniform4fv(glvars.LayerPosUniform, numLayers, &glvars.LayerPos[0])
 
 			gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
 			frame := frames.GetBlankFrame()
