@@ -34,14 +34,19 @@ type Api struct {
 	wsClients map[*websocket.Conn]bool
 }
 
-func New(cfg *config.ApiCfg, theatre *theatre.Theatre) *Api {
+func New(cfg *config.ApiCfg, t *theatre.Theatre) *Api {
 	a := &Api{}
 	a.cfg = cfg
 	a.mux = http.NewServeMux()
-	a.theatre = theatre
+	a.theatre = t
 	a.srv.Addr = cfg.Bind
 	a.srv.Handler = a.mux
 	a.wsClients = make(map[*websocket.Conn]bool)
+
+	t.AddEventListener("set-scene", func(t *theatre.Theatre, data interface{}) {
+		event := data.(theatre.EventDataSetScene)
+		log.Printf("Scene switched on stage %s to scene %s\n", event.Stage, event.Scene)
+	})
 	return a
 }
 

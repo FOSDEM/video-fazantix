@@ -16,6 +16,7 @@ import (
 	"github.com/fosdem/fazantix/lib/windowsink"
 )
 
+type Listener func(theatre *Theatre, data interface{})
 type Theatre struct {
 	Sources            map[string]layer.Source
 	SourceList         []layer.Source
@@ -23,6 +24,8 @@ type Theatre struct {
 	Stages             map[string]*Stage
 	WindowStageList    []*Stage
 	NonWindowStageList []*Stage
+
+	listener map[string][]Listener
 }
 
 type Stage struct {
@@ -31,6 +34,11 @@ type Stage struct {
 	VFlip        bool
 	Sink         layer.Sink
 	DefaultScene string
+}
+
+type EventDataSetScene struct {
+	Stage string
+	Scene string
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
@@ -61,6 +69,7 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		Stages:             stageMap,
 		WindowStageList:    windowStageList,
 		NonWindowStageList: nonWindowStageList,
+		listener:           make(map[string][]Listener),
 	}, nil
 }
 
@@ -191,9 +200,23 @@ func (t *Theatre) Animate(delta float32) {
 	}
 }
 
+func (t *Theatre) AddEventListener(event string, callback Listener) {
+	t.listener[event] = append(t.listener[event], callback)
+}
+
+func (t *Theatre) invoke(event string, data interface{}) {
+	for _, listener := range t.listener[event] {
+		go listener(t, data)
+	}
+}
+
 func (t *Theatre) SetScene(stageName string, sceneName string) error {
 	if stage, ok := t.Stages[stageName]; ok {
 		if scene, ok := t.Scenes[sceneName]; ok {
+			t.invoke("set-scene", EventDataSetScene{
+				Stage: stageName,
+				Scene: sceneName,
+			})
 			for i, l := range stage.Layers {
 				l.ApplyState(scene.LayerStates[i])
 			}
