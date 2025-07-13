@@ -90,19 +90,13 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 		gl.BindVertexArray(glvars.VAO)
 
-		gl.Uniform1iv(glvars.TexUniform, glvars.NumTextures, &glvars.Textures[0])
-		gl.Uniform1ui(glvars.StageDataUniform, windowStage.StageData())
 		layers = windowStage.Layers
 
 		dt := time.Since(deltaTimer)
 		deltaTimer = time.Now()
 
+		// send frames
 		for i := range numLayers {
-			glvars.LayerPos[(i*4)+0] = layers[i].Position.X
-			glvars.LayerPos[(i*4)+1] = layers[i].Position.Y
-			glvars.LayerPos[(i*4)+2] = layers[i].Size.X
-			glvars.LayerPos[(i*4)+3] = layers[i].Size.Y
-			glvars.LayerData[(i*4)+0] = layers[i].Opacity
 			layers[i].Frames().Age(dt)
 			if layers[i].Frames().IsStill && !firstFrame {
 				continue
@@ -115,9 +109,23 @@ func MakeWindowAndMix(cfg *config.Config) {
 			rendering.SendFrameToGPU(frame, layers[i].Frames().TextureIDs, int(i))
 			layers[i].Frames().FinishedReading(frame)
 		}
+
+		// push vars common for all stages
+		gl.Uniform1iv(glvars.TexUniform, glvars.NumTextures, &glvars.Textures[0])
+
+		// push vars related to the window stage
+		for i := range numLayers {
+			glvars.LayerPos[(i*4)+0] = layers[i].Position.X
+			glvars.LayerPos[(i*4)+1] = layers[i].Position.Y
+			glvars.LayerPos[(i*4)+2] = layers[i].Size.X
+			glvars.LayerPos[(i*4)+3] = layers[i].Size.Y
+			glvars.LayerData[(i*4)+0] = layers[i].Opacity
+		}
+		gl.Uniform1ui(glvars.StageDataUniform, windowStage.StageData())
 		gl.Uniform4fv(glvars.LayerDataUniform, numLayers, &glvars.LayerData[0])
 		gl.Uniform4fv(glvars.LayerPosUniform, numLayers, &glvars.LayerPos[0])
 
+		// draw vertices on the window stage
 		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
 
 		for _, stage := range nonWindowStages {
@@ -127,7 +135,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 			gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
 			gl.Clear(gl.COLOR_BUFFER_BIT)
 			layers = stage.Layers
-			gl.Uniform1ui(glvars.StageDataUniform, stage.StageData())
+
+			// push vars related to this non-window stage
 			for i := range numLayers {
 				glvars.LayerPos[(i*4)+0] = layers[i].Position.X
 				glvars.LayerPos[(i*4)+1] = layers[i].Position.Y
@@ -135,10 +144,13 @@ func MakeWindowAndMix(cfg *config.Config) {
 				glvars.LayerPos[(i*4)+3] = layers[i].Size.Y
 				glvars.LayerData[(i*4)+0] = layers[i].Opacity
 			}
+			gl.Uniform1ui(glvars.StageDataUniform, stage.StageData())
 			gl.Uniform4fv(glvars.LayerDataUniform, numLayers, &glvars.LayerData[0])
 			gl.Uniform4fv(glvars.LayerPosUniform, numLayers, &glvars.LayerPos[0])
 
+			// draw vertices on this non-window stage
 			gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+
 			frame := frames.GetBlankFrame()
 			gl.ReadPixels(0, 0, int32(frames.Width), int32(frames.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
 			frames.SendFrame(frame)
