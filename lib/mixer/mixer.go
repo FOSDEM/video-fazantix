@@ -13,7 +13,6 @@ import (
 	"github.com/fosdem/fazantix/lib/theatre"
 	"github.com/fosdem/fazantix/lib/utils"
 	"github.com/fosdem/fazantix/lib/windowsink"
-	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 func MakeWindowAndMix(cfg *config.Config) {
@@ -81,6 +80,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 			frameCounter = 0
 			frameTimer = time.Now()
 		}
-		glfw.PollEvents()
+		kbdctl.Poll()
 	}
 }
