@@ -3,10 +3,16 @@ package main
 import (
 	"log"
 	"os"
+	"runtime"
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/mixer"
 )
+
+func init() {
+	// The OpenGL stuff must be in one thread
+	runtime.LockOSThread()
+}
 
 func main() {
 	if len(os.Args) < 2 {
