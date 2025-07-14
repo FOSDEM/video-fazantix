@@ -108,7 +108,7 @@ func (g *GLVars) PushStageVars() {
 func (g *GLVars) DrawStage(stage *layer.Stage) {
 	frames := stage.Sink.Frames()
 
-	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, frames.FramebufferID)
 	gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
