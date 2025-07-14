@@ -18,8 +18,8 @@ type FrameForwarder struct {
 	IsReady bool
 	IsStill bool
 
-	lastFrame *encdec.Frame
-	FrameAge  time.Duration
+	curReadingFrame *encdec.Frame
+	FrameAge        time.Duration
 
 	TextureIDs [3]uint32
 
@@ -27,6 +27,10 @@ type FrameForwarder struct {
 	sync.Mutex
 
 	FramebufferID uint32
+	LastFrameID   uint64
+
+	DroppedFramesIn  uint64
+	DroppedFramesOut uint64
 }
 
 func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.FrameAllocator) {
@@ -38,28 +42,29 @@ func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.
 }
 
 func (f *FrameForwarder) GetFrameForReading() *encdec.Frame {
-	if !f.IsReady {
+	f.Lock()
+	defer f.Unlock()
+
+	frame := f.curReadingFrame
+	if !f.IsReady || frame == nil {
 		return nil
 	}
-	return f.lastFrame
+
+	frame.NumReaders.Add(1)
+	return frame
 }
 
 func (f *FrameForwarder) FinishedReading(frame *encdec.Frame) {
-	// TODO: implement
-}
+	f.Lock()
+	defer f.Unlock()
 
-func (f *FrameForwarder) FinishedWriting(frame *encdec.Frame) {
-	oldLastFrame := f.lastFrame
-	f.lastFrame = frame
-	f.FrameAge = 0
-	f.IsReady = true
-	if oldLastFrame != nil {
-		f.recycleFrame(oldLastFrame)
+	numReaders := frame.NumReaders.Add(-1)
+	if numReaders < 0 {
+		panic("FinishedReading called on frame with no readers")
 	}
-}
-
-func (f *FrameForwarder) FailedWriting(frame *encdec.Frame) {
-	f.recycleFrame(frame)
+	if numReaders == 0 && frame.MarkedForRecycling {
+		f.recycleFrame(frame)
+	}
 }
 
 func (f *FrameForwarder) GetFrameForWriting() *encdec.Frame {
@@ -67,17 +72,48 @@ func (f *FrameForwarder) GetFrameForWriting() *encdec.Frame {
 	defer f.Unlock()
 
 	if len(f.bin) == 0 {
-		// TODO: log a framedrop
+		f.DroppedFramesOut += 1
 		return nil
 	}
-	fr := f.bin[len(f.bin)-1]
+
+	frame := f.bin[len(f.bin)-1]
 	f.bin = f.bin[:len(f.bin)-1]
-	return fr
+
+	f.LastFrameID += 1
+	frame.ID = f.LastFrameID
+
+	frame.MarkedForRecycling = false
+	return frame
+}
+
+func (f *FrameForwarder) FinishedWriting(frame *encdec.Frame) {
+	f.Lock()
+	defer f.Unlock()
+
+	if f.curReadingFrame != nil {
+		if f.curReadingFrame.NumReaders.Load() == 0 {
+			f.recycleFrame(f.curReadingFrame)
+		} else {
+			f.curReadingFrame.MarkedForRecycling = true
+		}
+	}
+
+	f.curReadingFrame = frame
+
+	f.FrameAge = 0
+	f.IsReady = true
+}
+
+func (f *FrameForwarder) FailedWriting(frame *encdec.Frame) {
+	f.Lock()
+	defer f.Unlock()
+
+	f.DroppedFramesIn += 1
+
+	f.recycleFrame(frame)
 }
 
 func (f *FrameForwarder) recycleFrame(frame *encdec.Frame) {
-	f.Lock()
-	defer f.Unlock()
 	if len(f.bin) >= cap(f.bin) || cap(f.bin) != f.FrameInfo.NumAllocatedFrames {
 		panic("more frames returned than extracted??")
 	}

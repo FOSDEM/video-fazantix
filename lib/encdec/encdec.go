@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
+	"sync/atomic"
 )
 
 type FrameType int
@@ -25,6 +26,10 @@ type Frame struct {
 	Height         int
 	LastOffset     int
 	Type           FrameType
+
+	NumReaders         atomic.Int32
+	MarkedForRecycling bool
+	ID                 uint64
 }
 
 func (i *Frame) Clear() {
