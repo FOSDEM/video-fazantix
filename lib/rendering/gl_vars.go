@@ -96,11 +96,24 @@ func (g *GLVars) ReadLayers(layers []*layer.Layer) {
 	}
 }
 
-func (g *GLVars) DrawStage() {
+func (g *GLVars) PushStageVars() {
 	gl.Uniform1ui(g.StageDataUniform, g.StageData)
 	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
 	gl.Uniform4fv(g.LayerPosUniform, g.NumLayers, &g.LayerPos[0])
 
 	// draw vertices on the window stage
 	gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+}
+
+func (g *GLVars) DrawStage(stage *layer.Stage) {
+	frames := stage.Sink.Frames()
+
+	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+	gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
+	gl.Clear(gl.COLOR_BUFFER_BIT)
+
+	// push vars related to the window stage
+	g.ReadLayers(stage.Layers)
+	g.StageData = stage.StageData()
+	g.PushStageVars()
 }
