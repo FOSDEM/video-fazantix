@@ -27,6 +27,8 @@ type FrameForwarder struct {
 	sync.Mutex
 
 	FramebufferID uint32
+	PixelBufferID [2]uint32
+	PixelBufferOrder bool
 }
 
 func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.FrameAllocator) {
@@ -42,6 +44,16 @@ func (f *FrameForwarder) GetFrameForReading() *encdec.Frame {
 		return nil
 	}
 	return f.lastFrame
+}
+
+func (f *FrameForwarder) GetPixelBufferIndexes() (uint32, uint32) {
+	if f.PixelBufferOrder {
+		f.PixelBufferOrder = false
+		return f.PixelBufferID[0], f.PixelBufferID[1]
+	} else {
+		f.PixelBufferOrder = true
+		return f.PixelBufferID[1], f.PixelBufferID[0]
+	}
 }
 
 func (f *FrameForwarder) FinishedReading(frame *encdec.Frame) {

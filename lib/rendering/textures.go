@@ -31,6 +31,12 @@ func UseAsFramebuffer(f *layer.FrameForwarder) {
 		panic("trying to use a non-rgb frame forwarder as a framebuffer")
 	}
 	f.FramebufferID = UseTextureAsFramebuffer(f.TextureIDs[0])
+	gl.GenBuffers(2, &f.PixelBufferID[0])
+	for _, pbo := range f.PixelBufferID {
+		gl.BindBuffer(gl.PIXEL_PACK_BUFFER, pbo)
+		gl.BufferData(gl.PIXEL_PACK_BUFFER, f.Width*f.Height*3, gl.Ptr(nil), gl.STREAM_READ)
+	}
+	gl.BindBuffer(gl.PIXEL_PACK_BUFFER, 0)
 }
 
 func SetupYUVTexture(width int, height int) uint32 {

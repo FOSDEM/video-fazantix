@@ -2,6 +2,7 @@ package rendering
 
 import (
 	"time"
+	"unsafe"
 
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
@@ -25,7 +26,12 @@ func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 }
 
 func GetFrameFromGPU(frame *encdec.Frame) {
-	gl.ReadPixels(0, 0, int32(frame.Width), int32(frame.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
+	buffer := gl.MapBuffer(gl.PIXEL_PACK_BUFFER, gl.READ_ONLY)
+	if buffer != nil {
+		pixels := unsafe.Slice((*byte)(buffer), frame.Width*frame.Height*3)
+		copy(frame.Data, pixels)
+		gl.UnmapBuffer(gl.PIXEL_PACK_BUFFER)
+	}
 }
 
 type ThingWithFrames interface {

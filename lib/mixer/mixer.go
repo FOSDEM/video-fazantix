@@ -11,6 +11,7 @@ import (
 	"github.com/fosdem/fazantix/lib/rendering/shaders"
 	"github.com/fosdem/fazantix/lib/theatre"
 	"github.com/fosdem/fazantix/lib/utils"
+	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
 func MakeWindowAndMix(cfg *config.Config) {
@@ -74,8 +75,13 @@ func MakeWindowAndMix(cfg *config.Config) {
 		}
 
 		for _, stage := range theatre.NonWindowStageList {
-			glvars.DrawStage(stage)
+			readPBO, writePBO := stage.Sink.Frames().GetPixelBufferIndexes()
+			gl.BindBuffer(gl.PIXEL_PACK_BUFFER, writePBO)
+			glvars.DrawStage(stage) // gl.BindFramebuffer
+			gl.ReadPixels(0, 0, int32(stage.Sink.Frames().Width), int32(stage.Sink.Frames().Height), gl.RGB, gl.UNSIGNED_BYTE, gl.PtrOffset(0))
+			gl.BindBuffer(gl.PIXEL_PACK_BUFFER, readPBO)
 			rendering.GetFrameFromGPUInto(stage.Sink)
+			gl.BindBuffer(gl.PIXEL_PACK_BUFFER, 0)
 		}
 
 		for _, sink := range theatre.WindowSinkList {
