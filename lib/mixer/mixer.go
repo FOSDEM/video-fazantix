@@ -81,10 +81,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 	deltaTimer := time.Now()
 	firstFrame := true
 	for !windowSink.Window.ShouldClose() {
-		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-		gl.Viewport(0, 0, int32(windowStage.Sink.Frames().Width), int32(windowStage.Sink.Frames().Height))
-		gl.Clear(gl.COLOR_BUFFER_BIT)
-
 		// Render
 		gl.UseProgram(program)
 
@@ -113,14 +109,12 @@ func MakeWindowAndMix(cfg *config.Config) {
 		// push vars common for all stages
 		glvars.PushCommonVars()
 
+		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+		gl.Viewport(0, 0, int32(windowStage.Sink.Frames().Width), int32(windowStage.Sink.Frames().Height))
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+
 		// push vars related to the window stage
-		for i := range numLayers {
-			glvars.LayerPos[(i*4)+0] = layers[i].Position.X
-			glvars.LayerPos[(i*4)+1] = layers[i].Position.Y
-			glvars.LayerPos[(i*4)+2] = layers[i].Size.X
-			glvars.LayerPos[(i*4)+3] = layers[i].Size.Y
-			glvars.LayerData[(i*4)+0] = layers[i].Opacity
-		}
+		glvars.ReadLayers(layers)
 		glvars.StageData = windowStage.StageData()
 		glvars.DrawStage()
 
@@ -133,13 +127,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 			layers = stage.Layers
 
 			// push vars related to this non-window stage
-			for i := range numLayers {
-				glvars.LayerPos[(i*4)+0] = layers[i].Position.X
-				glvars.LayerPos[(i*4)+1] = layers[i].Position.Y
-				glvars.LayerPos[(i*4)+2] = layers[i].Size.X
-				glvars.LayerPos[(i*4)+3] = layers[i].Size.Y
-				glvars.LayerData[(i*4)+0] = layers[i].Opacity
-			}
+			glvars.ReadLayers(layers)
 			glvars.StageData = stage.StageData()
 			glvars.DrawStage()
 
