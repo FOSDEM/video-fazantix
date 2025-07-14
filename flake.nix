@@ -1,43 +1,70 @@
 {
   description = "Fazant fazant fazant videomixer";
 
-  inputs.nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    utils.url = "github:numtide/flake-utils";
+  };
 
-  outputs = inputs:
-    let
-      goVersion = 24;
+  outputs =
+    inputs:
+    with inputs;
+    utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+      in
+      rec {
+        packages = {
+          fazantix = pkgs.buildGoModule {
+            name = "fazantix";
+            src = ./.;
+            vendorHash = "sha256-z0SVda1vzKSyXMwnnZa3Y8BtvND8o3wSyGWMxrmK7L4=";
+            goSum = ./go.sum;
+            subPackages = [ "cmd/fazantix" ];
 
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
-      forEachSupportedSystem = f: inputs.nixpkgs.lib.genAttrs supportedSystems (system: f {
-        pkgs = import inputs.nixpkgs {
-          inherit system;
-          overlays = [ inputs.self.overlays.default ];
+            tags = [
+              "wayland"
+              "vulkan"
+            ];
+
+            doCheck = false;
+
+            nativeBuildInputs = with pkgs; [
+              pkg-config
+              wayland
+            ];
+
+            buildInputs = with pkgs; [
+              wayland
+              libxkbcommon
+              vulkan-headers
+              vulkan-loader
+              libGL
+
+              # FIXME: the tags specified above should probably stop this from
+              # needing X11 stuff, but they still get used
+              xorg.libX11.dev
+            ];
+          };
+          default = packages.fazantix;
         };
-      });
-    in
-    {
-      overlays.default = final: prev: {
-        go = final."go_1_${toString goVersion}";
-      };
 
-      devShells = forEachSupportedSystem ({ pkgs }: {
-        default = pkgs.mkShell {
-          packages = with pkgs; [
-            go
-            gotools
-            golangci-lint
+        devShells = {
+          default = pkgs.mkShell {
+            inputsFrom = [ packages.fazantix ];
+            buildInputs = with pkgs; [
+              go
+              gotools
+              gopls
+              golangci-lint
 
-            pkg-config
-
-            wayland
-            libxkbcommon
-            cage
-
-            vulkan-headers
-            vulkan-loader
-
-          ];
+              cage
+            ];
+          };
         };
-      });
-    };
+
+        formatter = pkgs.nixfmt-tree;
+      }
+    );
 }
