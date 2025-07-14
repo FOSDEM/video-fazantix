@@ -47,14 +47,21 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		}
 	}
 
-	return &Theatre{
+	t := &Theatre{
 		Sources:            sourceMap,
 		SourceList:         sourceList,
 		Scenes:             sceneMap,
 		Stages:             stageMap,
 		WindowStageList:    windowStageList,
 		NonWindowStageList: nonWindowStageList,
-	}, nil
+	}
+
+	err = t.ResetToDefaultScenes()
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
 
 func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.FrameAllocator) map[string]*layer.Stage {
@@ -197,6 +204,19 @@ func (t *Theatre) SetScene(stageName string, sceneName string) error {
 	} else {
 		return fmt.Errorf("no such stage: %s", stageName)
 	}
+}
+
+func (t *Theatre) ResetToDefaultScenes() error {
+	for name, stage := range t.Stages {
+		err := t.SetScene(name, stage.DefaultScene)
+		if err != nil {
+			return fmt.Errorf(
+				"could not apply default scene (%s) to stage %s: %w",
+				stage.DefaultScene, name, err,
+			)
+		}
+	}
+	return nil
 }
 
 func (t *Theatre) GetTheSingleWindowStage() *layer.Stage {
