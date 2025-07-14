@@ -15,7 +15,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/fosdem/fazantix/lib/config"
-	"github.com/fosdem/fazantix/lib/rendering"
+	"github.com/fosdem/fazantix/lib/stats"
 	"github.com/fosdem/fazantix/lib/theatre"
 )
 
@@ -28,8 +28,8 @@ type Api struct {
 	mux     *http.ServeMux
 	cfg     *config.ApiCfg
 	theatre *theatre.Theatre
-	start   time.Time
-	FPS     int
+
+	Stats *stats.Stats
 
 	wsClients map[*websocket.Conn]bool
 }
@@ -42,16 +42,16 @@ func New(cfg *config.ApiCfg, theatre *theatre.Theatre) *Api {
 	a.srv.Addr = cfg.Bind
 	a.srv.Handler = a.mux
 	a.wsClients = make(map[*websocket.Conn]bool)
+	a.Stats = stats.New()
 	return a
 }
 
 func (a *Api) Serve() error {
-	a.start = time.Now()
 	if a.cfg.EnableProfiler {
 		a.mux.HandleFunc("/prof", a.profileCPU)
 	}
 	a.mux.HandleFunc("/api/kill", a.suicide)
-	a.mux.HandleFunc("/api/stats", a.stats)
+	a.mux.HandleFunc("/api/stats", a.getStats)
 	a.mux.HandleFunc("/api/scene", a.handleScene)
 	a.mux.HandleFunc("/api/scene/{stage}/{scene}", a.handleScene)
 	a.mux.HandleFunc("/api/config", a.handleConfig)
@@ -101,14 +101,6 @@ func (a *Api) profileCPU(w http.ResponseWriter, _ *http.Request) {
 	pprof.StopCPUProfile()
 }
 
-type Stats struct {
-	TextureUpload      uint64  `json:"texture_upload"`
-	TextureUploadAvgGb float64 `json:"texture_upload_avg_gb"`
-	Uptime             float64 `json:"uptime"`
-	FPS                int     `json:"fps"`
-	WsClients          int     `json:"ws_clients"`
-}
-
 func (a *Api) suicide(w http.ResponseWriter, _ *http.Request) {
 	log.Printf("shutting down as per api request")
 	a.theatre.ShutdownRequested = true
@@ -119,18 +111,9 @@ func (a *Api) suicide(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func (a *Api) stats(w http.ResponseWriter, _ *http.Request) {
-	uptime := float64(time.Since(a.start).Nanoseconds()) / 1e9
-	stats := &Stats{
-		Uptime:             uptime,
-		TextureUpload:      rendering.TextureUploadCounter,
-		TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
-		FPS:                a.FPS,
-		WsClients:          len(a.wsClients),
-	}
-
+func (a *Api) getStats(w http.ResponseWriter, _ *http.Request) {
 	encoder := json.NewEncoder(w)
-	err := encoder.Encode(stats)
+	err := encoder.Encode(a.Stats)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could encode stats: %s", err), http.StatusForbidden)
 		return
@@ -182,10 +165,13 @@ func (a *Api) handleWebsocket(w http.ResponseWriter, req *http.Request) {
 
 	go a.websocketWriter(ws)
 
+	a.Stats.WsClients = len(a.wsClients)
+
 	for {
 		_, msg, err := ws.ReadMessage()
 		if err != nil {
 			delete(a.wsClients, ws)
+			a.Stats.WsClients = len(a.wsClients)
 			break
 		}
 		fmt.Printf("Received: %s\n", msg)
@@ -204,15 +190,8 @@ func (a *Api) websocketWriter(ws *websocket.Conn) {
 	}()
 	timeout := 10 * time.Second
 	for range pingTicker.C {
-		uptime := float64(time.Since(a.start).Nanoseconds()) / 1e9
-		stats := &Stats{
-			Uptime:             uptime,
-			TextureUpload:      rendering.TextureUploadCounter,
-			TextureUploadAvgGb: float64(rendering.TextureUploadCounter) / (uptime * 1024 * 1024 * 1024),
-			FPS:                a.FPS,
-			WsClients:          len(a.wsClients),
-		}
-		packet, err := json.Marshal(stats)
+		packet, err := json.Marshal(a.Stats)
+
 		if err != nil {
 			return
 		}
