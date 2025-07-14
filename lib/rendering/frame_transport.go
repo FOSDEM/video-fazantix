@@ -24,8 +24,22 @@ func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 	}
 }
 
+func GetFrameFromGPU(frame *encdec.Frame) {
+	gl.ReadPixels(0, 0, int32(frame.Width), int32(frame.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
+}
+
 type ThingWithFrames interface {
 	Frames() *layer.FrameForwarder
+}
+
+func GetFrameFromGPUInto(into ThingWithFrames) {
+	frames := into.Frames()
+	frame := frames.GetFrameForWriting()
+	if frame == nil {
+		return // we are instructed to drop the frame
+	}
+	GetFrameFromGPU(frame)
+	frames.FinishedWriting(frame)
 }
 
 func SendFramesToGPU[F ThingWithFrames](from []F, dt time.Duration) {
@@ -41,7 +55,7 @@ func SendFramesToGPU[F ThingWithFrames](from []F, dt time.Duration) {
 
 		frame := frames.GetFrameForReading()
 		if frame == nil {
-			continue
+			continue // we are instructed to drop the frame
 		}
 		SendFrameToGPU(frame, frames.TextureIDs, int(i))
 		frames.FinishedReading(frame)
