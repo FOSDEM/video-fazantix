@@ -62,6 +62,12 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("source %s is invalid: %w", k, err)
 		}
 	}
+	for k, v := range c.Scenes {
+		for ks, vs := range v {
+			err = vs.Validate()
+			if err != nil {return fmt.Errorf("scene %s layer %s is invalid: %w", k, ks, err)}
+		}
+	}
 	for k, v := range c.Stages {
 		err = v.Validate()
 		if err != nil {
