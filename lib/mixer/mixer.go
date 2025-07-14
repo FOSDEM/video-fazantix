@@ -2,7 +2,6 @@ package mixer
 
 import (
 	"log"
-	"time"
 
 	"github.com/fosdem/fazantix/lib/api"
 	"github.com/fosdem/fazantix/lib/config"
@@ -58,8 +57,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	glvars.Start()
 
-	frameCounter := 0
-	frameTimer := time.Now()
 	var deltaTimer utils.DeltaTimer
 	for !theatre.ShutdownRequested {
 		glvars.StartFrame()
@@ -85,14 +82,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 		// Maintenance
 		theatre.Animate(float32(dt.Nanoseconds()) * 1e-9)
-		frameCounter++
-		if time.Since(frameTimer) > 1*time.Second {
-			if api != nil {
-				api.FPS = frameCounter
-			}
-			frameCounter = 0
-			frameTimer = time.Now()
-		}
+		api.Stats.Update()
 		kbdctl.Poll()
 	}
 }
