@@ -1,6 +1,7 @@
 package rendering
 
 import (
+	"github.com/fosdem/fazantix/lib/layer"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
@@ -83,6 +84,16 @@ func AllocateGLVars(program uint32, numLayers int32) *GLVars {
 
 func (g *GLVars) PushCommonVars() {
 	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
+}
+
+func (g *GLVars) ReadLayers(layers []*layer.Layer) {
+	for i := range g.NumLayers {
+		g.LayerPos[(i*4)+0] = layers[i].Position.X
+		g.LayerPos[(i*4)+1] = layers[i].Position.Y
+		g.LayerPos[(i*4)+2] = layers[i].Size.X
+		g.LayerPos[(i*4)+3] = layers[i].Size.Y
+		g.LayerData[(i*4)+0] = layers[i].Opacity
+	}
 }
 
 func (g *GLVars) DrawStage() {
