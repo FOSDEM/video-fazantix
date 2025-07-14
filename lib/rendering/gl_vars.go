@@ -27,12 +27,40 @@ type GLVars struct {
 	TexUniform       int32
 }
 
-func AllocateGLVars(program uint32, numLayers int32) *GLVars {
+func NewGLVars(program uint32, numLayers int32) *GLVars {
 	g := &GLVars{}
 
 	g.NumLayers = numLayers
 	g.Program = program
 
+	return g
+}
+
+func (g *GLVars) Start() {
+	g.allocate()
+	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
+}
+
+func (g *GLVars) StartFrame() {
+	gl.UseProgram(g.Program)
+	gl.BindVertexArray(g.VAO)
+	g.pushCommonVars()
+}
+
+func (g *GLVars) DrawStage(stage *layer.Stage) {
+	frames := stage.Sink.Frames()
+
+	gl.BindFramebuffer(gl.FRAMEBUFFER, frames.FramebufferID)
+	gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
+	gl.Clear(gl.COLOR_BUFFER_BIT)
+
+	// push vars related to the window stage
+	g.readLayers(stage.Layers)
+	g.StageData = stage.StageData()
+	g.pushStageVars()
+}
+
+func (g *GLVars) allocate() {
 	vertices := []float32{
 		//  X, Y,  U, V
 		-1.0, -1.0, 0.0, 1.0,
@@ -54,54 +82,33 @@ func AllocateGLVars(program uint32, numLayers int32) *GLVars {
 
 	stride := int32(4 * f32)
 
-	vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("position\x00")))
+	vertAttrib := uint32(gl.GetAttribLocation(g.Program, gl.Str("position\x00")))
 	gl.EnableVertexAttribArray(vertAttrib)
 	gl.VertexAttribPointerWithOffset(vertAttrib, 2, gl.FLOAT, false, stride, 0)
 
-	texCoordAttrib := uint32(gl.GetAttribLocation(program, gl.Str("uv\x00")))
+	texCoordAttrib := uint32(gl.GetAttribLocation(g.Program, gl.Str("uv\x00")))
 	gl.EnableVertexAttribArray(texCoordAttrib)
 	gl.VertexAttribPointerWithOffset(texCoordAttrib, 2, gl.FLOAT, false, stride, 2*f32)
 
-	g.LayerPos = make([]float32, numLayers*4)
-	g.LayerPosUniform = gl.GetUniformLocation(program, gl.Str("layerPosition\x00"))
-	gl.Uniform4fv(g.LayerPosUniform, numLayers, &g.LayerPos[0])
+	g.LayerPos = make([]float32, g.NumLayers*4)
+	g.LayerPosUniform = gl.GetUniformLocation(g.Program, gl.Str("layerPosition\x00"))
+	gl.Uniform4fv(g.LayerPosUniform, g.NumLayers, &g.LayerPos[0])
 
-	g.LayerData = make([]float32, numLayers*4)
-	g.LayerDataUniform = gl.GetUniformLocation(program, gl.Str("layerData\x00"))
-	gl.Uniform4fv(g.LayerDataUniform, numLayers, &g.LayerData[0])
+	g.LayerData = make([]float32, g.NumLayers*4)
+	g.LayerDataUniform = gl.GetUniformLocation(g.Program, gl.Str("layerData\x00"))
+	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
 
-	g.StageDataUniform = gl.GetUniformLocation(program, gl.Str("stageData\x00"))
+	g.StageDataUniform = gl.GetUniformLocation(g.Program, gl.Str("stageData\x00"))
 	gl.Uniform1ui(g.StageDataUniform, 0)
 
 	// Allocate 3 textures for every layer in case of planar YUV
-	g.NumTextures = numLayers * 3
+	g.NumTextures = g.NumLayers * 3
 	g.Textures = make([]int32, g.NumTextures)
 	for i := range g.NumTextures {
 		g.Textures[i] = int32(i)
 	}
-	g.TexUniform = gl.GetUniformLocation(program, gl.Str("tex\x00"))
+	g.TexUniform = gl.GetUniformLocation(g.Program, gl.Str("tex\x00"))
 	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
-
-	return g
-}
-
-func (g *GLVars) StartFrame() {
-	gl.UseProgram(g.Program)
-	gl.BindVertexArray(g.VAO)
-	g.pushCommonVars()
-}
-
-func (g *GLVars) DrawStage(stage *layer.Stage) {
-	frames := stage.Sink.Frames()
-
-	gl.BindFramebuffer(gl.FRAMEBUFFER, frames.FramebufferID)
-	gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
-	gl.Clear(gl.COLOR_BUFFER_BIT)
-
-	// push vars related to the window stage
-	g.readLayers(stage.Layers)
-	g.StageData = stage.StageData()
-	g.pushStageVars()
 }
 
 func (g *GLVars) pushCommonVars() {
