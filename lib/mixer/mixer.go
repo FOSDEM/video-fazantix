@@ -53,13 +53,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 		rendering.UseAsFramebuffer(stage.Sink.Frames())
 	}
 
-	for name, stage := range theatre.Stages {
-		err := theatre.SetScene(name, stage.DefaultScene)
-		if err != nil {
-			log.Fatalf("Could not apply default scene: %s", err)
-		}
-	}
-
 	glvars.Start()
 
 	frameCounter := 0
