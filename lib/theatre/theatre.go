@@ -24,6 +24,8 @@ type Theatre struct {
 	Stages             map[string]*Stage
 	WindowStageList    []*Stage
 	NonWindowStageList []*Stage
+
+	listener map[string][]EventListener
 }
 
 type Stage struct {
@@ -62,6 +64,7 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		Stages:             stageMap,
 		WindowStageList:    windowStageList,
 		NonWindowStageList: nonWindowStageList,
+		listener:           make(map[string][]EventListener),
 	}, nil
 }
 
@@ -195,6 +198,10 @@ func (t *Theatre) Animate(delta float32) {
 func (t *Theatre) SetScene(stageName string, sceneName string) error {
 	if stage, ok := t.Stages[stageName]; ok {
 		if scene, ok := t.Scenes[sceneName]; ok {
+			t.invoke("set-scene", EventDataSetScene{
+				Stage: stageName,
+				Scene: sceneName,
+			})
 			for i, l := range stage.Layers {
 				l.ApplyState(scene.LayerStates[i])
 			}
