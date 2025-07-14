@@ -145,19 +145,3 @@ func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32
 	)
 	TextureUploadCounter += uint64(len(data))
 }
-
-func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
-	channelType := uint32(gl.RED)
-	if frame.Type == encdec.RGBAFrames {
-		channelType = gl.RGBA
-	}
-
-	for j := 0; j < frame.NumTextures; j++ {
-		dataPtr, w, h := frame.Texture(j)
-		SendTextureToGPU(
-			textureIDs[j], offset*3+j,
-			w, h, channelType,
-			dataPtr,
-		)
-	}
-}
