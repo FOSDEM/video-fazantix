@@ -57,7 +57,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 	layers := windowStage.Layers
 	numLayers := int32(len(layers))
 
-	glvars := rendering.AllocateGLVars(program, numLayers)
+	glvars := rendering.NewGLVars(program, numLayers)
 
 	// Create extra framebuffers as rendertargets
 	nonWindowStages := theatre.NonWindowStageList
@@ -74,7 +74,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		}
 	}
 
-	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
+	glvars.Start()
 
 	frameCounter := 0
 	frameTimer := time.Now()
