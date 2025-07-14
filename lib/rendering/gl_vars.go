@@ -9,8 +9,10 @@ const f32 = 4
 type GLVars struct {
 	LayerPos  []float32
 	LayerData []float32
+	StageData uint32
 
 	NumTextures int32
+	NumLayers   int32
 
 	// GL IDs
 	VAO              uint32
@@ -24,6 +26,8 @@ type GLVars struct {
 
 func AllocateGLVars(program uint32, numLayers int32) *GLVars {
 	g := &GLVars{}
+
+	g.NumLayers = numLayers
 
 	vertices := []float32{
 		//  X, Y,  U, V
@@ -75,4 +79,17 @@ func AllocateGLVars(program uint32, numLayers int32) *GLVars {
 	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
 
 	return g
+}
+
+func (g *GLVars) PushCommonVars() {
+	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
+}
+
+func (g *GLVars) DrawStage() {
+	gl.Uniform1ui(g.StageDataUniform, g.StageData)
+	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
+	gl.Uniform4fv(g.LayerPosUniform, g.NumLayers, &g.LayerPos[0])
+
+	// draw vertices on the window stage
+	gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
 }
