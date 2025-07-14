@@ -39,16 +39,6 @@ type LayerState struct {
 	Opacity float32
 }
 
-type Source interface {
-	Frames() *FrameForwarder
-	Start() bool
-}
-
-type Sink interface {
-	Frames() *FrameForwarder
-	Start() bool
-}
-
 func New(src Source, width int, height int) *Layer {
 	s := &Layer{}
 	s.Size = Coordinate{X: 1.0, Y: 1.0}

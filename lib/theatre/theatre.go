@@ -21,19 +21,11 @@ type Theatre struct {
 	Sources            map[string]layer.Source
 	SourceList         []layer.Source
 	Scenes             map[string]*Scene
-	Stages             map[string]*Stage
-	WindowStageList    []*Stage
-	NonWindowStageList []*Stage
+	Stages             map[string]*layer.Stage
+	WindowStageList    []*layer.Stage
+	NonWindowStageList []*layer.Stage
 
 	listener map[string][]EventListener
-}
-
-type Stage struct {
-	Layers       []*layer.Layer
-	HFlip        bool
-	VFlip        bool
-	Sink         layer.Sink
-	DefaultScene string
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
@@ -44,8 +36,8 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 	sourceMap := buildSourceMap(sourceList)
 	sceneMap := buildSceneMap(cfg, sourceList)
 	stageMap := buildStageMap(cfg, sourceList, alloc)
-	var windowStageList []*Stage
-	var nonWindowStageList []*Stage
+	var windowStageList []*layer.Stage
+	var nonWindowStageList []*layer.Stage
 
 	for _, stage := range stageMap {
 		switch stage.Sink.(type) {
@@ -68,10 +60,10 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 	}, nil
 }
 
-func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.FrameAllocator) map[string]*Stage {
-	stages := make(map[string]*Stage)
+func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.FrameAllocator) map[string]*layer.Stage {
+	stages := make(map[string]*layer.Stage)
 	for stageName, stageCfg := range cfg.Stages {
-		stage := &Stage{}
+		stage := &layer.Stage{}
 		stage.Layers = make([]*layer.Layer, len(sources))
 		stage.DefaultScene = stageCfg.DefaultScene
 
@@ -214,7 +206,7 @@ func (t *Theatre) SetScene(stageName string, sceneName string) error {
 	}
 }
 
-func (t *Theatre) GetTheSingleWindowStage() *Stage {
+func (t *Theatre) GetTheSingleWindowStage() *layer.Stage {
 	if len(t.WindowStageList) < 1 {
 		panic("we still don't support running without a window-type sink :(")
 	}
@@ -229,15 +221,4 @@ func (t *Theatre) ShaderData() *shaders.ShaderData {
 		NumSources: t.NumSources(),
 		Sources:    t.SourceList,
 	}
-}
-
-func (s *Stage) StageData() uint32 {
-	data := uint32(0)
-	if s.HFlip {
-		data += 1
-	}
-	if s.VFlip {
-		data += 2
-	}
-	return data
 }

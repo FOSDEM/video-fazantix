@@ -109,28 +109,12 @@ func MakeWindowAndMix(cfg *config.Config) {
 		// push vars common for all stages
 		glvars.PushCommonVars()
 
-		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-		gl.Viewport(0, 0, int32(windowStage.Sink.Frames().Width), int32(windowStage.Sink.Frames().Height))
-		gl.Clear(gl.COLOR_BUFFER_BIT)
-
-		// push vars related to the window stage
-		glvars.ReadLayers(layers)
-		glvars.StageData = windowStage.StageData()
-		glvars.DrawStage()
+		glvars.DrawStage(windowStage)
 
 		for _, stage := range nonWindowStages {
-			// Switch to the framebuffer connected to the window
+			glvars.DrawStage(stage)
+
 			frames := stage.Sink.Frames()
-			gl.BindFramebuffer(gl.FRAMEBUFFER, frames.FramebufferID)
-			gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
-			gl.Clear(gl.COLOR_BUFFER_BIT)
-			layers = stage.Layers
-
-			// push vars related to this non-window stage
-			glvars.ReadLayers(layers)
-			glvars.StageData = stage.StageData()
-			glvars.DrawStage()
-
 			frame := frames.GetBlankFrame()
 			gl.ReadPixels(0, 0, int32(frames.Width), int32(frames.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
 			frames.SendFrame(frame)
