@@ -38,6 +38,15 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	glvars := rendering.NewGLVars(program, int32(len(theatre.SourceList)))
 
+	if len(theatre.WindowSinkList) > 1 {
+		log.Fatalf("multiple window sinks are not supported yet")
+		// TODO: figure out how to share the stuff managed by glvars between windows
+	}
+	if len(theatre.WindowSinkList) < 1 {
+		log.Fatalf("usage without a window sink is not supported yet")
+		// TODO: figure out how to make a GL context without a window
+	}
+
 	for _, sink := range theatre.WindowSinkList {
 		kbdctl.SetupShortcutKeys(theatre, sink)
 	}
