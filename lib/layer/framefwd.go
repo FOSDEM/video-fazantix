@@ -48,7 +48,7 @@ func (f *FrameForwarder) FinishedReading(frame *encdec.Frame) {
 	// TODO: implement
 }
 
-func (f *FrameForwarder) SendFrame(frame *encdec.Frame) {
+func (f *FrameForwarder) FinishedWriting(frame *encdec.Frame) {
 	oldLastFrame := f.lastFrame
 	f.lastFrame = frame
 	f.FrameAge = 0
@@ -58,7 +58,11 @@ func (f *FrameForwarder) SendFrame(frame *encdec.Frame) {
 	}
 }
 
-func (f *FrameForwarder) GetBlankFrame() *encdec.Frame {
+func (f *FrameForwarder) FailedWriting(frame *encdec.Frame) {
+	f.recycleFrame(frame)
+}
+
+func (f *FrameForwarder) GetFrameForWriting() *encdec.Frame {
 	f.Lock()
 	defer f.Unlock()
 
