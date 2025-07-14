@@ -108,6 +108,7 @@ func (f *FFmpegSink) processStdin() {
 		if frame == nil {
 			continue
 		}
+		frame.PBOToFrame()
 
 		_, err := f.stdin.Write(frame.Data)
 		f.Frames().FinishedReading(frame)

@@ -4,6 +4,7 @@ import (
 	"log"
 	"runtime"
 	"time"
+	"unsafe"
 
 	"github.com/fosdem/fazantix/lib/api"
 	"github.com/fosdem/fazantix/lib/config"
@@ -44,6 +45,21 @@ func initGL() {
 	log.Printf("OpenGL version '%s'", version)
 }
 
+func HandleOpenGLError() {
+	for {
+		glerr := gl.GetError()
+		if glerr != 0 {
+			log.Printf("OpenGL error %d\n", glerr)
+		} else {
+			return
+		}
+	}
+}
+
+func OpenGLErrorPrinter(source uint32, gltype uint32, id uint32, severity uint32, length int32, message string, userParam unsafe.Pointer) {
+	log.Printf("OpenGL error: %d %s\n", source, message)
+}
+
 func MakeWindowAndMix(cfg *config.Config) {
 	alloc := &encdec.DumbFrameAllocator{}
 
@@ -53,6 +69,11 @@ func MakeWindowAndMix(cfg *config.Config) {
 	}
 
 	initGL()
+
+	gl.Enable(gl.DEBUG_OUTPUT)
+	gl.Enable(gl.DEBUG_OUTPUT_SYNCHRONOUS)
+	gl.DebugMessageCallback(OpenGLErrorPrinter, gl.Ptr(nil))
+
 	// assume exactly one window stage for now
 	windowStage := theatre.GetTheSingleWindowStage()
 	windowSink := windowStage.Sink.(*windowsink.WindowSink)
@@ -66,6 +87,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 	if err != nil {
 		log.Fatalf("could not init GL program: %s", err)
 	}
+	gl.UseProgram(program)
 
 	// Configure the vertex data
 	var vao uint32
@@ -76,30 +98,37 @@ func MakeWindowAndMix(cfg *config.Config) {
 	gl.GenBuffers(1, &vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*f32, gl.Ptr(vertices), gl.STATIC_DRAW)
+	HandleOpenGLError()
 
 	stride := int32(4 * f32)
 
 	vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("position\x00")))
 	gl.EnableVertexAttribArray(vertAttrib)
 	gl.VertexAttribPointerWithOffset(vertAttrib, 2, gl.FLOAT, false, stride, 0)
+	HandleOpenGLError()
 
 	texCoordAttrib := uint32(gl.GetAttribLocation(program, gl.Str("uv\x00")))
 	gl.EnableVertexAttribArray(texCoordAttrib)
 	gl.VertexAttribPointerWithOffset(texCoordAttrib, 2, gl.FLOAT, false, stride, 2*f32)
+	HandleOpenGLError()
 
 	layers := windowStage.Layers
 	numLayers := int32(len(layers))
 
 	layerPos := make([]float32, numLayers*4)
 	layerPosUniform := gl.GetUniformLocation(program, gl.Str("layerPosition\x00"))
+	HandleOpenGLError()
 	gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
+	HandleOpenGLError()
 
 	layerData := make([]float32, numLayers*4)
 	layerDataUniform := gl.GetUniformLocation(program, gl.Str("layerData\x00"))
 	gl.Uniform4fv(layerDataUniform, numLayers, &layerData[0])
+	HandleOpenGLError()
 
 	stageDataUniform := gl.GetUniformLocation(program, gl.Str("stageData\x00"))
 	gl.Uniform1ui(stageDataUniform, 0)
+	HandleOpenGLError()
 
 	// Allocate 3 textures for every layer in case of planar YUV
 	numTextures := numLayers * 3
@@ -126,6 +155,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 	}
 
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
+	HandleOpenGLError()
 
 	frameCounter := 0
 	frameTimer := time.Now()
@@ -135,11 +165,11 @@ func MakeWindowAndMix(cfg *config.Config) {
 		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 		gl.Viewport(0, 0, int32(windowStage.Sink.Frames().Width), int32(windowStage.Sink.Frames().Height))
 		gl.Clear(gl.COLOR_BUFFER_BIT)
+		HandleOpenGLError()
 
 		// Render
-		gl.UseProgram(program)
-
 		gl.BindVertexArray(vao)
+		HandleOpenGLError()
 
 		gl.Uniform1iv(texUniform, numTextures, &textures[0])
 		gl.Uniform1ui(stageDataUniform, windowStage.StageData())
@@ -147,6 +177,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 		dt := time.Since(deltaTimer)
 		deltaTimer = time.Now()
+		HandleOpenGLError()
 
 		for i := range numLayers {
 			layerPos[(i*4)+0] = layers[i].Position.X
@@ -171,11 +202,12 @@ func MakeWindowAndMix(cfg *config.Config) {
 		gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+		HandleOpenGLError()
 
 		for _, stage := range nonWindowStages {
 			// Switch to the framebuffer connected to the window
 			frames := stage.Sink.Frames()
-			gl.BindFramebuffer(gl.FRAMEBUFFER, frames.FramebufferID)
+			gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, frames.FramebufferID)
 			gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
 			gl.Clear(gl.COLOR_BUFFER_BIT)
 			layers = stage.Layers
@@ -191,8 +223,14 @@ func MakeWindowAndMix(cfg *config.Config) {
 			gl.Uniform4fv(layerPosUniform, numLayers, &layerPos[0])
 
 			gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+			HandleOpenGLError()
 			frame := frames.GetBlankFrame()
-			gl.ReadPixels(0, 0, int32(frames.Width), int32(frames.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
+			gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+			HandleOpenGLError()
+			gl.BindFramebuffer(gl.READ_FRAMEBUFFER, frames.FramebufferID)
+			HandleOpenGLError()
+			frame.FramebufferToPBO()
+			gl.BindFramebuffer(gl.READ_FRAMEBUFFER, 0)
 			frames.SendFrame(frame)
 		}
 

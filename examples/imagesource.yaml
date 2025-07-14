@@ -113,6 +113,15 @@ sinks:
       height: 720
       num_allocated_frames: 5
     default_scene: default
+  stream:
+    type: ffmpeg_stdin
+    cmd: "ffmpeg -f rawvideo -video_size 1280x720 -pixel_format rgb24 -framerate 60 -i - -c:v libx264 -preset fast -pix_fmt yuv420p -f mpegts tcp://0.0.0.0:2000?listen"
+    frames:
+      width: 1280
+      height: 720
+      num_allocated_frames: 5
+    default_scene: default
+
 
 api:
   bind: ':8000'

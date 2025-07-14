@@ -39,10 +39,11 @@ func (d *DumbFrameAllocator) NewFrame(info *FrameInfo) *Frame {
 
 func (d *DumbFrameAllocator) makeFrame(t FrameType, n int, w int, h int) *Frame {
 	return &Frame{
-		Data:   make([]byte, n),
-		Width:  w,
-		Height: h,
-		Type:   t,
+		Data:         make([]byte, n),
+		Width:        w,
+		Height:       h,
+		Type:         t,
+		BufferStatus: PixelBufferUninitialized,
 	}
 }
 

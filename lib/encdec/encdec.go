@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
+	"log"
+
+	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
 type FrameType int
@@ -13,6 +16,15 @@ const (
 	YUV422Frames FrameType = iota
 	RGBAFrames
 	RGBFrames
+)
+
+type PixelBufferStatus int
+
+const (
+	PixelBufferUninitialized PixelBufferStatus = iota
+	PixelBufferPack
+	PixelBufferUnpack
+	PixelBufferUnmapped
 )
 
 type Frame struct {
@@ -25,6 +37,8 @@ type Frame struct {
 	Height         int
 	LastOffset     int
 	Type           FrameType
+	BufferStatus   PixelBufferStatus
+	Buffers        []uint32
 }
 
 func (i *Frame) Clear() {
@@ -44,6 +58,122 @@ func (i *Frame) MakeTexture(n int, w int, h int) []uint8 {
 
 	i.LastOffset = newOffset
 	return texture
+}
+
+func clearOpenGLError() {
+	for {
+		glerr := gl.GetError()
+		if glerr == 0 {
+			return
+		}
+	}
+}
+
+func HandleOpenGLError() {
+	glerr := gl.GetError()
+	if glerr == gl.NO_ERROR {
+		return
+	}
+	log.Fatalf("OpenGL Error %d\n", glerr)
+}
+
+func (i *Frame) AllocatePBO() {
+	if i.BufferStatus != PixelBufferUninitialized {
+		panic("Double allocation")
+	}
+	if i.NumTextures == 0 {
+		i.NumTextures = 1
+	}
+	i.Buffers = make([]uint32, i.NumTextures)
+	gl.GenBuffers(int32(i.NumTextures), &i.Buffers[0])
+	HandleOpenGLError()
+	i.BufferStatus = PixelBufferUnmapped
+}
+
+func (i *Frame) PBOToTexture(textureIDs [3]uint32) {
+	if i.BufferStatus != PixelBufferUnmapped {
+		panic("Attempting to pack into PBO of wrong state")
+	}
+	i.BufferStatus = PixelBufferUnpack
+	channelType := uint32(gl.RED)
+	if i.Type == RGBAFrames {
+		channelType = gl.RGBA
+	}
+
+	for idx := range i.NumTextures {
+		gl.BindTexture(gl.TEXTURE_2D, textureIDs[idx])
+		gl.BindBuffer(gl.PIXEL_PACK_BUFFER, i.Buffers[idx])
+		gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(i.TextureWidths[idx]), int32(i.TextureHeights[idx]), channelType, gl.UNSIGNED_BYTE, gl.Ptr(0))
+		gl.BindBuffer(gl.PIXEL_UNPACK_BUFFER, 0)
+	}
+	i.BufferStatus = PixelBufferUnmapped
+}
+
+func (i *Frame) FrameToPBO() {
+	if i.BufferStatus != PixelBufferUnmapped {
+		panic("Attempting to pack into PBO of wrong state")
+	}
+	for idx := range i.NumTextures {
+		dataPtr, _, _ := i.Texture(idx)
+		gl.BindBuffer(gl.PIXEL_PACK_BUFFER, i.Buffers[idx])
+		gl.BufferData(gl.PIXEL_UNPACK_BUFFER, len(dataPtr), gl.Ptr(dataPtr), gl.STREAM_DRAW)
+		bufferPtr := gl.MapBuffer(gl.PIXEL_UNPACK_BUFFER, gl.WRITE_ONLY)
+
+		// TODO: Copy dataPtr ([]uint8) to bufferPtr (unsafe.Pointer)
+
+		// Unmapbuffer should accept a gl.Ptr instead of an uint32
+		bufferPtrBug := (*uint32)(bufferPtr)
+		gl.UnmapBuffer(*bufferPtrBug)
+		gl.BindBuffer(gl.PIXEL_UNPACK_BUFFER, 0)
+	}
+}
+
+func (i *Frame) FramebufferToPBO() {
+	if i.BufferStatus == PixelBufferUninitialized {
+		i.AllocatePBO()
+		gl.BindBuffer(gl.PIXEL_PACK_BUFFER, i.Buffers[0])
+		HandleOpenGLError()
+		gl.BufferData(gl.PIXEL_PACK_BUFFER, i.Width*i.Height*4, gl.Ptr(nil), gl.STREAM_READ)
+		HandleOpenGLError()
+
+	}
+	if i.BufferStatus != PixelBufferUnmapped {
+		panic("Attempting to pack into PBO of wrong state")
+	}
+	gl.BindBuffer(gl.PIXEL_PACK_BUFFER, i.Buffers[0])
+	HandleOpenGLError()
+	gl.ReadPixels(0, 0, int32(i.Width), int32(i.Height), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(nil))
+	HandleOpenGLError()
+
+	gl.BindBuffer(gl.PIXEL_PACK_BUFFER, 0)
+	HandleOpenGLError()
+}
+
+func (i *Frame) PBOToFrame() {
+	if i.BufferStatus != PixelBufferUnmapped {
+		panic("Attempting to pack into PBO of wrong state")
+	}
+
+	gl.BindBuffer(88, i.Buffers[0])
+	HandleOpenGLError()
+
+	bufferPtr := gl.MapBuffer(77, gl.READ_ONLY)
+	HandleOpenGLError()
+
+	if bufferPtr != nil {
+		fmt.Println("FRAME")
+		buffer := *(*[]uint8)(bufferPtr)
+
+		i.Clear()
+		framePtr := i.MakeTexture(i.Width*i.Height*4, i.Width, i.Height)
+
+		copy(framePtr, buffer)
+		gl.UnmapBuffer(gl.PIXEL_PACK_BUFFER)
+	}
+
+	gl.BindBuffer(gl.PIXEL_PACK_BUFFER, 0)
+	HandleOpenGLError()
+
 }
 
 func (i *Frame) Texture(idx int) ([]byte, int, int) {

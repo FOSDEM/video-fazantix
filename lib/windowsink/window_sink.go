@@ -50,6 +50,7 @@ func (w *WindowSink) makeWindow() *glfw.Window {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+	glfw.WindowHint(glfw.OpenGLDebugContext, glfw.True)
 	window, err := glfw.CreateWindow(w.Frames().Width, w.Frames().Height, w.Frames().Name, nil, nil)
 	if err != nil {
 		panic(err)
