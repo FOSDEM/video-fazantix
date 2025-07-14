@@ -13,7 +13,6 @@ import (
 	"github.com/fosdem/fazantix/lib/theatre"
 	"github.com/fosdem/fazantix/lib/utils"
 	"github.com/fosdem/fazantix/lib/windowsink"
-	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
@@ -68,11 +67,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 		for _, stage := range nonWindowStages {
 			glvars.DrawStage(stage)
-
-			frames := stage.Sink.Frames()
-			frame := frames.GetBlankFrame()
-			gl.ReadPixels(0, 0, int32(frames.Width), int32(frames.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
-			frames.SendFrame(frame)
+			rendering.GetFrameFromGPUInto(stage.Sink)
 		}
 
 		// Maintenance

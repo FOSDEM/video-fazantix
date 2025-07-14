@@ -91,19 +91,26 @@ func (f *FFmpegSource) processStderr() {
 
 func (f *FFmpegSource) processStdout() {
 	for {
-		frame := f.frames.GetBlankFrame()
+		frame := f.frames.GetFrameForWriting()
+		if frame == nil {
+			panic("framedropping for ffmpeg sources not yet implemented")
+			// TODO: here we should discard the exact amount of data from
+			// ffmpeg's stdout and continue the loop
+		}
 		err := encdec.PrepareYUYV422p(frame)
 		if err != nil {
 			f.log("Could not prepare YUV422 buffer: %s", err)
+			f.frames.FailedWriting(frame)
 			return
 		}
 		_, err = io.ReadFull(f.stdout, frame.Data)
 		if err != nil {
 			f.log("could not read from ffmpeg's output: %s", err)
+			f.frames.FailedWriting(frame)
 			return
 		}
 
-		f.frames.SendFrame(frame)
+		f.frames.FinishedWriting(frame)
 	}
 }
 

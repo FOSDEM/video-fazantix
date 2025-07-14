@@ -154,25 +154,35 @@ func (s *V4LSource) decodeFrames() {
 func (s *V4LSource) decodeFramesJPEG() {
 	// this does not work, dunno why
 	for rawFrame := range s.rawCamFrames {
-		frame := s.frames.GetBlankFrame()
+		frame := s.frames.GetFrameForWriting()
+		if frame == nil {
+			continue // drop the frame as instructed
+		}
+
 		err := encdec.DecodeRGBfromImage(rawFrame, frame)
 		if err != nil {
 			s.log("Could not decode frame: %s", err)
+			s.frames.FailedWriting(frame)
 			continue
 		}
-		s.frames.SendFrame(frame)
+		s.frames.FinishedWriting(frame)
 	}
 }
 
 func (s *V4LSource) decodeFrames422p() {
 	for rawFrame := range s.rawCamFrames {
-		frame := s.frames.GetBlankFrame()
+		frame := s.frames.GetFrameForWriting()
+		if frame == nil {
+			continue // drop the frame as instructed
+		}
+
 		err := encdec.DecodeYUYV422(rawFrame, frame)
 		if err != nil {
 			s.log("Could not decode frame: %s", err)
+			s.frames.FailedWriting(frame)
 			continue
 		}
-		s.frames.SendFrame(frame)
+		s.frames.FinishedWriting(frame)
 	}
 }
 

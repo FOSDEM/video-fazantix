@@ -76,7 +76,7 @@ func (s *ImgSource) Start() bool {
 	s.frames.IsReady = true
 	s.frames.IsStill = true
 
-	frame := s.frames.GetBlankFrame()
+	frame := s.frames.GetFrameForWriting()
 	if frame == nil {
 		s.log("Image source dropped its one and only frame - this is probably a bug")
 		return false
@@ -84,9 +84,10 @@ func (s *ImgSource) Start() bool {
 	err := encdec.FrameFromImage(s.img, frame)
 	if err != nil {
 		s.log("Decode error: %s", err)
+		s.frames.FailedWriting(frame)
 		return false
 	}
-	s.frames.SendFrame(frame)
+	s.frames.FinishedWriting(frame)
 	return true
 }
 
