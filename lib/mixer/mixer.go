@@ -12,7 +12,6 @@ import (
 	"github.com/fosdem/fazantix/lib/rendering/shaders"
 	"github.com/fosdem/fazantix/lib/theatre"
 	"github.com/fosdem/fazantix/lib/utils"
-	"github.com/fosdem/fazantix/lib/windowsink"
 )
 
 func MakeWindowAndMix(cfg *config.Config) {
@@ -27,12 +26,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 	if err != nil {
 		log.Fatalf("could not initialise renderer: %s", err)
 	}
-	// assume exactly one window stage for now
-	windowStage := theatre.GetTheSingleWindowStage()
-	windowSink := windowStage.Sink.(*windowsink.WindowSink)
 
 	theatre.Start()
-	kbdctl.SetupShortcutKeys(theatre, windowSink)
 
 	api := api.ServeInBackground(theatre, cfg.Api)
 
@@ -43,10 +38,11 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	glvars := rendering.NewGLVars(program, int32(len(theatre.SourceList)))
 
-	// Create extra framebuffers as rendertargets
-	nonWindowStages := theatre.NonWindowStageList
+	for _, sink := range theatre.WindowSinkList {
+		kbdctl.SetupShortcutKeys(theatre, sink)
+	}
 
-	for _, stage := range nonWindowStages {
+	for _, stage := range theatre.NonWindowStageList {
 		rendering.SetupTextures(stage.Sink.Frames())
 		rendering.UseAsFramebuffer(stage.Sink.Frames())
 	}
@@ -62,16 +58,24 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 		rendering.SendFramesToGPU(theatre.SourceList, dt)
 
-		glvars.DrawStage(windowStage)
+		for _, stage := range theatre.WindowStageList {
+			glvars.DrawStage(stage)
+		}
 
-		for _, stage := range nonWindowStages {
+		for _, stage := range theatre.NonWindowStageList {
 			glvars.DrawStage(stage)
 			rendering.GetFrameFromGPUInto(stage.Sink)
 		}
 
+		for _, sink := range theatre.WindowSinkList {
+			sink.Window.SwapBuffers()
+			if sink.Window.ShouldClose() {
+				theatre.ShutdownRequested = true
+			}
+		}
+
 		// Maintenance
 		theatre.Animate(float32(dt.Nanoseconds()) * 1e-9)
-		windowSink.Window.SwapBuffers()
 		frameCounter++
 		if time.Since(frameTimer) > 1*time.Second {
 			if api != nil {
