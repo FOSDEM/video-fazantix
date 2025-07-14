@@ -29,6 +29,8 @@ type Theatre struct {
 	WindowSinkList []*windowsink.WindowSink
 
 	ShutdownRequested bool
+
+	listener map[string][]EventListener
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
@@ -62,11 +64,8 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		WindowStageList:    windowStageList,
 		NonWindowStageList: nonWindowStageList,
 		WindowSinkList:     windowSinkList,
-	}
 
-	err = t.ResetToDefaultScenes()
-	if err != nil {
-		return nil, err
+		listener: make(map[string][]EventListener),
 	}
 
 	return t, nil
@@ -202,6 +201,10 @@ func (t *Theatre) Animate(delta float32) {
 func (t *Theatre) SetScene(stageName string, sceneName string) error {
 	if stage, ok := t.Stages[stageName]; ok {
 		if scene, ok := t.Scenes[sceneName]; ok {
+			t.invoke("set-scene", EventDataSetScene{
+				Stage: stageName,
+				Scene: sceneName,
+			})
 			for i, l := range stage.Layers {
 				l.ApplyState(scene.LayerStates[i])
 			}

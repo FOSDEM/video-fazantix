@@ -52,6 +52,18 @@ section#stages > section > button {
 	margin-top: 10px;
 	width: 100%;
 }
+button[data-scene] {
+    border: 1px solid #8f8f9d;
+    border-radius: 3px;
+    background: linear-gradient(0deg, #c5c5c5 0%, #eaeaea 100%);
+    color: #333;
+}
+button.active {
+    color: white;
+    background: linear-gradient(0deg, #f52727 0%, #f44 100%);
+    box-shadow: 0 0 8px 0 #f44;
+    border-color: #df7a50;
+}
 </style>
 <header>
 	<h1 id="logo">Fazantix</h1>
@@ -117,6 +129,17 @@ function makeWebsocket() {
 			const clientsElem = document.getElementById("stat-clients");
 			clientsElem.innerText = message["ws_clients"];
 		}
+        if ("Event" in message) {
+            switch(message["Event"]) {
+                case "set-scene":
+                    document.querySelectorAll("button[data-scene]").forEach(function(el) {
+                        el.classList.remove("active");
+                    })
+                    let btn = document.querySelector("button[data-stage="+message["Stage"]+"][data-scene="+message["Scene"]+"]")
+                    btn.classList.add("active");
+                    break;
+            }
+        }
         };
 
         socket.onclose = function(event) {

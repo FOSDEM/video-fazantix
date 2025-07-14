@@ -30,6 +30,11 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	api := api.ServeInBackground(theatre, cfg.Api)
 
+	err = theatre.ResetToDefaultScenes()
+	if err != nil {
+		log.Fatalf("could not init default scenes: %s", err)
+	}
+
 	program, err := shaders.BuildGLProgram(theatre.ShaderData())
 	if err != nil {
 		log.Fatalf("could not init GL program: %s", err)

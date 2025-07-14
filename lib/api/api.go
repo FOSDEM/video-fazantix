@@ -34,15 +34,37 @@ type Api struct {
 	wsClients map[*websocket.Conn]bool
 }
 
-func New(cfg *config.ApiCfg, theatre *theatre.Theatre) *Api {
+func New(cfg *config.ApiCfg, t *theatre.Theatre) *Api {
 	a := &Api{}
 	a.cfg = cfg
 	a.mux = http.NewServeMux()
-	a.theatre = theatre
+	a.theatre = t
 	a.srv.Addr = cfg.Bind
 	a.srv.Handler = a.mux
 	a.wsClients = make(map[*websocket.Conn]bool)
 	a.Stats = stats.New()
+
+	t.AddEventListener("set-scene", func(t *theatre.Theatre, data interface{}) {
+		event := data.(theatre.EventDataSetScene)
+		event.Event = "set-scene"
+		log.Printf("Scene switched on stage %s to scene %s\n", event.Stage, event.Scene)
+
+		for ws := range a.wsClients {
+			packet, err := json.Marshal(event)
+			if err != nil {
+				return
+			}
+			err = ws.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err != nil {
+				log.Printf("could not set write deadline: %s\n", err.Error())
+				return
+			}
+			if err := ws.WriteMessage(websocket.TextMessage, packet); err != nil {
+				return
+			}
+		}
+	})
+
 	return a
 }
 
