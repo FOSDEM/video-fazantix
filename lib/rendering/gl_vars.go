@@ -15,6 +15,8 @@ type GLVars struct {
 	NumTextures int32
 	NumLayers   int32
 
+	Program uint32
+
 	// GL IDs
 	VAO              uint32
 	VBO              uint32
@@ -29,6 +31,7 @@ func AllocateGLVars(program uint32, numLayers int32) *GLVars {
 	g := &GLVars{}
 
 	g.NumLayers = numLayers
+	g.Program = program
 
 	vertices := []float32{
 		//  X, Y,  U, V
@@ -82,27 +85,10 @@ func AllocateGLVars(program uint32, numLayers int32) *GLVars {
 	return g
 }
 
-func (g *GLVars) PushCommonVars() {
-	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
-}
-
-func (g *GLVars) ReadLayers(layers []*layer.Layer) {
-	for i := range g.NumLayers {
-		g.LayerPos[(i*4)+0] = layers[i].Position.X
-		g.LayerPos[(i*4)+1] = layers[i].Position.Y
-		g.LayerPos[(i*4)+2] = layers[i].Size.X
-		g.LayerPos[(i*4)+3] = layers[i].Size.Y
-		g.LayerData[(i*4)+0] = layers[i].Opacity
-	}
-}
-
-func (g *GLVars) PushStageVars() {
-	gl.Uniform1ui(g.StageDataUniform, g.StageData)
-	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
-	gl.Uniform4fv(g.LayerPosUniform, g.NumLayers, &g.LayerPos[0])
-
-	// draw vertices on the window stage
-	gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+func (g *GLVars) StartFrame() {
+	gl.UseProgram(g.Program)
+	gl.BindVertexArray(g.VAO)
+	g.pushCommonVars()
 }
 
 func (g *GLVars) DrawStage(stage *layer.Stage) {
@@ -113,7 +99,30 @@ func (g *GLVars) DrawStage(stage *layer.Stage) {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
 	// push vars related to the window stage
-	g.ReadLayers(stage.Layers)
+	g.readLayers(stage.Layers)
 	g.StageData = stage.StageData()
-	g.PushStageVars()
+	g.pushStageVars()
+}
+
+func (g *GLVars) pushCommonVars() {
+	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
+}
+
+func (g *GLVars) readLayers(layers []*layer.Layer) {
+	for i := range g.NumLayers {
+		g.LayerPos[(i*4)+0] = layers[i].Position.X
+		g.LayerPos[(i*4)+1] = layers[i].Position.Y
+		g.LayerPos[(i*4)+2] = layers[i].Size.X
+		g.LayerPos[(i*4)+3] = layers[i].Size.Y
+		g.LayerData[(i*4)+0] = layers[i].Opacity
+	}
+}
+
+func (g *GLVars) pushStageVars() {
+	gl.Uniform1ui(g.StageDataUniform, g.StageData)
+	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
+	gl.Uniform4fv(g.LayerPosUniform, g.NumLayers, &g.LayerPos[0])
+
+	// draw vertices on the window stage
+	gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
 }

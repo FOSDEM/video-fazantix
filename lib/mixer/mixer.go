@@ -81,10 +81,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 	deltaTimer := time.Now()
 	firstFrame := true
 	for !windowSink.Window.ShouldClose() {
-		// Render
-		gl.UseProgram(program)
-
-		gl.BindVertexArray(glvars.VAO)
+		glvars.StartFrame()
 
 		layers = windowStage.Layers
 
@@ -105,9 +102,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 			rendering.SendFrameToGPU(frame, layers[i].Frames().TextureIDs, int(i))
 			layers[i].Frames().FinishedReading(frame)
 		}
-
-		// push vars common for all stages
-		glvars.PushCommonVars()
 
 		glvars.DrawStage(windowStage)
 
