@@ -43,10 +43,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		log.Fatalf("could not init GL program: %s", err)
 	}
 
-	layers := windowStage.Layers
-	numLayers := int32(len(layers))
-
-	glvars := rendering.NewGLVars(program, numLayers)
+	glvars := rendering.NewGLVars(program, int32(len(theatre.SourceList)))
 
 	// Create extra framebuffers as rendertargets
 	nonWindowStages := theatre.NonWindowStageList
@@ -71,8 +68,6 @@ func MakeWindowAndMix(cfg *config.Config) {
 	for !windowSink.Window.ShouldClose() {
 		glvars.StartFrame()
 		dt := deltaTimer.Next()
-
-		layers = windowStage.Layers
 
 		rendering.SendFramesToGPU(theatre.SourceList, dt)
 
