@@ -2,7 +2,6 @@ package mixer
 
 import (
 	"log"
-	"runtime"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/api"
@@ -17,11 +16,6 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
-
-func init() {
-	// The OpenGL stuff must be in one thread
-	runtime.LockOSThread()
-}
 
 func initGL() {
 	if err := gl.Init(); err != nil {
