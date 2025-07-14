@@ -18,16 +18,19 @@ import (
 )
 
 type Theatre struct {
-	Sources            map[string]layer.Source
-	SourceList         []layer.Source
-	Scenes             map[string]*Scene
-	Stages             map[string]*layer.Stage
+	Sources    map[string]layer.Source
+	SourceList []layer.Source
+	Scenes     map[string]*Scene
+	Stages     map[string]*layer.Stage
+
 	WindowStageList    []*layer.Stage
 	NonWindowStageList []*layer.Stage
 
-	listener map[string][]EventListener
+	WindowSinkList []*windowsink.WindowSink
 
 	ShutdownRequested bool
+
+	listener map[string][]EventListener
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
@@ -39,12 +42,14 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 	sceneMap := buildSceneMap(cfg, sourceList)
 	stageMap := buildStageMap(cfg, sourceList, alloc)
 	var windowStageList []*layer.Stage
+	var windowSinkList []*windowsink.WindowSink
 	var nonWindowStageList []*layer.Stage
 
 	for _, stage := range stageMap {
-		switch stage.Sink.(type) {
+		switch sink := stage.Sink.(type) {
 		case *windowsink.WindowSink:
 			windowStageList = append(windowStageList, stage)
+			windowSinkList = append(windowSinkList, sink)
 		default:
 			stage.HFlip = true
 			nonWindowStageList = append(nonWindowStageList, stage)
@@ -59,6 +64,7 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		WindowStageList:    windowStageList,
 		NonWindowStageList: nonWindowStageList,
 		listener:           make(map[string][]EventListener),
+		WindowSinkList:     windowSinkList,
 	}
 
 	err = t.ResetToDefaultScenes()
@@ -226,16 +232,6 @@ func (t *Theatre) ResetToDefaultScenes() error {
 		}
 	}
 	return nil
-}
-
-func (t *Theatre) GetTheSingleWindowStage() *layer.Stage {
-	if len(t.WindowStageList) < 1 {
-		panic("we still don't support running without a window-type sink :(")
-	}
-	if len(t.WindowStageList) > 1 {
-		panic("we still don't support multiple window-type sinks :(")
-	}
-	return t.WindowStageList[0]
 }
 
 func (t *Theatre) ShaderData() *shaders.ShaderData {
