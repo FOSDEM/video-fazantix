@@ -12,6 +12,7 @@ import (
 	"github.com/fosdem/fazantix/lib/rendering"
 	"github.com/fosdem/fazantix/lib/rendering/shaders"
 	"github.com/fosdem/fazantix/lib/theatre"
+	"github.com/fosdem/fazantix/lib/utils"
 	"github.com/fosdem/fazantix/lib/windowsink"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -78,30 +79,14 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	frameCounter := 0
 	frameTimer := time.Now()
-	deltaTimer := time.Now()
-	firstFrame := true
+	var deltaTimer utils.DeltaTimer
 	for !windowSink.Window.ShouldClose() {
 		glvars.StartFrame()
+		dt := deltaTimer.Next()
 
 		layers = windowStage.Layers
 
-		dt := time.Since(deltaTimer)
-		deltaTimer = time.Now()
-
-		// send frames
-		for i := range numLayers {
-			layers[i].Frames().Age(dt)
-			if layers[i].Frames().IsStill && !firstFrame {
-				continue
-			}
-
-			frame := layers[i].Frames().GetFrameForReading()
-			if frame == nil {
-				continue
-			}
-			rendering.SendFrameToGPU(frame, layers[i].Frames().TextureIDs, int(i))
-			layers[i].Frames().FinishedReading(frame)
-		}
+		rendering.SendFramesToGPU(theatre.SourceList, dt)
 
 		glvars.DrawStage(windowStage)
 
@@ -126,6 +111,5 @@ func MakeWindowAndMix(cfg *config.Config) {
 			frameTimer = time.Now()
 		}
 		glfw.PollEvents()
-		firstFrame = false
 	}
 }
