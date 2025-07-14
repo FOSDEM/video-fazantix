@@ -17,15 +17,6 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-func initGL() {
-	if err := gl.Init(); err != nil {
-		panic(err)
-	}
-
-	version := gl.GoStr(gl.GetString(gl.VERSION))
-	log.Printf("OpenGL version '%s'", version)
-}
-
 func MakeWindowAndMix(cfg *config.Config) {
 	alloc := &encdec.DumbFrameAllocator{}
 
@@ -34,7 +25,10 @@ func MakeWindowAndMix(cfg *config.Config) {
 		log.Fatalf("could not build theatre: %s", err)
 	}
 
-	initGL()
+	err = rendering.Init()
+	if err != nil {
+		log.Fatalf("could not initialise renderer: %s", err)
+	}
 	// assume exactly one window stage for now
 	windowStage := theatre.GetTheSingleWindowStage()
 	windowSink := windowStage.Sink.(*windowsink.WindowSink)
