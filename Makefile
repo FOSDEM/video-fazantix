@@ -1,4 +1,4 @@
-CONFIG=examples/fosdem.yaml
+CONFIG=examples/imagesource.yaml
 
 builddir:
 	mkdir -p build
