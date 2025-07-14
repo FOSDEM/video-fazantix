@@ -50,6 +50,7 @@ func (a *Api) Serve() error {
 	if a.cfg.EnableProfiler {
 		a.mux.HandleFunc("/prof", a.profileCPU)
 	}
+	a.mux.HandleFunc("/api/kill", a.suicide)
 	a.mux.HandleFunc("/api/stats", a.stats)
 	a.mux.HandleFunc("/api/scene", a.handleScene)
 	a.mux.HandleFunc("/api/scene/{stage}/{scene}", a.handleScene)
@@ -106,6 +107,16 @@ type Stats struct {
 	Uptime             float64 `json:"uptime"`
 	FPS                int     `json:"fps"`
 	WsClients          int     `json:"ws_clients"`
+}
+
+func (a *Api) suicide(w http.ResponseWriter, _ *http.Request) {
+	log.Printf("shutting down as per api request")
+	a.theatre.ShutdownRequested = true
+	_, err := fmt.Fprintf(w, "\"ok\"\n")
+	if err != nil {
+		log.Printf("could not write response: %s\n", err.Error())
+		return
+	}
 }
 
 func (a *Api) stats(w http.ResponseWriter, _ *http.Request) {

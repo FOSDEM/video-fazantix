@@ -56,7 +56,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 	frameCounter := 0
 	frameTimer := time.Now()
 	var deltaTimer utils.DeltaTimer
-	for !windowSink.Window.ShouldClose() {
+	for !theatre.ShutdownRequested {
 		glvars.StartFrame()
 		dt := deltaTimer.Next()
 

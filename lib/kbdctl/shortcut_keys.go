@@ -28,7 +28,7 @@ func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window
 				mods&glfw.ModControl != 0 &&
 				mods&glfw.ModShift != 0 {
 				log.Println("told to quit, exiting")
-				w.SetShouldClose(true)
+				theatre.ShutdownRequested = true
 			}
 		}
 		if action == glfw.Press {

@@ -24,6 +24,8 @@ type Theatre struct {
 	Stages             map[string]*layer.Stage
 	WindowStageList    []*layer.Stage
 	NonWindowStageList []*layer.Stage
+
+	ShutdownRequested bool
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
