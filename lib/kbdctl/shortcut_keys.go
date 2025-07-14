@@ -14,6 +14,10 @@ func SetupShortcutKeys(theatre *theatre.Theatre, ws *windowsink.WindowSink) {
 	ws.Window.SetKeyCallback(keyCallback(theatre, ws.Frames().Name))
 }
 
+func Poll() {
+	glfw.PollEvents()
+}
+
 func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	names := make([]string, len(theatre.Scenes))
 	copy(names, slices.Sorted(maps.Keys(theatre.Scenes)))
