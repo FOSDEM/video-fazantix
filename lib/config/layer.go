@@ -21,68 +21,68 @@ type LayerCfgExtendedPositioning struct {
 	Cy     float32
 }
 
-func (s *LayerCfg) Validate() error {
-	if s.X != 0 && (s.Left != 0 || s.Right != 0) {
+func (l *LayerCfg) Validate() error {
+	if l.X != 0 && (l.Left != 0 || l.Right != 0) {
 		return fmt.Errorf("cannot set both X and Left or Right for the position")
 	}
-	if s.Y != 0 && (s.Top != 0 || s.Bottom != 0) {
+	if l.Y != 0 && (l.Top != 0 || l.Bottom != 0) {
 		return fmt.Errorf("cannot set both Y and Top or Bottom for the position")
 	}
-	if s.Top != 0 && s.Bottom != 0 && s.Left != 0 && s.Right != 0 {
+	if l.Top != 0 && l.Bottom != 0 && l.Left != 0 && l.Right != 0 {
 		return fmt.Errorf("cannot define all four edges for position")
 	}
 
-	s.Left = normalize(s.Left, 9.0/16)
-	s.Right = normalize(s.Right, 9.0/16)
-	s.Top = normalize(s.Top, 1)
-	s.Bottom = normalize(s.Bottom, 1)
+	l.Left = normalize(l.Left, 9.0/16)
+	l.Right = normalize(l.Right, 9.0/16)
+	l.Top = normalize(l.Top, 1)
+	l.Bottom = normalize(l.Bottom, 1)
 
-	if s.Scale == 0 {
-		if s.Left != 0 && s.Right != 0 {
-			s.Scale = 1.0 - s.Left - s.Right
-		} else if s.Top != 0 && s.Bottom != 0 {
-			s.Scale = 1.0 - s.Top - s.Bottom
+	if l.Scale == 0 {
+		if l.Left != 0 && l.Right != 0 {
+			l.Scale = 1.0 - l.Left - l.Right
+		} else if l.Top != 0 && l.Bottom != 0 {
+			l.Scale = 1.0 - l.Top - l.Bottom
 		}
 	}
 
-	if s.X == 0 && s.Y == 0 {
-		if s.Left != 0 {
-			s.X = s.Left
+	if l.X == 0 && l.Y == 0 {
+		if l.Left != 0 {
+			l.X = l.Left
 		} else {
-			s.X = (1.0 - s.Right) - s.Scale
+			l.X = (1.0 - l.Right) - l.Scale
 		}
-		if s.Top != 0 {
-			s.Y = s.Top
+		if l.Top != 0 {
+			l.Y = l.Top
 		} else {
-			s.Y = (1.0 - s.Bottom) - s.Scale
+			l.Y = (1.0 - l.Bottom) - l.Scale
 		}
 	}
 
-	if s.Cx != 0 {
-		if s.Scale == 0 {
+	if l.Cx != 0 {
+		if l.Scale == 0 {
 			// Figure out scale from an edge constraint
-			if s.Left != 0 {
-				s.Scale = (s.Cx - s.Left) * 2
-			} else if s.Right != 0 {
-				s.Scale = ((1.0 - s.Cx) - s.Right) * 2
+			if l.Left != 0 {
+				l.Scale = (l.Cx - l.Left) * 2
+			} else if l.Right != 0 {
+				l.Scale = ((1.0 - l.Cx) - l.Right) * 2
 			} else {
 				return fmt.Errorf("horisontal scale undercontrained")
 			}
 		}
-		s.X = s.Cx - (s.Scale / 2)
+		l.X = l.Cx - (l.Scale / 2)
 	}
-	if s.Cy != 0 {
-		if s.Scale == 0 {
+	if l.Cy != 0 {
+		if l.Scale == 0 {
 			// Figure out scale from an edge constraint
-			if s.Top != 0 {
-				s.Scale = (s.Cy - s.Top) * 2
-			} else if s.Bottom != 0 {
-				s.Scale = ((1.0 - s.Cy) - s.Bottom) * 2
+			if l.Top != 0 {
+				l.Scale = (l.Cy - l.Top) * 2
+			} else if l.Bottom != 0 {
+				l.Scale = ((1.0 - l.Cy) - l.Bottom) * 2
 			} else {
 				return fmt.Errorf("vertical scale undercontrained")
 			}
 		}
-		s.Y = s.Cy - (s.Scale / 2)
+		l.Y = l.Cy - (l.Scale / 2)
 	}
 
 	return nil
