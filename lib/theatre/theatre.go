@@ -102,10 +102,11 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 
 func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene {
 	scenes := make(map[string]*Scene)
-	for sceneName, layerStateMap := range cfg.Scenes {
+	for sceneName, layerCfgMap := range cfg.Scenes {
 		layerStates := make([]*layer.LayerState, len(sources))
 		for i, src := range sources {
-			layerStates[i] = layerStateMap[src.Frames().Name]
+			layerStates[i] = layerCfgMap[src.Frames().Name].CopyState()
+			log.Printf("layer state %d: %+v", i, layerStates[i])
 		}
 		scenes[sceneName] = &Scene{
 			Name:        sceneName,
@@ -117,8 +118,8 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 
 func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.Source, error) {
 	enabledSources := make(map[string]struct{})
-	for _, layerStateMap := range cfg.Scenes {
-		for name := range layerStateMap {
+	for _, layerCfgMap := range cfg.Scenes {
+		for name := range layerCfgMap {
 			if _, ok := cfg.Sources[name]; ok {
 				enabledSources[name] = struct{}{}
 			} else {
