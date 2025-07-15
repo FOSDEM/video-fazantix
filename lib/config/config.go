@@ -6,13 +6,12 @@ import (
 	"path/filepath"
 
 	"github.com/fosdem/fazantix/lib/encdec"
-	"github.com/fosdem/fazantix/lib/layer"
 	yaml "github.com/goccy/go-yaml"
 )
 
 type Config struct {
 	Sources map[string]*SourceCfg
-	Scenes  map[string]map[string]*layer.LayerState
+	Scenes  map[string]map[string]*LayerCfg
 	Stages  map[string]*StageCfg `yaml:"sinks"`
 	Api     *ApiCfg
 }
@@ -65,7 +64,9 @@ func (c *Config) Validate() error {
 	for k, v := range c.Scenes {
 		for ks, vs := range v {
 			err = vs.Validate()
-			if err != nil {return fmt.Errorf("scene %s layer %s is invalid: %w", k, ks, err)}
+			if err != nil {
+				return fmt.Errorf("scene %s layer %s is invalid: %w", k, ks, err)
+			}
 		}
 	}
 	for k, v := range c.Stages {
@@ -195,6 +196,7 @@ func (s *StageCfg) Validate() error {
 func (s *SourceCfg) Validate() error {
 	return s.Cfg.Validate()
 }
+
 func (s *ImgSourceCfg) Validate() error {
 	if s.Path == "" {
 		return fmt.Errorf("image path must be specified")
