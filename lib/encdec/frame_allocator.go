@@ -12,6 +12,7 @@ type FrameInfo struct {
 	FrameCfg
 	FrameType FrameType
 	PixFmt    []uint8
+	TransportType
 }
 
 type FrameAllocator interface {
@@ -25,16 +26,7 @@ func (d *DumbFrameAllocator) NewFrame(info *FrameInfo) *Frame {
 	w := info.Width
 	h := info.Height
 
-	switch t {
-	case YUV422Frames:
-		return d.makeFrame(t, w*h*2, w, h)
-	case RGBAFrames:
-		return d.makeFrame(t, w*h*4, w, h)
-	case RGBFrames:
-		return d.makeFrame(t, w*h*3, w, h)
-	default:
-		panic("unknown frame type")
-	}
+	return d.makeFrame(t, info.CalcBufSize(), w, h)
 }
 
 func (d *DumbFrameAllocator) makeFrame(t FrameType, n int, w int, h int) *Frame {
@@ -60,4 +52,21 @@ func (f *FrameCfg) Validate(isWindow bool) error {
 		return fmt.Errorf("height must be at least 1")
 	}
 	return nil
+}
+
+func (f *FrameInfo) CalcBufSize() int {
+	t := f.FrameType
+	w := f.Width
+	h := f.Height
+
+	switch t {
+	case YUV422Frames:
+		return w * h * 2
+	case RGBAFrames:
+		return w * h * 4
+	case RGBFrames:
+		return w * h * 3
+	default:
+		panic("unknown frame type")
+	}
 }

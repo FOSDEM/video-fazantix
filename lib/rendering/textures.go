@@ -145,3 +145,17 @@ func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32
 	)
 	TextureUploadCounter += uint64(len(data))
 }
+
+func SendPBOTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32, pboType uint32, pboOffset int, pboSize uint32) {
+	// this function requires that the PBO is already bound
+	gl.ActiveTexture(uint32(gl.TEXTURE0 + offset))
+	gl.BindTexture(gl.TEXTURE_2D, texID)
+	gl.TexSubImage2D(
+		gl.TEXTURE_2D,
+		0, 0, 0,
+		int32(w), int32(h),
+		channelType, gl.UNSIGNED_BYTE, gl.PtrOffset(pboOffset),
+	)
+	gl.BindBuffer(pboType, 0)
+	TextureUploadCounter += uint64(pboSize)
+}

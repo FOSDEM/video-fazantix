@@ -2,6 +2,7 @@ package rendering
 
 import (
 	"time"
+	"unsafe"
 
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
@@ -14,18 +15,47 @@ func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 		channelType = gl.RGBA
 	}
 
+	gl.BindBuffer(frame.GLPixelBufferType, frame.GLPixelBufferID)
+
+	// this buffer has been written to until now, unmap it so that we can read from it
+	gl.UnmapBuffer(frame.GLPixelBufferType)
+
 	for j := 0; j < frame.NumTextures; j++ {
-		dataPtr, w, h := frame.Texture(j)
-		SendTextureToGPU(
+		pboOffset, size, w, h := frame.TextureOffset(j)
+		SendPBOTextureToGPU(
 			textureIDs[j], offset*3+j,
 			w, h, channelType,
-			dataPtr,
+			frame.GLPixelBufferType,
+			pboOffset, uint32(size),
 		)
 	}
+
+	// map the buffer so that it can be written to
+	buffer := gl.MapBuffer(frame.GLPixelBufferType, gl.WRITE_ONLY)
+	if buffer == nil {
+		panic("no buffer?")
+	}
+	frame.Data = unsafe.Slice((*byte)(buffer), frame.GLPixelBufferSize)
 }
 
 func GetFrameFromGPU(frame *encdec.Frame) {
-	gl.ReadPixels(0, 0, int32(frame.Width), int32(frame.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
+	gl.BindBuffer(frame.GLPixelBufferType, frame.GLPixelBufferID)
+	if frame.Data != nil {
+		// since we're now going to write pixels into this frame
+		// whoever was reading from it has released it and we can now
+		// unmap its buffer
+		gl.UnmapBuffer(frame.GLPixelBufferType)
+	}
+
+	gl.ReadPixels(0, 0, int32(frame.Width), int32(frame.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.PtrOffset(0))
+
+	// FIXME: Mapping the buffer immediately after calling ReadPixels is bad and forces it to be synchronous
+	// however, even this is better than doing raw copy without PBO (but is this true on devices with integrated memory?)
+	buffer := gl.MapBuffer(frame.GLPixelBufferType, gl.READ_ONLY)
+	if buffer == nil {
+		panic("no buffer?")
+	}
+	frame.Data = unsafe.Slice((*byte)(buffer), frame.GLPixelBufferSize)
 }
 
 type ThingWithFrames interface {

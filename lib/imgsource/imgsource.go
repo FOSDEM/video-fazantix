@@ -51,6 +51,7 @@ func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *Im
 				Height:             s.rgba.Rect.Size().Y,
 				NumAllocatedFrames: 1,
 			},
+			TransportType: encdec.TransportToGPU,
 		},
 		alloc,
 	)

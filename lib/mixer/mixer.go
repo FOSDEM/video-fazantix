@@ -5,7 +5,6 @@ import (
 
 	"github.com/fosdem/fazantix/lib/api"
 	"github.com/fosdem/fazantix/lib/config"
-	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/kbdctl"
 	"github.com/fosdem/fazantix/lib/rendering"
 	"github.com/fosdem/fazantix/lib/rendering/shaders"
@@ -14,16 +13,16 @@ import (
 )
 
 func MakeWindowAndMix(cfg *config.Config) {
-	alloc := &encdec.DumbFrameAllocator{}
+	alloc := &rendering.PBOFrameAllocator{}
+
+	err := rendering.Init()
+	if err != nil {
+		log.Fatalf("could not initialise renderer: %s", err)
+	}
 
 	theatre, err := theatre.New(cfg, alloc)
 	if err != nil {
 		log.Fatalf("could not build theatre: %s", err)
-	}
-
-	err = rendering.Init()
-	if err != nil {
-		log.Fatalf("could not initialise renderer: %s", err)
 	}
 
 	theatre.Start()

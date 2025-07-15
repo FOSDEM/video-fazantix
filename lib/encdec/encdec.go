@@ -16,6 +16,14 @@ const (
 	RGBFrames
 )
 
+type TransportType int
+
+const (
+	TransportUnknown TransportType = iota
+	TransportToGPU
+	TransportFromGPU
+)
+
 type Frame struct {
 	Data           []byte
 	TextureOffsets [3][2]int
@@ -26,6 +34,10 @@ type Frame struct {
 	Height         int
 	LastOffset     int
 	Type           FrameType
+
+	GLPixelBufferID   uint32
+	GLPixelBufferSize uint32
+	GLPixelBufferType uint32
 
 	NumReaders         atomic.Int32
 	MarkedForRecycling bool
@@ -59,6 +71,15 @@ func (i *Frame) Texture(idx int) ([]byte, int, int) {
 	w := i.TextureWidths[idx]
 	h := i.TextureHeights[idx]
 	return ptr, w, h
+}
+
+func (i *Frame) TextureOffset(idx int) (int, int, int, int) {
+	start := i.TextureOffsets[idx][0]
+	upto := i.TextureOffsets[idx][1]
+	w := i.TextureWidths[idx]
+	h := i.TextureHeights[idx]
+
+	return start, upto - start, w, h
 }
 
 func DecodeYUYV422(buf []byte, into *Frame) error {
