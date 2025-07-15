@@ -88,9 +88,9 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 
 		switch sc := stageCfg.SinkCfg.(type) {
 		case *config.FFmpegSinkCfg:
-			stage.Sink = ffmpegsink.New(stageName, sc, alloc)
+			stage.Sink = ffmpegsink.New(stageName, sc, &stageCfg.FrameCfg, alloc)
 		case *config.WindowSinkCfg:
-			stage.Sink = windowsink.New(stageName, sc, alloc)
+			stage.Sink = windowsink.New(stageName, sc, &stageCfg.FrameCfg, alloc)
 		default:
 			panic(fmt.Sprintf("unhandled sink type: %+v", stageCfg.SinkCfg))
 		}

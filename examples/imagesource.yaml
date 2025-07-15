@@ -111,7 +111,6 @@ sinks:
     frames:
       width: 1280
       height: 720
-      num_allocated_frames: 5
     default_scene: default
 
 api:
