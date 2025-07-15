@@ -42,7 +42,7 @@ func (p *PBOFrameAllocator) NewFrame(info *encdec.FrameInfo) *encdec.Frame {
 	gl.BindBuffer(frame.GLPixelBufferType, frame.GLPixelBufferID)
 	gl.BufferData(frame.GLPixelBufferType, bufSize, gl.Ptr(nil), streamType)
 	if info.TransportType == encdec.TransportToGPU {
-		gl.MapBuffer(frame.GLPixelBufferType, gl.WRITE_ONLY)
+		mapBuffer(frame, gl.WRITE_ONLY)
 	}
 	gl.BindBuffer(frame.GLPixelBufferType, 0)
 

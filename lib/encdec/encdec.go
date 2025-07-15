@@ -88,6 +88,9 @@ func DecodeYUYV422(buf []byte, into *Frame) error {
 	numPixels := len(buf) / 2
 	numChromaPixels := numPixels / 2 // the chroma plane is half-sized
 
+	if len(into.Data) == 0 {
+		panic("oops, frame with a buf size of 0?")
+	}
 	if len(buf) != len(into.Data) {
 		return fmt.Errorf("expected buffer of size %d but got %d", len(into.Data), len(buf))
 	}
@@ -140,6 +143,10 @@ func FrameFromImage(img image.Image, into *Frame) error {
 
 	nrgba := image.NewNRGBA(image.Rect(0, 0, w, h))
 	bufSize := len(nrgba.Pix)
+
+	if len(into.Data) == 0 {
+		panic("oops, frame with a buf size of 0?")
+	}
 
 	if bufSize != len(into.Data) {
 		return fmt.Errorf("expected buffer of size %d but got %d", len(into.Data), bufSize)

@@ -31,11 +31,8 @@ func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 	}
 
 	// map the buffer so that it can be written to
-	buffer := gl.MapBuffer(frame.GLPixelBufferType, gl.WRITE_ONLY)
-	if buffer == nil {
-		panic("no buffer?")
-	}
-	frame.Data = unsafe.Slice((*byte)(buffer), frame.GLPixelBufferSize)
+	mapBuffer(frame, gl.WRITE_ONLY)
+	gl.BindBuffer(frame.GLPixelBufferType, 0)
 }
 
 func GetFrameFromGPU(frame *encdec.Frame) {
@@ -51,7 +48,12 @@ func GetFrameFromGPU(frame *encdec.Frame) {
 
 	// FIXME: Mapping the buffer immediately after calling ReadPixels is bad and forces it to be synchronous
 	// however, even this is better than doing raw copy without PBO (but is this true on devices with integrated memory?)
-	buffer := gl.MapBuffer(frame.GLPixelBufferType, gl.READ_ONLY)
+	mapBuffer(frame, gl.READ_ONLY)
+	gl.BindBuffer(frame.GLPixelBufferType, 0)
+}
+
+func mapBuffer(frame *encdec.Frame, mapType uint32) {
+	buffer := gl.MapBuffer(frame.GLPixelBufferType, mapType)
 	if buffer == nil {
 		panic("no buffer?")
 	}

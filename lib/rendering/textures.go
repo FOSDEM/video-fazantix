@@ -156,6 +156,5 @@ func SendPBOTextureToGPU(texID uint32, offset int, w int, h int, channelType uin
 		int32(w), int32(h),
 		channelType, gl.UNSIGNED_BYTE, gl.PtrOffset(pboOffset),
 	)
-	gl.BindBuffer(pboType, 0)
 	TextureUploadCounter += uint64(pboSize)
 }
