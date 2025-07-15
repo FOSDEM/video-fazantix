@@ -122,7 +122,7 @@ func (f *FrameForwarder) recycleFrame(frame *encdec.Frame) {
 
 func (f *FrameForwarder) allocateFrames(num int) {
 	if num < 1 {
-		panic(fmt.Sprintf("[%s]: %d is an invalid number of requested allocated frames", f.Name, num))
+		return
 	}
 	f.bin = make([]*encdec.Frame, num)
 	for i := range num {

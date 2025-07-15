@@ -115,12 +115,10 @@ type FFmpegSourceCfg struct {
 	Cmd             string
 }
 type FFmpegSinkCfg struct {
-	encdec.FrameCfg `yaml:"frames"`
-	Cmd             string
+	Cmd string
 }
 
 type WindowSinkCfg struct {
-	encdec.FrameCfg `yaml:"frames"`
 }
 
 type ImgSourceCfg struct {
@@ -186,7 +184,12 @@ func (s *StageCfg) Validate() error {
 	if s.DefaultScene == "" {
 		return fmt.Errorf("default scene must be specified")
 	}
-	err := s.FrameCfg.Validate()
+
+	isWindow := false
+	if _, ok := s.SinkCfg.(*WindowSinkCfg); ok {
+		isWindow = true
+	}
+	err := s.FrameCfg.Validate(isWindow)
 	if err != nil {
 		return fmt.Errorf("invalid frame config: %w", err)
 	}
@@ -202,4 +205,29 @@ func (s *ImgSourceCfg) Validate() error {
 		return fmt.Errorf("image path must be specified")
 	}
 	return nil
+}
+
+func (s *FFmpegSourceCfg) Validate() error {
+	if s.Cmd == "" {
+		return fmt.Errorf("ffmpeg cmd must be specified")
+	}
+	return s.FrameCfg.Validate(false)
+}
+
+func (s *FFmpegSinkCfg) Validate() error {
+	if s.Cmd == "" {
+		return fmt.Errorf("ffmpeg cmd must be specified")
+	}
+	return nil
+}
+
+func (s *WindowSinkCfg) Validate() error {
+	return nil
+}
+
+func (s *V4LSourceCfg) Validate() error {
+	if s.Path == "" {
+		return fmt.Errorf("path to video device must be specified")
+	}
+	return s.FrameCfg.Validate(false)
 }

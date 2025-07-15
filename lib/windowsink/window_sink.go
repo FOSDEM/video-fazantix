@@ -14,14 +14,14 @@ type WindowSink struct {
 	Window *glfw.Window
 }
 
-func New(name string, cfg *config.WindowSinkCfg, alloc encdec.FrameAllocator) *WindowSink {
+func New(name string, cfg *config.WindowSinkCfg, frameCfg *encdec.FrameCfg, alloc encdec.FrameAllocator) *WindowSink {
 	w := &WindowSink{}
 	w.frames.Init(
 		name,
 		&encdec.FrameInfo{
 			FrameType: encdec.RGBFrames,
 			PixFmt:    []uint8{},
-			FrameCfg:  cfg.FrameCfg,
+			FrameCfg:  *frameCfg,
 		},
 		alloc,
 	)

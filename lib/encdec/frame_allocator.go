@@ -46,15 +46,18 @@ func (d *DumbFrameAllocator) makeFrame(t FrameType, n int, w int, h int) *Frame 
 	}
 }
 
-func (f *FrameCfg) Validate() error {
-	if f.NumAllocatedFrames < 1 {
-		return fmt.Errorf("number of allocated frames should be at least 1")
+func (f *FrameCfg) Validate(isWindow bool) error {
+	if !isWindow && f.NumAllocatedFrames < 1 {
+		return fmt.Errorf("number of allocated frames must be at least 1")
+	}
+	if isWindow && f.NumAllocatedFrames != 0 {
+		return fmt.Errorf("number of allocated frames for window sinks must be 0")
 	}
 	if f.Width < 1 {
-		return fmt.Errorf("width should be at least 1")
+		return fmt.Errorf("width must be at least 1")
 	}
 	if f.Height < 1 {
-		return fmt.Errorf("height should be at least 1")
+		return fmt.Errorf("height must be at least 1")
 	}
 	return nil
 }
