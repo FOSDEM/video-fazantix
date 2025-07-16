@@ -3,7 +3,7 @@ package device
 import (
 	"fmt"
 
-	"github.com/fosdem/fazantix/lib/v4lsource/v4l2"
+	"github.com/fosdem/fazantix/external/go4vl/v4l2"
 )
 
 // GetControl queries the device for information about the specified control id.

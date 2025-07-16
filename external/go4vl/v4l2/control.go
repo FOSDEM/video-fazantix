@@ -92,7 +92,7 @@ func GetControlValue(fd uintptr, id CtrlID) (CtrlValue, error) {
 func SetControlValue(fd uintptr, id CtrlID, val CtrlValue) error {
 	ctrlInfo, err := QueryControlInfo(fd, id)
 	if err != nil {
-		return fmt.Errorf("set control value: id %s: %w", id, err)
+		return fmt.Errorf("set control value: id %d: %w", id, err)
 	}
 	if val < ctrlInfo.Minimum || val > ctrlInfo.Maximum {
 		return fmt.Errorf("set control value: out-of-range failure: val %d: expected ctrl.Min %d, ctrl.Max %d", val, ctrlInfo.Minimum, ctrlInfo.Maximum)
@@ -134,7 +134,7 @@ func GetControl(fd uintptr, id CtrlID) (Control, error) {
 	// retrieve control value
 	ctrlValue, err := GetControlValue(fd, uint32(id))
 	if err != nil {
-		return Control{}, fmt.Errorf("get control: %w", id, err)
+		return Control{}, fmt.Errorf("get control on %d: %w", id, err)
 	}
 
 	control.Value = ctrlValue

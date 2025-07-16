@@ -4,15 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	sys "syscall"
 
-	"github.com/fosdem/fazantix/lib/v4lsource/v4l2"
+	"github.com/fosdem/fazantix/external/go4vl/v4l2"
 )
 
 type Device struct {
 	path         string
-	file         *os.File
 	fd           uintptr
 	config       config
 	bufType      v4l2.BufType
@@ -417,7 +415,6 @@ func (d *Device) startStreamLoop(ctx context.Context) error {
 						d.output <- []byte{}
 					}
 					d.output <- frame
-					frame = nil
 				} else {
 					d.output <- []byte{}
 				}

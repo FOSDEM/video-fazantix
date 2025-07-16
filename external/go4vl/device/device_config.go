@@ -1,7 +1,7 @@
 package device
 
 import (
-	"github.com/fosdem/fazantix/lib/v4lsource/v4l2"
+	"github.com/fosdem/fazantix/external/go4vl/v4l2"
 )
 
 type config struct {

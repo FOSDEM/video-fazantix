@@ -9,11 +9,11 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	"github.com/fosdem/fazantix/external/go4vl/device"
+	"github.com/fosdem/fazantix/external/go4vl/v4l2"
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
-	"github.com/fosdem/fazantix/lib/v4lsource/device"
-	"github.com/fosdem/fazantix/lib/v4lsource/v4l2"
 )
 
 type V4LSource struct {
