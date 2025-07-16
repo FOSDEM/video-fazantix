@@ -9,12 +9,11 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	"github.com/fosdem/fazantix/external/go4vl/device"
+	"github.com/fosdem/fazantix/external/go4vl/v4l2"
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
-
-	"github.com/vladimirvivien/go4vl/device"
-	"github.com/vladimirvivien/go4vl/v4l2"
 )
 
 type V4LSource struct {
@@ -122,7 +121,7 @@ func (s *V4LSource) Start() bool {
 		s.frames.Init(
 			s.frames.Name,
 			&encdec.FrameInfo{
-				FrameType: encdec.RGBAFrames,
+				FrameType: encdec.YUV422pFrames,
 				PixFmt:    []uint8{},
 				FrameCfg:  frameCfg,
 			},
@@ -175,13 +174,8 @@ func (s *V4LSource) decodeFrames422p() {
 		if frame == nil {
 			continue // drop the frame as instructed
 		}
-
-		err := encdec.DecodeYUYV422(rawFrame, frame)
-		if err != nil {
-			s.log("Could not decode frame: %s", err)
-			s.frames.FailedWriting(frame)
-			continue
-		}
+		_ = encdec.PrepareYUYV(frame)
+		copy(frame.Data, rawFrame)
 		s.frames.FinishedWriting(frame)
 	}
 }

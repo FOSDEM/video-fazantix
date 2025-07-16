@@ -28,6 +28,8 @@ func (d *DumbFrameAllocator) NewFrame(info *FrameInfo) *Frame {
 	switch t {
 	case YUV422Frames:
 		return d.makeFrame(t, w*h*2, w, h)
+	case YUV422pFrames:
+		return d.makeFrame(t, w*h*2, w, h)
 	case RGBAFrames:
 		return d.makeFrame(t, w*h*4, w, h)
 	case RGBFrames:
