@@ -4,6 +4,8 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"io/fs"
 	"log"
 	"maps"
@@ -12,6 +14,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/fosdem/fazantix/lib/imgsource"
 	"github.com/gorilla/websocket"
 
 	"github.com/fosdem/fazantix/lib/config"
@@ -77,6 +80,7 @@ func (a *Api) Serve() error {
 	a.mux.HandleFunc("/api/scene/{stage}/{scene}", a.handleScene)
 	a.mux.HandleFunc("/api/config", a.handleConfig)
 	a.mux.HandleFunc("/api/ws", a.handleWebsocket)
+	a.mux.HandleFunc("/api/media/{source}", a.handleMediaSource)
 	a.mux.Handle("/", http.FileServer(http.FS(contentFS)))
 	return a.srv.ListenAndServe()
 }
@@ -84,6 +88,46 @@ func (a *Api) Serve() error {
 type SceneReq struct {
 	Scene string
 	Stage string
+}
+
+func (a *Api) handleMediaSource(w http.ResponseWriter, req *http.Request) {
+	sourceName := req.PathValue("source")
+	if sourceName == "" {
+		http.Error(w, "Missing source name", http.StatusBadRequest)
+		return
+	}
+	source := a.theatre.Sources[sourceName]
+	if source == nil {
+		http.Error(w, "Source does not exist", http.StatusNotFound)
+		return
+	}
+
+	imgSource, ok := source.(*imgsource.ImgSource)
+	if !ok {
+		http.Error(w, "not a valid image source", http.StatusBadRequest)
+		return
+	}
+
+	if req.Method == "GET" {
+		png.Encode(w, imgSource.GetImage())
+		return
+	}
+	if req.Method == "PUT" {
+		newImage, ftype, err := image.Decode(req.Body)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("not a valid image: %s", err), http.StatusBadRequest)
+			return
+		}
+		log.Printf("Image source %s was updated with new %s image (%dx%d)\n", sourceName, ftype, newImage.Bounds().Dx(), newImage.Bounds().Dy())
+		err = imgSource.SetImage(newImage)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("could not update image: %s", err), http.StatusBadRequest)
+			return
+		}
+		return
+	}
+
+	http.Error(w, "Invalid method, only GET and PUT supported", http.StatusMethodNotAllowed)
 }
 
 func (a *Api) handleScene(w http.ResponseWriter, req *http.Request) {

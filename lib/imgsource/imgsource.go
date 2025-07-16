@@ -49,7 +49,7 @@ func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *Im
 			FrameCfg: encdec.FrameCfg{
 				Width:              s.rgba.Rect.Size().X,
 				Height:             s.rgba.Rect.Size().Y,
-				NumAllocatedFrames: 1,
+				NumAllocatedFrames: 2,
 			},
 		},
 		alloc,
@@ -74,21 +74,9 @@ func (s *ImgSource) Start() bool {
 	s.log("Size: %dx%d", w, h)
 
 	s.frames.IsReady = true
-	s.frames.IsStill = true
-
-	frame := s.frames.GetFrameForWriting()
-	if frame == nil {
-		s.log("Image source dropped its one and only frame - this is probably a bug")
-		return false
-	}
-	err := encdec.FrameFromImage(s.img, frame)
-	if err != nil {
-		s.log("Decode error: %s", err)
-		s.frames.FailedWriting(frame)
-		return false
-	}
-	s.frames.FinishedWriting(frame)
-	return true
+	s.frames.HoldFrame = layer.Hold
+	err := s.SetImage(s.img)
+	return err == nil
 }
 
 func (s *ImgSource) Frames() *layer.FrameForwarder {
@@ -97,4 +85,22 @@ func (s *ImgSource) Frames() *layer.FrameForwarder {
 
 func (s *ImgSource) log(msg string, args ...interface{}) {
 	s.Frames().Log(msg, args...)
+}
+
+func (s *ImgSource) GetImage() image.Image {
+	return s.img
+}
+
+func (s *ImgSource) SetImage(newImage image.Image) error {
+	s.img = newImage
+	s.rgba = image.NewNRGBA(s.img.Bounds())
+	frame := s.frames.GetFrameForWriting()
+	err := encdec.FrameFromImage(s.img, frame)
+	if err != nil {
+		s.log("Decode error: %s", err)
+		s.frames.FailedWriting(frame)
+		return err
+	}
+	s.frames.FinishedWriting(frame)
+	return nil
 }

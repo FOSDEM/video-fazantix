@@ -43,15 +43,11 @@ func GetFrameFromGPUInto(into ThingWithFrames) {
 }
 
 func SendFramesToGPU[F ThingWithFrames](from []F, dt time.Duration) {
-	isFirstFrame := (dt == 0)
 
 	for i, thing := range from {
 		frames := thing.Frames()
 
 		frames.Age(dt)
-		if frames.IsStill && !isFirstFrame {
-			continue
-		}
 
 		frame := frames.GetFrameForReading()
 		if frame == nil {
