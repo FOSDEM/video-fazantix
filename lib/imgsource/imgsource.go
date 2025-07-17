@@ -2,6 +2,7 @@ package imgsource
 
 import (
 	"os"
+	"time"
 
 	"image"
 	_ "image/jpeg"
@@ -10,6 +11,7 @@ import (
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/jhenstridge/go-inotify"
 )
 
 type ImgSource struct {
@@ -25,22 +27,10 @@ func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *Im
 	s := &ImgSource{}
 	s.frames.Name = name
 
-	s.path = string(cfg.Path)
-	s.log("Loading")
-	imgFile, err := os.Open(s.path)
+	err := s.LoadImage(string(cfg.Path))
 	if err != nil {
-		s.log("Error opening %s: %s", s.path, err)
-		return s
+		return nil
 	}
-
-	s.img, _, err = image.Decode(imgFile)
-	if err != nil {
-		s.log("Error decoding %s: %s", s.path, err)
-		return s
-	}
-
-	s.rgba = image.NewNRGBA(s.img.Bounds())
-
 	s.frames.Init(
 		name,
 		&encdec.FrameInfo{
@@ -64,6 +54,43 @@ func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *Im
 	return s
 }
 
+func (s *ImgSource) watch() {
+	watcher, err := inotify.NewWatcher()
+	if err != nil {
+		return
+	}
+	defer func(watcher *inotify.Watcher) {
+		err := watcher.Close()
+		if err != nil {
+			return
+		}
+	}(watcher)
+
+	_, err = watcher.Watch(s.path)
+	if err != nil {
+		s.log("Could not start inotify watcher: %s", err)
+		return
+	}
+
+	for ev := range watcher.Event {
+		if ev.Mask&inotify.IN_CLOSE_WRITE != 0 {
+			s.log("Reloading image due to inotify event")
+			time.Sleep(100 * time.Millisecond)
+
+			err := s.LoadImage(s.path)
+			if err != nil {
+				s.log("Error loading image: %s", err)
+				continue
+			}
+			err = s.SetImage(s.img)
+			if err != nil {
+				s.log("Error setting image: %s", err)
+				continue
+			}
+		}
+	}
+}
+
 func (s *ImgSource) Start() bool {
 	if !s.loaded {
 		return false
@@ -76,6 +103,9 @@ func (s *ImgSource) Start() bool {
 	s.frames.IsReady = true
 	s.frames.HoldFrame = layer.Hold
 	err := s.SetImage(s.img)
+
+	go s.watch()
+
 	return err == nil
 }
 
@@ -89,6 +119,25 @@ func (s *ImgSource) log(msg string, args ...interface{}) {
 
 func (s *ImgSource) GetImage() image.Image {
 	return s.img
+}
+
+func (s *ImgSource) LoadImage(newPath string) error {
+	s.path = newPath
+	s.log("Loading %s", s.path)
+	imgFile, err := os.Open(s.path)
+	if err != nil {
+		s.log("Error opening: %s", err)
+		return err
+	}
+
+	s.img, _, err = image.Decode(imgFile)
+	if err != nil {
+		s.log("Error decoding: %s", err)
+		return err
+	}
+
+	s.rgba = image.NewNRGBA(s.img.Bounds())
+	return nil
 }
 
 func (s *ImgSource) SetImage(newImage image.Image) error {
