@@ -9,6 +9,14 @@ import (
 	"github.com/fosdem/fazantix/lib/encdec"
 )
 
+type FrameHold int
+
+const (
+	NoHold FrameHold = iota
+	HoldUpdate
+	Hold
+)
+
 type FrameForwarder struct {
 	encdec.FrameInfo
 
@@ -16,7 +24,7 @@ type FrameForwarder struct {
 	Allocator encdec.FrameAllocator
 
 	IsReady bool
-	IsStill bool
+	HoldFrame FrameHold
 
 	curReadingFrame *encdec.Frame
 	FrameAge        time.Duration
@@ -45,12 +53,22 @@ func (f *FrameForwarder) GetFrameForReading() *encdec.Frame {
 	f.Lock()
 	defer f.Unlock()
 
+	if f.HoldFrame == Hold {
+		// Don't upload the frame again when holding
+		return nil
+	}
+
 	frame := f.curReadingFrame
 	if !f.IsReady || frame == nil {
 		return nil
 	}
 
 	frame.NumReaders.Add(1)
+
+	if f.HoldFrame == HoldUpdate {
+		// Don't send this frame again on the next request
+		f.HoldFrame = Hold
+	}
 	return frame
 }
 
@@ -102,6 +120,9 @@ func (f *FrameForwarder) FinishedWriting(frame *encdec.Frame) {
 
 	f.FrameAge = 0
 	f.IsReady = true
+	if f.HoldFrame == Hold {
+		f.HoldFrame = HoldUpdate
+	}
 }
 
 func (f *FrameForwarder) FailedWriting(frame *encdec.Frame) {
@@ -136,7 +157,7 @@ func (f *FrameForwarder) Log(msg string, args ...interface{}) {
 
 func (f *FrameForwarder) Age(dt time.Duration) {
 	f.FrameAge += dt
-	if !f.IsStill && f.FrameAge > 1*time.Second {
+	if f.HoldFrame == NoHold && f.FrameAge > 1*time.Second {
 		f.IsReady = false
 	}
 }
