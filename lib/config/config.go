@@ -122,7 +122,8 @@ type WindowSinkCfg struct {
 }
 
 type ImgSourceCfg struct {
-	Path CfgPath
+	Path    CfgPath
+	Inotify bool
 }
 
 type V4LSourceCfg struct {

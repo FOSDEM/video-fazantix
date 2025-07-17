@@ -15,10 +15,11 @@ import (
 )
 
 type ImgSource struct {
-	path   string
-	loaded bool
-	rgba   *image.NRGBA
-	img    image.Image
+	path    string
+	loaded  bool
+	rgba    *image.NRGBA
+	img     image.Image
+	inotify bool
 
 	frames layer.FrameForwarder
 }
@@ -26,6 +27,7 @@ type ImgSource struct {
 func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *ImgSource {
 	s := &ImgSource{}
 	s.frames.Name = name
+	s.inotify = cfg.Inotify
 
 	err := s.LoadImage(string(cfg.Path))
 	if err != nil {
@@ -104,7 +106,9 @@ func (s *ImgSource) Start() bool {
 	s.frames.HoldFrame = layer.Hold
 	err := s.SetImage(s.img)
 
-	go s.watch()
+	if s.inotify {
+		go s.watch()
+	}
 
 	return err == nil
 }
