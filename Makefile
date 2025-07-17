@@ -1,10 +1,10 @@
 CONFIG=examples/imagesource.yaml
 
-builddir:
-	mkdir -p build
-
 fazantix: builddir
 	go build -o build/fazantix ./cmd/fazantix
+
+builddir:
+	mkdir -p build
 
 fazantix-wayland: builddir
 	go build -o build/fazantix -tags "wayland,vulkan" ./cmd/fazantix
