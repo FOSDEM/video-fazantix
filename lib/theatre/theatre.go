@@ -100,7 +100,26 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 	return stages
 }
 
+func buildDynamicScenes(cfg *config.Config) {
+	for sourceName, source := range cfg.Sources {
+		if source.MakeScene {
+			scene := make(map[string]*config.LayerCfg)
+			sourceLayer := &config.LayerCfg{
+				LayerState: layer.LayerState{
+					X:       0,
+					Y:       0,
+					Scale:   1,
+					Opacity: 1,
+				},
+			}
+			scene[sourceName] = sourceLayer
+			cfg.Scenes[sourceName] = scene
+		}
+	}
+}
+
 func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene {
+	buildDynamicScenes(cfg)
 	scenes := make(map[string]*Scene)
 	for sceneName, layerCfgMap := range cfg.Scenes {
 		layerStates := make([]*layer.LayerState, len(sources))

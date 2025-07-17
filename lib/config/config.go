@@ -106,6 +106,7 @@ func (c *Config) String() string {
 type SourceCfgStub struct {
 	Type string
 	Z    float32
+	MakeScene bool
 }
 
 type StageCfgStub struct {
