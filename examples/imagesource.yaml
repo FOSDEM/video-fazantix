@@ -143,3 +143,19 @@ api:
   bind: ':8000'
   enable_profiler: true
 
+multiviews:
+  multiview1:
+    width: 1280
+    height: 720
+    font: Ubuntu
+    fontsize: 14
+    split: [false, false, true, true]
+    source:
+      - sink: test1
+        label: Preview
+      - sink: projector
+        label: Program
+      - source: test1
+      - source: test2
+      - source: test3
+      - source: background

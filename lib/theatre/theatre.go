@@ -34,6 +34,7 @@ type Theatre struct {
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
+	buildMultiviews(cfg)
 	sourceList, err := buildSourceList(cfg, alloc)
 	if err != nil {
 		return nil, err
