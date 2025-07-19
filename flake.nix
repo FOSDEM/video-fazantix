@@ -19,7 +19,9 @@
           fazantix = pkgs.buildGoModule {
             name = "fazantix";
             src = ./.;
-            vendorHash = "sha256-z0SVda1vzKSyXMwnnZa3Y8BtvND8o3wSyGWMxrmK7L4=";
+
+            # This currently needs to be manually updated when go.sum is changed
+            vendorHash = "sha256-xuDgsIxFfiEWk9Va/tJJrVx02AUwSFjPruIkOS4ayZw=";
             goSum = ./go.sum;
             subPackages = [ "cmd/fazantix" ];
 
