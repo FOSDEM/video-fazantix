@@ -136,7 +136,6 @@ sinks:
     frames:
       width: 1920
       height: 1080
-      num_allocated_frames: 5
     default_scene: presentation
   stream:
     type: ffmpeg_stdin
