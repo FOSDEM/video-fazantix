@@ -121,6 +121,7 @@ func DecodeRGBfromImage(buf []byte, into *Frame) error {
 }
 
 func FrameFromImage(img image.Image, into *Frame) error {
+	into.Clear()
 	w := img.Bounds().Dx()
 	h := img.Bounds().Dy()
 
