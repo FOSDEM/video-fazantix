@@ -6,14 +6,17 @@ sources:
   test1:
     type: image
     path: images/testsrc1.png
+    makescene: true
     z: 1
   test2:
     type: image
     path: images/testsrc2.png
+    makescene: true
     z: 2
   test3:
     type: image
     path: images/testsrc3.png
+    makescene: true
     z: 3
   video0:
     type: v4l
