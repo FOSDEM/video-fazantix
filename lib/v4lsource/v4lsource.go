@@ -14,6 +14,7 @@ import (
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/metrics"
 )
 
 type V4LSource struct {
@@ -22,8 +23,9 @@ type V4LSource struct {
 	Device       *device.Device
 	rawCamFrames <-chan []byte
 
-	frames layer.FrameForwarder
-	alloc  encdec.FrameAllocator
+	frames  layer.FrameForwarder
+	alloc   encdec.FrameAllocator
+	metrics metrics.SourceMetrics
 
 	requestedFrameCfg *encdec.FrameCfg
 }
@@ -37,6 +39,8 @@ func New(name string, cfg *config.V4LSourceCfg, alloc encdec.FrameAllocator) *V4
 	s.Format = cfg.Fmt
 
 	s.requestedFrameCfg = &cfg.FrameCfg
+
+	s.metrics = metrics.NewSourceMetrics(name)
 
 	return s
 }
@@ -165,6 +169,8 @@ func (s *V4LSource) decodeFramesJPEG() {
 			continue
 		}
 		s.frames.FinishedWriting(frame)
+
+		s.metrics.FramesForwarded.Inc()
 	}
 }
 
@@ -177,6 +183,8 @@ func (s *V4LSource) decodeFrames422p() {
 		_ = encdec.PrepareYUYV(frame)
 		copy(frame.Data, rawFrame)
 		s.frames.FinishedWriting(frame)
+
+		s.metrics.FramesForwarded.Inc()
 	}
 }
 
