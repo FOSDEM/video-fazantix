@@ -11,10 +11,11 @@ import (
 )
 
 type Config struct {
-	Sources map[string]*SourceCfg
-	Scenes  map[string]map[string]*LayerCfg
-	Stages  map[string]*StageCfg `yaml:"sinks"`
-	Api     *ApiCfg
+	Sources    map[string]*SourceCfg
+	Scenes     map[string]map[string]*LayerCfg
+	Stages     map[string]*StageCfg `yaml:"sinks"`
+	Multiviews map[string]*MultiviewCfg
+	Api        *ApiCfg
 }
 
 func Parse(filename string) (*Config, error) {
@@ -79,6 +80,12 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("scene %s, which is %s's default scene, does not exist", v.DefaultScene, k)
 		}
 	}
+	for k, v := range c.Multiviews {
+		err = v.Validate()
+		if err != nil {
+			return fmt.Errorf("multiview %s is invalid: %w", k, err)
+		}
+	}
 	return nil
 }
 
@@ -104,8 +111,8 @@ func (c *Config) String() string {
 }
 
 type SourceCfgStub struct {
-	Type string
-	Z    float32
+	Type      string
+	Z         float32
 	MakeScene bool
 }
 
@@ -153,6 +160,20 @@ type V4LSourceCfg struct {
 	encdec.FrameCfg `yaml:"frames"`
 	Path            string
 	Fmt             string
+}
+
+type SourceRef struct {
+	Source string
+	Sink   string
+	Label  string
+}
+type MultiviewCfg struct {
+	Font     string
+	FontSize int
+	Width    int
+	Height   int
+	Split    [4]bool
+	Source   []*SourceRef
 }
 
 func (s *SourceCfg) UnmarshalYAML(b []byte) error {
@@ -254,4 +275,20 @@ func (s *V4LSourceCfg) Validate() error {
 		return fmt.Errorf("path to video device must be specified")
 	}
 	return s.FrameCfg.Validate(false)
+}
+
+func (m *MultiviewCfg) Validate() error {
+	if m.Width < 1 {
+		return fmt.Errorf("multiview width must be specified")
+	}
+	if m.Height < 1 {
+		return fmt.Errorf("multiview height must be specified")
+	}
+	if m.Font == "" {
+		return fmt.Errorf("multiview font must be specified")
+	}
+	if m.FontSize < 1 {
+		return fmt.Errorf("multiview font size must be specified")
+	}
+	return nil
 }
