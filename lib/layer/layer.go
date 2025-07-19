@@ -1,6 +1,7 @@
 package layer
 
 import (
+	"log"
 	"math"
 )
 
@@ -59,7 +60,7 @@ func (s *Layer) Name() string {
 	return s.Source.Frames().Name
 }
 
-func (s *Layer) ApplyState(state *LayerState) {
+func (s *Layer) ApplyState(state *LayerState, warp *LayerState) {
 	if state == nil {
 		state = &LayerState{}
 		if s.targetState != nil {
@@ -68,12 +69,26 @@ func (s *Layer) ApplyState(state *LayerState) {
 		state.Opacity = 0
 	}
 
+	if s.Opacity < 0.001 && warp != nil {
+		log.Println("Warping state")
+		s.Position.X = warp.X
+		s.Position.Y = warp.Y
+		s.Size.X = warp.Scale
+		s.Size.Y = warp.Scale / s.Squeeze
+		s.Opacity = warp.Opacity
+	}
+
 	if s.targetState == nil {
-		s.Position.X = state.X
-		s.Position.Y = state.Y
-		s.Size.X = state.Scale
-		s.Size.Y = state.Scale / s.Squeeze
-		s.Opacity = state.Opacity
+		base := state
+		if warp != nil {
+			log.Println("Warping")
+			base = warp
+		}
+		s.Position.X = base.X
+		s.Position.Y = base.Y
+		s.Size.X = base.Scale
+		s.Size.Y = base.Scale / s.Squeeze
+		s.Opacity = base.Opacity
 	}
 	s.targetState = state
 }

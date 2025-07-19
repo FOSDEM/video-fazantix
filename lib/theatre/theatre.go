@@ -123,13 +123,15 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 	scenes := make(map[string]*Scene)
 	for sceneName, layerCfgMap := range cfg.Scenes {
 		layerStates := make([]*layer.LayerState, len(sources))
+		layerWarps := make([]*layer.LayerState, len(sources))
 		for i, src := range sources {
-			layerStates[i] = layerCfgMap[src.Frames().Name].CopyState()
-			log.Printf("layer state %d: %+v", i, layerStates[i])
+			layerStates[i], layerWarps[i] = layerCfgMap[src.Frames().Name].CopyState()
+			log.Printf("layer state %d: %+v %+v", i, layerStates[i], layerWarps[i])
 		}
 		scenes[sceneName] = &Scene{
 			Name:        sceneName,
 			LayerStates: layerStates,
+			LayerWarps:  layerWarps,
 		}
 	}
 	return scenes
@@ -190,6 +192,7 @@ func buildSourceMap(sources []layer.Source) map[string]layer.Source {
 type Scene struct {
 	Name        string
 	LayerStates []*layer.LayerState
+	LayerWarps  []*layer.LayerState
 }
 
 func (t *Theatre) NumLayers() int {
@@ -230,7 +233,7 @@ func (t *Theatre) SetScene(stageName string, sceneName string) error {
 				Scene: sceneName,
 			})
 			for i, l := range stage.Layers {
-				l.ApplyState(scene.LayerStates[i])
+				l.ApplyState(scene.LayerStates[i], scene.LayerWarps[i])
 			}
 			return nil
 		} else {
