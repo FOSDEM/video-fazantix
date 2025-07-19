@@ -9,6 +9,9 @@ builddir:
 fazantix-wayland: builddir
 	go build -o build/fazantix -tags "wayland,vulkan" ./cmd/fazantix
 
+fazantix-window: builddir
+	go build -o build/fazantix-window ./cmd/fazantix-window
+
 run: fazantix
 	./build/fazantix $(CONFIG)
 
