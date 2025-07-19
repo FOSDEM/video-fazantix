@@ -14,6 +14,7 @@ type Config struct {
 	Sources map[string]*SourceCfg
 	Scenes  map[string]*SceneCfg
 	Stages  map[string]*StageCfg `yaml:"sinks"`
+	Multiviews map[string]*MultiviewCfg
 	Api     *ApiCfg
 }
 
@@ -77,6 +78,12 @@ func (c *Config) Validate() error {
 		}
 		if _, ok := c.Scenes[v.DefaultScene]; !ok {
 			return fmt.Errorf("scene %s, which is %s's default scene, does not exist", v.DefaultScene, k)
+		}
+	}
+	for k, v := range c.Multiviews {
+		err = v.Validate()
+		if err != nil {
+			return fmt.Errorf("multiview %s is invalid: %w", k, err)
 		}
 	}
 	return nil
@@ -166,6 +173,20 @@ type V4LSourceCfg struct {
 	Path               string
 	Fmt                string
 	NumFramesInWriting int `yaml:"num_frames_in_writing"`
+}
+
+type SourceRef struct {
+	Source string
+	Sink   string
+	Label  string
+}
+type MultiviewCfg struct {
+	Font     string
+	FontSize int
+	Width    int
+	Height   int
+	Split    [4]bool
+	Source   []*SourceRef
 }
 
 func (s *SourceCfg) UnmarshalYAML(b []byte) error {
@@ -289,6 +310,22 @@ func (s *V4LSourceCfg) Validate() error {
 
 	if s.NumFramesInWriting < 2 || s.NumFramesInWriting > s.FrameCfg.NumAllocatedFrames-2 {
 		return fmt.Errorf("a v4l source should have at least two frames in writing (%d) (`num_frames_in_writing`) but also at least two allocated frames that are not for writing", s.NumFramesInWriting)
+	}
+	return nil
+}
+
+func (m *MultiviewCfg) Validate() error {
+	if m.Width < 1 {
+		return fmt.Errorf("multiview width must be specified")
+	}
+	if m.Height < 1 {
+		return fmt.Errorf("multiview height must be specified")
+	}
+	if m.Font == "" {
+		return fmt.Errorf("multiview font must be specified")
+	}
+	if m.FontSize < 1 {
+		return fmt.Errorf("multiview font size must be specified")
 	}
 	return nil
 }
