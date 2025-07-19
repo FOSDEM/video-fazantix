@@ -22,6 +22,11 @@ lint:
 	golangci-lint run
 	golangci-lint fmt
 
+examples/%.yaml: FORCE
+	go run ./cmd/fazantix-validate-config $@
+
+validate-examples: $(wildcard examples/*.yaml)
+
 clean:
 	rm -rvf build
 
@@ -29,4 +34,7 @@ all: fazantix
 
 build: fazantix
 
-.PHONY: clean run lint fazantix fazantix-wayland builddir
+.PHONY: FORCE
+FORCE:;
+
+.PHONY: clean run lint fazantix fazantix-wayland builddir validate-examples
