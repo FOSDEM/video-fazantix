@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/fosdem/fazantix/lib/encdec"
 	yaml "github.com/goccy/go-yaml"
@@ -79,6 +80,27 @@ func (c *Config) Validate() error {
 		}
 	}
 	return nil
+}
+
+func (c *Config) String() string {
+	var b strings.Builder
+	b.WriteString("Sources:\n")
+
+	for k, v := range c.Sources {
+		b.WriteString(fmt.Sprintf("  %s (%s)\n", k, v.Type))
+	}
+
+	b.WriteString("\nSinks:\n")
+	for k, v := range c.Stages {
+		b.WriteString(fmt.Sprintf("  %s (%s)\n", k, v.Type))
+	}
+
+	b.WriteString("\nScenes:\n")
+	for k := range c.Scenes {
+		b.WriteString(fmt.Sprintf("  %s\n", k))
+	}
+
+	return b.String()
 }
 
 type SourceCfgStub struct {
