@@ -10,6 +10,9 @@ import (
 
 func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 	channelType := uint32(gl.RED)
+	if frame.Type == encdec.RGBFrames {
+		channelType = gl.RGB
+	}
 	if frame.Type == encdec.RGBAFrames || frame.Type == encdec.YUV422pFrames {
 		channelType = gl.RGBA
 	}

@@ -1,6 +1,8 @@
 package encdec
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type FrameCfg struct {
 	Width              int
