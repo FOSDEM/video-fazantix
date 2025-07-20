@@ -39,20 +39,19 @@ func NewGLVars(program uint32, numLayers int32) *GLVars {
 func (g *GLVars) Start() {
 	g.allocate()
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
+	gl.UseProgram(g.Program)
+	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
+
 }
 
 func (g *GLVars) StartFrame() {
-	gl.UseProgram(g.Program)
 	gl.BindVertexArray(g.VAO)
-	g.pushCommonVars()
 }
 
 func (g *GLVars) DrawStage(stage *layer.Stage) {
 	frames := stage.Sink.Frames()
 
 	gl.BindFramebuffer(gl.FRAMEBUFFER, frames.FramebufferID)
-	gl.Viewport(0, 0, int32(frames.Width), int32(frames.Height))
-	gl.Clear(gl.COLOR_BUFFER_BIT)
 
 	// push vars related to the window stage
 	g.readLayers(stage.Layers)
@@ -61,25 +60,10 @@ func (g *GLVars) DrawStage(stage *layer.Stage) {
 }
 
 func (g *GLVars) allocate() {
-	vertices := []float32{
-		//  X, Y,  U, V
-		-1.0, -1.0, 0.0, 1.0,
-		+1.0, -1.0, 1.0, 1.0,
-		+1.0, +1.0, 1.0, 0.0,
-
-		-1.0, -1.0, 0.0, 1.0,
-		+1.0, +1.0, 1.0, 0.0,
-		-1.0, +1.0, 0.0, 0.0,
-	}
 
 	// Configure the vertex data
 	gl.GenVertexArrays(1, &g.VAO)
 	gl.BindVertexArray(g.VAO)
-
-	gl.GenBuffers(1, &g.VBO)
-	gl.BindBuffer(gl.ARRAY_BUFFER, g.VBO)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*f32, gl.Ptr(vertices), gl.STATIC_DRAW)
-
 	stride := int32(4 * f32)
 
 	vertAttrib := uint32(gl.GetAttribLocation(g.Program, gl.Str("position\x00")))
@@ -111,10 +95,6 @@ func (g *GLVars) allocate() {
 	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
 }
 
-func (g *GLVars) pushCommonVars() {
-	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
-}
-
 func (g *GLVars) readLayers(layers []*layer.Layer) {
 	for i := range g.NumLayers {
 		g.LayerPos[(i*4)+0] = layers[i].Position.X
@@ -131,5 +111,5 @@ func (g *GLVars) pushStageVars() {
 	gl.Uniform4fv(g.LayerPosUniform, g.NumLayers, &g.LayerPos[0])
 
 	// draw vertices on the window stage
-	gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+	gl.DrawArrays(gl.TRIANGLES, 0, 1*3)
 }
