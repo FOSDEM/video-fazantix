@@ -144,6 +144,9 @@ type FFmpegSinkCfg struct {
 type WindowSinkCfg struct {
 }
 
+type NullSinkCfg struct {
+}
+
 type ImgSourceCfg struct {
 	Path    CfgPath
 	Inotify bool
@@ -192,6 +195,10 @@ func (s *StageCfg) UnmarshalYAML(b []byte) error {
 		return yaml.Unmarshal(b, &cfg)
 	case "window":
 		cfg := WindowSinkCfg{}
+		s.SinkCfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	case "":
+		cfg := NullSinkCfg{}
 		s.SinkCfg = &cfg
 		return yaml.Unmarshal(b, &cfg)
 	default:
@@ -246,6 +253,10 @@ func (s *FFmpegSinkCfg) Validate() error {
 }
 
 func (s *WindowSinkCfg) Validate() error {
+	return nil
+}
+
+func (s *NullSinkCfg) Validate() error {
 	return nil
 }
 
