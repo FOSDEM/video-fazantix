@@ -6,6 +6,7 @@ type Stage struct {
 	VFlip        bool
 	Sink         Sink
 	DefaultScene string
+	PreviewFor   string
 }
 
 type Sink interface {

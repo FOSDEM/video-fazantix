@@ -12,7 +12,7 @@ import (
 
 type Config struct {
 	Sources map[string]*SourceCfg
-	Scenes  map[string]map[string]*LayerCfg
+	Scenes  map[string]*SceneCfg
 	Stages  map[string]*StageCfg `yaml:"sinks"`
 	Api     *ApiCfg
 }
@@ -63,7 +63,7 @@ func (c *Config) Validate() error {
 		}
 	}
 	for k, v := range c.Scenes {
-		for ks, vs := range v {
+		for ks, vs := range v.Sources {
 			err = vs.Validate()
 			if err != nil {
 				return fmt.Errorf("scene %s layer %s is invalid: %w", k, ks, err)
@@ -104,14 +104,23 @@ func (c *Config) String() string {
 }
 
 type SourceCfgStub struct {
-	Type string
-	Z    float32
+	Type      string
+	Z         float32
 	MakeScene bool
+	Tag       string
+	Label     string
+}
+
+type SceneCfg struct {
+	Tag     string
+	Label   string
+	Sources map[string]*LayerCfg
 }
 
 type StageCfgStub struct {
 	Type            string
 	DefaultScene    string `yaml:"default_scene"`
+	PreviewFor      string `yaml:"preview_for"`
 	encdec.FrameCfg `yaml:"frames"`
 }
 

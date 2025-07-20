@@ -67,11 +67,6 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		WindowSinkList:     windowSinkList,
 	}
 
-	err = t.ResetToDefaultScenes()
-	if err != nil {
-		return nil, err
-	}
-
 	return t, nil
 }
 
@@ -81,6 +76,7 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 		stage := &layer.Stage{}
 		stage.Layers = make([]*layer.Layer, len(sources))
 		stage.DefaultScene = stageCfg.DefaultScene
+		stage.PreviewFor = stageCfg.StageCfgStub.PreviewFor
 
 		for i, src := range sources {
 			stage.Layers[i] = layer.New(src, stageCfg.Width, stageCfg.Height)
@@ -113,7 +109,11 @@ func buildDynamicScenes(cfg *config.Config) {
 				},
 			}
 			scene[sourceName] = sourceLayer
-			cfg.Scenes[sourceName] = scene
+			cfg.Scenes[sourceName] = &config.SceneCfg{
+				Tag:     source.Tag,
+				Label:   source.Label,
+				Sources: scene,
+			}
 		}
 	}
 }
@@ -121,14 +121,22 @@ func buildDynamicScenes(cfg *config.Config) {
 func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene {
 	buildDynamicScenes(cfg)
 	scenes := make(map[string]*Scene)
-	for sceneName, layerCfgMap := range cfg.Scenes {
+	for sceneName, scene := range cfg.Scenes {
 		layerStates := make([]*layer.LayerState, len(sources))
 		for i, src := range sources {
-			layerStates[i] = layerCfgMap[src.Frames().Name].CopyState()
+			layerStates[i] = scene.Sources[src.Frames().Name].CopyState()
 			log.Printf("layer state %d: %+v", i, layerStates[i])
+		}
+		if scene.Label == "" {
+			scene.Label = sceneName
+		}
+		if scene.Tag == "" {
+			scene.Tag = sceneName[0:3] + sceneName[len(sceneName)-1:]
 		}
 		scenes[sceneName] = &Scene{
 			Name:        sceneName,
+			Label:       scene.Label,
+			Tag:         scene.Tag,
 			LayerStates: layerStates,
 		}
 	}
@@ -137,8 +145,8 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 
 func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.Source, error) {
 	enabledSources := make(map[string]struct{})
-	for _, layerCfgMap := range cfg.Scenes {
-		for name := range layerCfgMap {
+	for _, scene := range cfg.Scenes {
+		for name := range scene.Sources {
 			if _, ok := cfg.Sources[name]; ok {
 				enabledSources[name] = struct{}{}
 			} else {
@@ -189,6 +197,8 @@ func buildSourceMap(sources []layer.Source) map[string]layer.Source {
 
 type Scene struct {
 	Name        string
+	Tag         string
+	Label       string
 	LayerStates []*layer.LayerState
 }
 
@@ -201,6 +211,11 @@ func (t *Theatre) NumSources() int {
 }
 
 func (t *Theatre) Start() {
+	err := t.ResetToDefaultScenes()
+	if err != nil {
+		return
+	}
+
 	for _, stage := range t.WindowStageList {
 		stage.Sink.Start()
 	}
