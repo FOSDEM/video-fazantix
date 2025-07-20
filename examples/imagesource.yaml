@@ -4,16 +4,19 @@ sources:
     path: images/background.png
     z: 0
   test1:
+    tag: tst1
     type: image
     path: images/testsrc1.png
     makescene: true
     z: 1
   test2:
+    tag: tst2
     type: image
     path: images/testsrc2.png
     makescene: true
     z: 2
   test3:
+    tag: tst3
     type: image
     path: images/testsrc3.png
     makescene: true
@@ -39,74 +42,80 @@ sources:
 
 scenes:
   side-by-side:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    test1:
-      cx: 0.25
-      cy: 0.5
-      left: 0.01
-      opacity: 1
-    test2:
-      cx: 0.75
-      cy: 0.5
-      right: 0.01
-      opacity: 1
+    sources:
+      background:
+        x: 0
+        y: 0
+        scale: 1
+        opacity: 1
+      test1:
+        cx: 0.25
+        cy: 0.5
+        left: 0.01
+        opacity: 1
+      test2:
+        cx: 0.75
+        cy: 0.5
+        right: 0.01
+        opacity: 1
   full-1:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    test1:
-      cy: 0.5
-      left: -0.03
-      right: -0.03
-      opacity: 1
-    test2:
-      opacity: 0
+    sources:
+      background:
+        x: 0
+        y: 0
+        scale: 1
+        opacity: 1
+      test1:
+        cy: 0.5
+        left: -0.03
+        right: -0.03
+        opacity: 1
+      test2:
+        opacity: 0
   full-3:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    test3:
-      x: 0.03
-      y: 0.03
-      scale: 0.93
-      opacity: 1
+    sources:
+      background:
+        x: 0
+        y: 0
+        scale: 1
+        opacity: 1
+      test3:
+        x: 0.03
+        y: 0.03
+        scale: 0.93
+        opacity: 1
   full-2:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    test2:
-      x: 0.03
-      y: 0.03
-      scale: 0.93
-      opacity: 1
-    test1:
-      opacity: 0
+    sources:
+      background:
+        x: 0
+        y: 0
+        scale: 1
+        opacity: 1
+      test2:
+        x: 0.03
+        y: 0.03
+        scale: 0.93
+        opacity: 1
+      test1:
+        opacity: 0
   default:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    video0:
-      left: -0.04
-      top: -0.04
-      scale: 0.79
-      opacity: 1
-    test2:
-      right: -0.04
-      bottom: -0.1
-      scale: 0.25
-      opacity: 1
+    tag: "dflt"
+    sources:
+      background:
+        x: 0
+        y: 0
+        scale: 1
+        opacity: 1
+      video0:
+        left: -0.04
+        top: -0.04
+        scale: 0.79
+        opacity: 1
+      test2:
+        right: -0.04
+        bottom: -0.1
+        scale: 0.25
+        opacity: 1
 
 sinks:
   projector:

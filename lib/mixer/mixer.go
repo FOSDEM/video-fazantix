@@ -26,9 +26,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 		log.Fatalf("could not initialise renderer: %s", err)
 	}
 
-	theatre.Start()
-
 	api := api.ServeInBackground(theatre, cfg.Api)
+	theatre.Start()
 
 	program, err := shaders.BuildGLProgram(theatre.ShaderData())
 	if err != nil {
