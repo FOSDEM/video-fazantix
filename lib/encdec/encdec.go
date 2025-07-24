@@ -30,7 +30,8 @@ type Frame struct {
 
 	NumReaders         atomic.Int32
 	MarkedForRecycling bool
-	ID                 uint64
+	SoulID             uint32 // never changes, unique for each frame object
+	ID                 uint64 // incremented each time frame is reused
 }
 
 func (i *Frame) Clear() {

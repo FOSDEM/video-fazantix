@@ -34,7 +34,35 @@ func (d *DumbFrameAllocator) NewFrame(info *FrameInfo) *Frame {
 		Width:  w,
 		Height: h,
 		Type:   t,
-		ID: d.LastID
+		ID:     0,
+		SoulID: d.LastID,
+	}
+	d.LastID += 1
+
+	return f
+}
+
+type FixedFrameAllocator struct {
+	LastID uint32
+	getBuf func(uint32) []byte
+}
+
+func NewFixedFrameAllocator(getBuf func(uint32) []byte) *FixedFrameAllocator {
+	return &FixedFrameAllocator{getBuf: getBuf}
+}
+
+func (d *FixedFrameAllocator) NewFrame(info *FrameInfo) *Frame {
+	t := info.FrameType
+
+	_, w, h := calcFrameSize(info)
+
+	f := &Frame{
+		Data:   d.getBuf(d.LastID),
+		Width:  w,
+		Height: h,
+		Type:   t,
+		ID:     0,
+		SoulID: d.LastID,
 	}
 	d.LastID += 1
 
@@ -50,20 +78,20 @@ type NullFrameAllocator struct {
 func (n *NullFrameAllocator) NewFrame(info *FrameInfo) *Frame {
 	t := info.FrameType
 
-	n, w, h := calcFrameSize(info)
+	_, w, h := calcFrameSize(info)
 
 	f := &Frame{
-		Data:   n,
+		Data:   []byte{},
 		Width:  w,
 		Height: h,
 		Type:   t,
-		ID: n.LastID
+		ID:     0,
+		SoulID: n.LastID,
 	}
 	n.LastID += 1
 
 	return f
 }
-
 
 func (f *FrameCfg) Validate(isWindow bool) error {
 	if !isWindow && f.NumAllocatedFrames < 1 {
@@ -88,13 +116,13 @@ func calcFrameSize(info *FrameInfo) (int, int, int) {
 
 	switch t {
 	case YUV422Frames:
-		return w*h*2, w, h
+		return w * h * 2, w, h
 	case YUV422pFrames:
-		return w*h*2, w, h
+		return w * h * 2, w, h
 	case RGBAFrames:
-		return w*h*4, w, h
+		return w * h * 4, w, h
 	case RGBFrames:
-		return w*h*3, w, h
+		return w * h * 3, w, h
 	default:
 		panic("unknown frame type")
 	}
