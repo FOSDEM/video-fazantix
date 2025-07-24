@@ -155,6 +155,10 @@ func (f *FrameForwarder) FailedWriting(frame *encdec.Frame) {
 	f.recycleFrame(frame)
 }
 
+func (f *FrameForwarder) AvailableFramesForWriting() int {
+	return len(f.bin)
+}
+
 func (f *FrameForwarder) recycleFrame(frame *encdec.Frame) {
 	if len(f.bin) >= cap(f.bin) || cap(f.bin) != f.FrameInfo.NumAllocatedFrames {
 		panic("more frames returned than extracted??")

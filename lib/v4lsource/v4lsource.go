@@ -2,6 +2,8 @@ package v4lsource
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"strings"
 
@@ -29,11 +31,11 @@ type V4LSource struct {
 	requestedFrameCfg *encdec.FrameCfg
 }
 
-func New(name string, cfg *config.V4LSourceCfg, alloc encdec.FrameAllocator) *V4LSource {
+func New(name string, cfg *config.V4LSourceCfg) *V4LSource {
 	s := &V4LSource{}
 	s.path = cfg.Path
 	s.frames.Name = name
-	s.alloc = alloc
+	s.alloc = &NullFrameAllocator{}
 
 	s.Format = cfg.Fmt
 
@@ -201,4 +203,86 @@ func (s *V4LSource) PixFmt() []uint8 {
 
 func (s *V4LSource) log(msg string, args ...interface{}) {
 	s.Frames().Log(msg, args...)
+}
+
+func (s *V4LSource) enqueueFrames() error {
+	numFrames := s.Frames().AvailableFramesForWriting()
+	s.framesInWriting = make([]*encdec.Frame, numFrames)
+	// Initial enqueue of buffers for capture
+	for i := range numFrames {
+		frame := s.frames.GetFrameForWriting()
+		s.framesInWriting[i] = frame
+
+		_, err := v4l2.QueueBuffer(fd, ioType, bufType, uint32(i))
+		if err != nil {
+			s.releaseFrames()
+			return fmt.Errorf("device: buffer queueing: %w", err)
+		}
+	}
+	return nil
+}
+
+func (s *V4LSource) releaseFrames() {
+	for _, frame := range s.framesInWriting {
+		s.Frames().FailedWriting(frame)
+	}
+}
+
+func (s *V4LSource) startStreamLoop(ctx context.Context) error {
+	dev := s.Device
+	ioType := dev.MemIOType()
+	bufType := dev.BufferType()
+	fd := dev.Fd()
+
+	if err := v4l2.StreamOn(d); err != nil {
+		return fmt.Errorf("device: stream on: %w", err)
+	}
+
+	go func() {
+		defer close(dev.output)
+
+		err := s.enqueueFrames()
+		if err != nil {
+			panic(fmt.Sprintf("could not enqueue frames: %s", err))
+		}
+		defer s.releaseFrames()
+
+		fd := dev.Fd()
+		var frame []byte
+		waitForRead := v4l2.WaitForRead(d)
+		for {
+			select {
+			// handle stream capture (read from driver)
+			case <-waitForRead:
+				buff, err := v4l2.DequeueBuffer(fd, ioMemType, bufType)
+				if err != nil {
+					if errors.Is(err, sys.EAGAIN) {
+						continue
+					}
+					panic(fmt.Sprintf("device: stream loop dequeue: %s", err))
+				}
+
+				// copy mapped buffer (copying avoids polluted data from subsequent dequeue ops)
+				if buff.Flags&v4l2.BufFlagMapped != 0 && buff.Flags&v4l2.BufFlagError == 0 {
+					frame = make([]byte, buff.BytesUsed)
+					if n := copy(frame, dev.buffers[buff.Index][:buff.BytesUsed]); n == 0 {
+						dev.output <- []byte{}
+					}
+					dev.output <- frame
+					frame = nil
+				} else {
+					dev.output <- []byte{}
+				}
+
+				if _, err := v4l2.QueueBuffer(fd, ioMemType, bufType, buff.Index); err != nil {
+					panic(fmt.Sprintf("device: stream loop queue: %s: buff: %#v", err, buff))
+				}
+			case <-ctx.Done():
+				dev.Stop()
+				return
+			}
+		}
+	}()
+
+	return nil
 }
