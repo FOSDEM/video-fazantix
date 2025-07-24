@@ -431,3 +431,7 @@ func (d *Device) startStreamLoop(ctx context.Context) error {
 
 	return nil
 }
+
+func (d *Device) GetBuf(idx uint32) []byte {
+	return d.buffers[idx]
+}
