@@ -325,6 +325,18 @@ func (d *Device) Start(ctx context.Context) error {
 		return ctx.Err()
 	}
 
+	if err := d.InitForStreaming(); err != nil {
+		return err
+	}
+
+	if err := d.startStreamLoop(ctx); err != nil {
+		return fmt.Errorf("device: start stream loop: %s", err)
+	}
+
+	return nil
+}
+
+func (d *Device) InitForStreaming() error {
 	if !d.cap.IsStreamingSupported() {
 		return fmt.Errorf("device: start stream: %s", v4l2.ErrorUnsupportedFeature)
 	}
@@ -345,10 +357,6 @@ func (d *Device) Start(ctx context.Context) error {
 	// for each allocated device buf, map into local space
 	if d.buffers, err = v4l2.MapMemoryBuffers(d); err != nil {
 		return fmt.Errorf("device: make mapped buffers: %s", err)
-	}
-
-	if err := d.startStreamLoop(ctx); err != nil {
-		return fmt.Errorf("device: start stream loop: %s", err)
 	}
 
 	d.streaming = true

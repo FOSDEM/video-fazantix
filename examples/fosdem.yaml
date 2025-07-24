@@ -63,7 +63,7 @@ scenes:
       y: 0
       scale: 1
       opacity: 1
-    presentation_ffmpeg:
+    presentation:
       x: 0.03
       y: 0.25
       scale: 0.45
@@ -79,7 +79,7 @@ scenes:
       y: 0
       scale: 1
       opacity: 1
-    presentation_ffmpeg:
+    presentation:
       x: 0.03
       y: 0.03
       scale: 0.93
@@ -97,7 +97,7 @@ scenes:
       y: 0.03
       scale: 0.93
       opacity: 1
-    presentation_ffmpeg:
+    presentation:
       opacity: 0
   fazant:
     background:
@@ -126,7 +126,7 @@ scenes:
       y: 0.049
       scale: 0.75
       opacity: 1
-    presentation_ffmpeg:
+    presentation:
       x: 0.8
       y: 0.6
       scale: 0.2
