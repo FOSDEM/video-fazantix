@@ -1,12 +1,12 @@
 package v4lsource
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"syscall"
+	"time"
 
 	"image"
 	_ "image/jpeg"
@@ -58,7 +58,7 @@ func (s *V4LSource) Start() bool {
 		pixfmt = v4l2.PixelFmtYUYV
 	}
 
-	s.log("Loading v4l2 device %s", s.path)
+	s.log("Loading v4l2 device %s with %d frames in transit", s.path, s.requestedFrameCfg.NumAllocatedFrames)
 
 	if !strings.HasPrefix(s.path, "/") {
 		lookup, err := utils.LocateUSBDevice(s.path)
@@ -81,7 +81,7 @@ func (s *V4LSource) Start() bool {
 			Width:       uint32(s.requestedFrameCfg.Width),
 			Height:      uint32(s.requestedFrameCfg.Height),
 		}),
-		device.WithBufferSize(uint32(s.numFramesInWriting)),
+		device.WithBufferSize(uint32(s.requestedFrameCfg.NumAllocatedFrames)),
 	)
 	if err != nil {
 		s.log("Failed to open device: %s", err)
@@ -95,7 +95,7 @@ func (s *V4LSource) Start() bool {
 	}
 	s.log("framerate: %d", fps)
 
-	if err := camera.Start(context.TODO()); err != nil {
+	if err := camera.InitForStreaming(); err != nil {
 		s.log("camera start: %s", err)
 	}
 	s.Device = camera
@@ -149,6 +149,8 @@ func (s *V4LSource) Start() bool {
 		)
 	}
 
+	go s.streamLoopLoop()
+
 	return true
 }
 
@@ -160,7 +162,7 @@ func (s *V4LSource) Stop() {
 	}
 }
 
-func (s *V4LSource) prepareFrame(frame *encdec.Frame) error {
+func (s *V4LSource) finaliseFrame(frame *encdec.Frame) error {
 	switch s.Format {
 	case "mjpeg":
 		return encdec.DecodeRGBfromImage(frame.Data, frame)
@@ -238,7 +240,7 @@ func (s *V4LSource) dequeueFrame() error {
 		frame := s.framesInWriting[buff.Index]
 		frame.Data = frame.Data[:buff.BytesUsed]
 		s.framesInWriting[buff.Index] = nil
-		err := s.prepareFrame(frame)
+		err := s.finaliseFrame(frame)
 		if err != nil {
 			return fmt.Errorf("could not prepare frame: %w", err)
 			s.Frames().FailedWriting(frame)
@@ -246,42 +248,51 @@ func (s *V4LSource) dequeueFrame() error {
 			s.Frames().FinishedWriting(frame)
 		}
 	} else {
-		panic("I'm not sure if I have to send an empty frame or ignore this?")
+		// I'm not sure whether we should call FailedWriting on the frame at
+		// s.framesInWriting[buff.Index] here, or if buff is not related to any
+		// buffer (thus buff.Index being invalid) and we should just return an
+		// error without calling FailedWriting
+		// My hunch is that BufFlagMapped means that buff.Index refers to a real
+		// buffer that wasn't written to and we should call FailedWriting only if
+		// BufFlagMapped is true, but I'm on a plane right now and I can't
+		// read the kernel docs to verify
+		panic("FIXME: read the source and follow the instructions in the comment")
 	}
 	return nil
 }
 
-func (s *V4LSource) startStreamLoop(ctx context.Context) error {
+func (s *V4LSource) streamLoopLoop() {
+	for {
+		err := s.streamLoop()
+		s.Frames().Log("stream loop died, starting again in a second: %s", err)
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func (s *V4LSource) streamLoop() error {
 	if err := v4l2.StreamOn(s.Device); err != nil {
 		return fmt.Errorf("device: stream on: %w", err)
 	}
 
-	go func() {
-		err := s.enqueueFrames()
-		if err != nil {
-			panic(fmt.Sprintf("could not enqueue frames: %s", err))
-		}
-		defer s.releaseFrames()
+	err := s.enqueueFrames()
+	if err != nil {
+		panic(fmt.Sprintf("could not enqueue frames: %s", err))
+	}
+	defer s.releaseFrames()
 
-		waitForRead := v4l2.WaitForRead(s.Device)
-		for {
-			select {
-			// handle stream capture (read from driver)
-			case <-waitForRead:
-				err = s.enqueueFrame()
-				if err != nil {
-					panic(fmt.Sprintf("could not enqueue frame: %w", err))
-				}
-				err = s.dequeueFrame()
-				if err != nil {
-					panic(fmt.Sprintf("could not dequeue frame: %w", err))
-				}
-			case <-ctx.Done():
-				s.Device.Stop()
-				return
+	waitForRead := v4l2.WaitForRead(s.Device)
+	for {
+		select {
+		// handle stream capture (read from driver)
+		case <-waitForRead:
+			err = s.enqueueFrame()
+			if err != nil {
+				return fmt.Errorf("could not enqueue frame: %w", err)
+			}
+			err = s.dequeueFrame()
+			if err != nil {
+				return fmt.Errorf("could not dequeue frame: %w", err)
 			}
 		}
-	}()
-
-	return nil
+	}
 }
