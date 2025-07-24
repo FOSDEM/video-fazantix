@@ -20,35 +20,50 @@ type FrameAllocator interface {
 	NewFrame(info *FrameInfo) *Frame
 }
 
-type DumbFrameAllocator struct{}
+type DumbFrameAllocator struct {
+	LastID uint32
+}
 
 func (d *DumbFrameAllocator) NewFrame(info *FrameInfo) *Frame {
 	t := info.FrameType
-	w := info.Width
-	h := info.Height
 
-	switch t {
-	case YUV422Frames:
-		return d.makeFrame(t, w*h*2, w, h)
-	case YUV422pFrames:
-		return d.makeFrame(t, w*h*2, w, h)
-	case RGBAFrames:
-		return d.makeFrame(t, w*h*4, w, h)
-	case RGBFrames:
-		return d.makeFrame(t, w*h*3, w, h)
-	default:
-		panic("unknown frame type")
-	}
-}
+	n, w, h := calcFrameSize(info)
 
-func (d *DumbFrameAllocator) makeFrame(t FrameType, n int, w int, h int) *Frame {
-	return &Frame{
+	f := &Frame{
 		Data:   make([]byte, n),
 		Width:  w,
 		Height: h,
 		Type:   t,
+		ID: d.LastID
 	}
+	d.LastID += 1
+
+	return f
 }
+
+// NullFrameAllocator allocates frames without any data buffer,
+// such that the writer is supposed to take care of providing the buffer memory
+type NullFrameAllocator struct {
+	LastID uint32
+}
+
+func (n *NullFrameAllocator) NewFrame(info *FrameInfo) *Frame {
+	t := info.FrameType
+
+	n, w, h := calcFrameSize(info)
+
+	f := &Frame{
+		Data:   n,
+		Width:  w,
+		Height: h,
+		Type:   t,
+		ID: n.LastID
+	}
+	n.LastID += 1
+
+	return f
+}
+
 
 func (f *FrameCfg) Validate(isWindow bool) error {
 	if !isWindow && f.NumAllocatedFrames < 1 {
@@ -64,4 +79,23 @@ func (f *FrameCfg) Validate(isWindow bool) error {
 		return fmt.Errorf("height must be at least 1")
 	}
 	return nil
+}
+
+func calcFrameSize(info *FrameInfo) (int, int, int) {
+	t := info.FrameType
+	w := info.Width
+	h := info.Height
+
+	switch t {
+	case YUV422Frames:
+		return w*h*2, w, h
+	case YUV422pFrames:
+		return w*h*2, w, h
+	case RGBAFrames:
+		return w*h*4, w, h
+	case RGBFrames:
+		return w*h*3, w, h
+	default:
+		panic("unknown frame type")
+	}
 }
