@@ -162,9 +162,10 @@ type ImgSourceCfg struct {
 }
 
 type V4LSourceCfg struct {
-	encdec.FrameCfg `yaml:"frames"`
-	Path            string
-	Fmt             string
+	encdec.FrameCfg    `yaml:"frames"`
+	Path               string
+	Fmt                string
+	NumFramesInWriting int `yaml:"num_frames_in_writing"`
 }
 
 func (s *SourceCfg) UnmarshalYAML(b []byte) error {
@@ -280,5 +281,14 @@ func (s *V4LSourceCfg) Validate() error {
 	if s.Path == "" {
 		return fmt.Errorf("path to video device must be specified")
 	}
-	return s.FrameCfg.Validate(false)
+
+	err := s.FrameCfg.Validate(false)
+	if err != nil {
+		return err
+	}
+
+	if s.NumFramesInWriting < 2 || s.NumFramesInWriting > s.FrameCfg.NumAllocatedFrames-2 {
+		return fmt.Errorf("a v4l source should have at least two frames in writing (%d) (`num_frames_in_writing`) but also at least two allocated frames that are not for writing", s.NumFramesInWriting)
+	}
+	return nil
 }
