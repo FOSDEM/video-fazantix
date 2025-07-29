@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<title>Fazantix</title>
 <style>
 body, html {
 	height: 100%;
@@ -38,6 +39,7 @@ body > header > span {
 
 section#stages {
 	display: flex;
+    flex-direction: column;
 }
 section#stages > section {
 	padding: 15px;
@@ -45,31 +47,65 @@ section#stages > section {
 	border: 1px solid #555;
 	background: rgba(255, 255, 255, 0.1);
 	border-radius: 4px;
+    display: flex;
+    flex-wrap: wrap;
 }
 section#stages > section > header {
 	border-bottom: 1px solid #555;
 	margin: -15px;
 	margin-bottom: 0;
 	padding: 5px 15px;
+    flex: 1 1 100%;
 }
-section#stages > section > button {
-	display: block;
+section.buttonbox, section.control {
+    flex: 1 1 auto;
+}
+section.control {
+    border-left: 1px solid #555;
+    margin-bottom: -15px;
+    padding: 10px 10px 15px;
+}
+section.buttonbox > button {
+	display: inline-block;
 	padding: 10px;
 	margin-top: 10px;
-	width: 100%;
 }
-button[data-scene] {
+button[data-scene], button.btn {
     border: 1px solid #8f8f9d;
     border-radius: 3px;
     background: linear-gradient(0deg, #c5c5c5 0%, #eaeaea 100%);
     color: #333;
+    font-variant: small-caps;
+    font-weight: bold;
+    width: 48px;
+    height: 48px;
+    line-height: 28px;
+    text-align: center;
+    margin-right: 15px;
 }
-button.active {
+section.buttonbox.program button.active {
     color: white;
     background: linear-gradient(0deg, #f52727 0%, #f44 100%);
     box-shadow: 0 0 8px 0 #f44;
     border-color: #df7a50;
 }
+section.buttonbox.preview {
+    margin-top: 32px;
+}
+section.buttonbox.preview button.active {
+    color: black;
+    background: linear-gradient(0deg, #50e021 0%, #4aff44 100%);
+    box-shadow: 0 0 8px 0 #82ff44;
+    border-color: #89df50;
+}
+
+button.yellow.active {
+    color: black;
+    background: linear-gradient(0deg, #e0d021 0%, #ecff44 100%);
+    box-shadow: 0 0 8px 0 #ffda44;
+    border-color: #e5c7a9;
+}
+
 </style>
 <link rel="icon" type="image/png" href="/favicon.png">
 <header>
@@ -91,31 +127,124 @@ function switchScene(stage, scene) {
 	console.log("Switching to", scene, "on stage", stage);
 	fetch("/api/scene/"+stage+"/"+scene).then();
 }
-function makeButtons() {
+
+function makeAuxControls(aux) {
+    const controlbox = document.createElement("section");
+    controlbox.classList.add("control");
+
+    const transitionCut = document.createElement("button");
+    transitionCut.classList.add("btn");
+    transitionCut.classList.add("yellow");
+    transitionCut.innerText = "CUT";
+    controlbox.appendChild(transitionCut);
+
+    const transitionAuto = document.createElement("button");
+    transitionAuto.classList.add("btn");
+    transitionAuto.classList.add("yellow");
+    transitionAuto.classList.add("active");
+    transitionAuto.innerText = "AUTO";
+    controlbox.appendChild(transitionAuto);
+    return controlbox;
+}
+function makeMEControls(program, preview) {
+    const controlbox = document.createElement("section");
+    controlbox.classList.add("control");
+
+    const transitionCut = document.createElement("button");
+    transitionCut.classList.add("btn");
+    transitionCut.innerText = "CUT";
+    controlbox.appendChild(transitionCut);
+
+    const transitionAuto = document.createElement("button");
+    transitionAuto.classList.add("btn");
+    transitionAuto.innerText = "AUTO";
+    transitionAuto.addEventListener("click", function (event) {
+        event.preventDefault();
+        const currentProgram = document.querySelector("button[data-stage="+program.Name+"].active");
+        const currentPreview = document.querySelector("button[data-stage="+preview.Name+"].active");
+        switchScene(program.Name, currentPreview.dataset.scene);
+        switchScene(preview.Name, currentProgram.dataset.scene);
+    })
+    controlbox.appendChild(transitionAuto);
+    return controlbox;
+}
+
+function makeButtons(scenes, stage) {
+    const buttonBox = document.createElement("section");
+    buttonBox.classList.add("buttonbox");
+
+    scenes.forEach(function(scene){
+        const button = document.createElement("button");
+        button.innerText = scene.Tag;
+        button.title = scene.Label;
+        button.dataset.stage = stage.Name;
+        button.dataset.scene = scene.Code;
+        buttonBox.appendChild(button);
+
+        button.addEventListener("click", function() {
+            switchScene(stage.Name, scene.Code);
+        });
+    });
+    return buttonBox;
+}
+function makeStages() {
 	const stages = document.getElementById("stages");
 	fetch('/api/config').then(response => response.json()).then(response => {
-		response.stages.forEach(function(stage){
+        let stageList = [];
+        // First get all the program/aux sources
+        response.stages.forEach(function(stage){
+            if(stage.PreviewFor === "") {
+                stage.Type = "aux";
+                stageList.push(stage);
+            }
+        });
+        // Insert all the preview buses in the program bus it's linked to
+        response.stages.forEach(function(stage){
+            if(stage.PreviewFor !== "") {
+                stage.Type = "preview";
+                stageList.forEach(function(programStage, index){
+                    if(programStage.Name !== stage.PreviewFor) {
+                        return;
+                    }
+                    programStage.Type = "program";
+                    programStage.Preview = stage;
+                });
+            }
+        });
+        stageList.forEach(function(stage){
 			const stageBox = document.createElement("section");
-			stageBox.dataset.stage = stage;
+			stageBox.dataset.stage = stage.Name;
+            stageBox.dataset.previewFor = stage.PreviewFor
+            stageBox.dataset.type = stage.Type;
+            if (stage.PreviewFor !== "") {
+                stageBox.classList.add("preview");
+            } else {
+                stageBox.classList.add("program");
+            }
 			stages.appendChild(stageBox);
 
 			const stageHeader = document.createElement("header");
-			stageHeader.innerText = stage;
+			stageHeader.innerText = stage.Name;
 			stageBox.appendChild(stageHeader);
 
-			response.scenes.forEach(function(scene){
-				const button = document.createElement("button");
-				button.innerText = scene;
-				button.dataset.stage = stage;
-				button.dataset.scene = scene;
-				stageBox.appendChild(button);
+            const buttonbox = document.createElement("section");
+            buttonbox.classList.add("buttons");
+            stageBox.appendChild(buttonbox)
 
-				button.addEventListener("click", function() {
-					switchScene(stage, scene);
-				});
-			});
+            const buttons = makeButtons(response.scenes, stage);
+            buttons.classList.add("program");
+            buttonbox.appendChild(buttons);
+            if(stage.Type === "program") {
+                console.log("Make program for", stage);
+                const preview = makeButtons(response.scenes, stage.Preview);
+                preview.classList.add("preview");
+                buttonbox.appendChild(preview);
+                stageBox.appendChild(makeMEControls(stage, stage.Preview));
+            } else if (stage.Type === "aux") {
+                stageBox.appendChild(makeAuxControls(stage));
+            }
 		});
-		console.log(response)
+        makeWebsocket();
         })
     	.catch(err => console.error(err))
 }
@@ -139,10 +268,13 @@ function makeWebsocket() {
         if ("Event" in message) {
             switch(message["Event"]) {
                 case "set-scene":
-                    document.querySelectorAll("button[data-scene]").forEach(function(el) {
+                    document.querySelectorAll("button[data-stage="+message["Stage"]+"]").forEach(function(el) {
                         el.classList.remove("active");
                     })
-                    let btn = document.querySelector("button[data-stage="+message["Stage"]+"][data-scene="+message["Scene"]+"]")
+                    let btn = document.querySelector("button[data-stage="+message["Stage"]+"][data-scene="+message["Scene"]+"]");
+                    if(btn === undefined) {
+                        console.error("Could not find button for stage '"+message["Stage"]+"' scene '"+message["Scene"]+"'")
+                    }
                     btn.classList.add("active");
                     break;
             }
@@ -166,8 +298,7 @@ function makeWebsocket() {
 
 let socket;
 document.addEventListener("DOMContentLoaded", function() {
-	makeButtons();
-	makeWebsocket();
+	makeStages();
 });
 
 </script>

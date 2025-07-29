@@ -8,10 +8,9 @@ import (
 	"image/png"
 	"io/fs"
 	"log"
-	"maps"
 	"net/http"
 	"runtime/pprof"
-	"slices"
+	"sync"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/imgsource"
@@ -34,6 +33,9 @@ type Api struct {
 
 	Stats *stats.Stats
 
+	InitialState map[string][]byte
+	stateMutex   sync.Mutex
+
 	wsClients map[*websocket.Conn]bool
 }
 
@@ -45,14 +47,18 @@ func New(cfg *config.ApiCfg, t *theatre.Theatre) *Api {
 	a.srv.Addr = cfg.Bind
 	a.srv.Handler = a.mux
 	a.wsClients = make(map[*websocket.Conn]bool)
+	a.InitialState = make(map[string][]byte)
 
 	t.AddEventListener("set-scene", func(t *theatre.Theatre, data interface{}) {
+		a.stateMutex.Lock()
+		defer a.stateMutex.Unlock()
 		event := data.(theatre.EventDataSetScene)
 		event.Event = "set-scene"
 		log.Printf("Scene switched on stage %s to scene %s\n", event.Stage, event.Scene)
+		packet, err := json.Marshal(event)
+		a.InitialState[fmt.Sprintf("active-scene-%s", event.Stage)] = packet
 
 		for ws := range a.wsClients {
-			packet, err := json.Marshal(event)
 			if err != nil {
 				return
 			}
@@ -145,7 +151,7 @@ func (a *Api) handleScene(w http.ResponseWriter, req *http.Request) {
 
 	err := a.theatre.SetScene(sceneReq.Stage, sceneReq.Scene)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("could not set scene: %s", err), http.StatusForbidden)
+		http.Error(w, fmt.Sprintf("could not set scene: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -191,14 +197,36 @@ func (a *Api) getStats(w http.ResponseWriter, _ *http.Request) {
 }
 
 type Config struct {
-	Stages []string `json:"stages"`
-	Scenes []string `json:"scenes"`
+	Stages []StageInfo `json:"stages"`
+	Scenes []SceneInfo `json:"scenes"`
+}
+type StageInfo struct {
+	Name       string
+	PreviewFor string
+}
+type SceneInfo struct {
+	Code  string
+	Tag   string
+	Label string
 }
 
 func (a *Api) handleConfig(w http.ResponseWriter, _ *http.Request) {
 	result := &Config{
-		Stages: slices.Collect(maps.Keys(a.theatre.Stages)),
-		Scenes: slices.Collect(maps.Keys(a.theatre.Scenes)),
+		Stages: make([]StageInfo, len(a.theatre.Stages)),
+		Scenes: make([]SceneInfo, len(a.theatre.Scenes)),
+	}
+	idx := 0
+	for name, scene := range a.theatre.Scenes {
+		result.Scenes[idx].Code = name
+		result.Scenes[idx].Label = scene.Label
+		result.Scenes[idx].Tag = scene.Tag
+		idx++
+	}
+	idx = 0
+	for name, stage := range a.theatre.Stages {
+		result.Stages[idx].Name = name
+		result.Stages[idx].PreviewFor = stage.PreviewFor
+		idx++
 	}
 	encoder := json.NewEncoder(w)
 	err := encoder.Encode(result)
@@ -244,6 +272,13 @@ func (a *Api) handleWebsocket(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) websocketWriter(ws *websocket.Conn) {
+
+	for _, packet := range a.InitialState {
+		if err := ws.WriteMessage(websocket.TextMessage, packet); err != nil {
+			continue
+		}
+	}
+
 	pingTicker := time.NewTicker(2 * time.Second)
 	defer func() {
 		pingTicker.Stop()
