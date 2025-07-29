@@ -15,7 +15,7 @@ func New(name string, cfg *config.NullSinkCfg, frameCfg *encdec.FrameCfg, alloc 
 	f.frames.Init(
 		name,
 		&encdec.FrameInfo{
-			FrameType: encdec.RGBFrames,
+			FrameType: encdec.RGBAFrames,
 			FrameCfg:  *frameCfg,
 		},
 		alloc,

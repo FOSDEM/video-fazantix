@@ -29,7 +29,7 @@ func SetupTextures(f *layer.FrameForwarder) {
 }
 
 func UseAsFramebuffer(f *layer.FrameForwarder) {
-	if f.FrameType != encdec.RGBFrames {
+	if f.FrameType != encdec.RGBAFrames {
 		panic("trying to use a non-rgb frame forwarder as a framebuffer")
 	}
 	f.FramebufferID = UseTextureAsFramebuffer(f.TextureIDs[0])
