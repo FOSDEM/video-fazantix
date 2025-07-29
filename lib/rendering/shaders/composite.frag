@@ -62,6 +62,12 @@ vec4 sampleLayerRGBA(vec2 uv, int layer, vec4 dve, vec4 data) {
 	return col;
 }
 
+vec4 sampleLayerRGB(vec2 uv, int layer, vec4 dve, vec4 data) {
+	vec4 col = texture(tex[layer*3], (uv / dve.z) - (dve.xy / dve.zw));
+	col.a = 1.0;
+	return col;
+}
+
 void main() {
     vec2 uv = UV;
     if ((stageData & 1) != 0) {

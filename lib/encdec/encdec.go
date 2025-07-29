@@ -149,6 +149,8 @@ func (f FrameType) String() string {
 		return "YUYV"
 	case RGBAFrames:
 		return "RGBA"
+	case RGBFrames:
+		return "RGB"
 	default:
 		panic("unknown frame type")
 	}
