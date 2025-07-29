@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
+	"syscall"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
@@ -52,6 +53,7 @@ func (f *FFmpegSink) Start() bool {
 
 func (f *FFmpegSink) setupCmd() error {
 	f.cmd = exec.Command("bash", "-c", f.shellCmd)
+	f.cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGTERM}
 	var err error
 	f.stdin, err = f.cmd.StdinPipe()
 	if err != nil {
