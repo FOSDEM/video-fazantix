@@ -6,6 +6,7 @@ import (
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
@@ -40,7 +41,7 @@ func (w *WindowSink) Frames() *layer.FrameForwarder {
 }
 
 func (w *WindowSink) makeWindow() *glfw.Window {
-	log.Println("Initializing window")
+	w.log("Initializing window")
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
 	}
@@ -57,5 +58,15 @@ func (w *WindowSink) makeWindow() *glfw.Window {
 
 	window.MakeContextCurrent()
 
+	vendor := gl.GoStr(gl.GetString(gl.VENDOR))
+	renderer := gl.GoStr(gl.GetString(gl.RENDERER))
+	version := gl.GoStr(gl.GetString(gl.VERSION))
+
+	w.log("OpenGL version %s / %s / %s", vendor, renderer, version)
+
 	return window
+}
+
+func (w *WindowSink) log(msg string, args ...interface{}) {
+	w.Frames().Log(msg, args...)
 }
