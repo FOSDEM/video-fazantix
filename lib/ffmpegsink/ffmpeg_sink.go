@@ -28,7 +28,7 @@ func New(name string, cfg *config.FFmpegSinkCfg, frameCfg *encdec.FrameCfg, allo
 	f.frames.Init(
 		name,
 		&encdec.FrameInfo{
-			FrameType: encdec.RGBFrames,
+			FrameType: encdec.RGBAFrames,
 			FrameCfg:  *frameCfg,
 		},
 		alloc,
