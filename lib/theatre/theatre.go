@@ -178,7 +178,7 @@ func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.S
 		case *config.ImgSourceCfg:
 			sources = append(sources, imgsource.New(srcName, sc, alloc))
 		case *config.V4LSourceCfg:
-			sources = append(sources, v4lsource.New(srcName, sc, alloc))
+			sources = append(sources, v4lsource.New(srcName, sc))
 		default:
 			panic(fmt.Sprintf("unhandled source type: %+v", srcCfg.Cfg))
 		}

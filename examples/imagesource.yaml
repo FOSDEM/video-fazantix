@@ -28,7 +28,8 @@ sources:
     frames:
       width: 1920
       height: 1080
-      num_allocated_frames: 5
+      num_allocated_frames: 32
+    num_frames_in_writing: 3
     z: 1
   video_listen:
     type: ffmpeg_stdout

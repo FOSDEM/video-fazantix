@@ -10,7 +10,8 @@ sources:
     frames:
       width: 1920
       height: 1080
-      num_allocated_frames: 5
+      num_allocated_frames: 6
+    num_frames_in_writing: 3
     z: 1
   camera:
     type: v4l
@@ -19,7 +20,8 @@ sources:
     frames:
       width: 1920
       height: 1080
-      num_allocated_frames: 5
+      num_allocated_frames: 6
+    num_frames_in_writing: 3
     z: 2
   presentation_ffmpeg:
     type: ffmpeg_stdout
@@ -61,7 +63,7 @@ scenes:
       y: 0
       scale: 1
       opacity: 1
-    presentation_ffmpeg:
+    presentation:
       x: 0.03
       y: 0.25
       scale: 0.45
@@ -77,7 +79,7 @@ scenes:
       y: 0
       scale: 1
       opacity: 1
-    presentation_ffmpeg:
+    presentation:
       x: 0.03
       y: 0.03
       scale: 0.93
@@ -95,7 +97,7 @@ scenes:
       y: 0.03
       scale: 0.93
       opacity: 1
-    presentation_ffmpeg:
+    presentation:
       opacity: 0
   fazant:
     background:
@@ -124,7 +126,7 @@ scenes:
       y: 0.049
       scale: 0.75
       opacity: 1
-    presentation_ffmpeg:
+    presentation:
       x: 0.8
       y: 0.6
       scale: 0.2
