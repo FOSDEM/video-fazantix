@@ -2,7 +2,6 @@ package theatre
 
 import (
 	"fmt"
-	"log"
 	"sort"
 
 	"github.com/fosdem/fazantix/lib/config"
@@ -101,11 +100,13 @@ func buildDynamicScenes(cfg *config.Config) {
 		if source.MakeScene {
 			scene := make(map[string]*config.LayerCfg)
 			sourceLayer := &config.LayerCfg{
-				LayerState: layer.LayerState{
-					X:       0,
-					Y:       0,
-					Scale:   1,
-					Opacity: 1,
+				LayerStateCfg: config.LayerStateCfg{
+					LayerTransform: layer.LayerTransform{
+						X:       0,
+						Y:       0,
+						Scale:   1,
+						Opacity: 1,
+					},
 				},
 			}
 			scene[sourceName] = sourceLayer
@@ -123,10 +124,8 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 	scenes := make(map[string]*Scene)
 	for sceneName, scene := range cfg.Scenes {
 		layerStates := make([]*layer.LayerState, len(sources))
-		layerWarps := make([]*layer.LayerState, len(sources))
 		for i, src := range sources {
-			layerStates[i], layerWarps[i] = scene.Sources[src.Frames().Name].CopyState()
-			log.Printf("layer state %d: %+v %+v", i, layerStates[i], layerWarps[i])
+			layerStates[i] = scene.Sources[src.Frames().Name].CopyState()
 		}
 		if scene.Label == "" {
 			scene.Label = sceneName
@@ -139,7 +138,6 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 			Label:       scene.Label,
 			Tag:         scene.Tag,
 			LayerStates: layerStates,
-			LayerWarps:  layerWarps,
 		}
 	}
 	return scenes
@@ -172,8 +170,6 @@ func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.S
 	for _, srcName := range sortedSourceNames {
 		srcCfg := cfg.Sources[srcName]
 
-		log.Printf("adding source: %s\n", srcName)
-
 		switch sc := srcCfg.Cfg.(type) {
 		case *config.FFmpegSourceCfg:
 			sources = append(sources, ffmpegsource.New(srcName, sc, alloc))
@@ -202,7 +198,6 @@ type Scene struct {
 	Tag         string
 	Label       string
 	LayerStates []*layer.LayerState
-	LayerWarps  []*layer.LayerState
 }
 
 func (t *Theatre) NumLayers() int {
@@ -248,7 +243,7 @@ func (t *Theatre) SetScene(stageName string, sceneName string) error {
 				Scene: sceneName,
 			})
 			for i, l := range stage.Layers {
-				l.ApplyState(scene.LayerStates[i], scene.LayerWarps[i])
+				l.ApplyState(scene.LayerStates[i])
 			}
 			return nil
 		} else {
