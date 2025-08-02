@@ -16,6 +16,7 @@ import (
 
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/imgsource"
+	"github.com/fosdem/fazantix/lib/layer"
 	"github.com/gorilla/websocket"
 
 	"github.com/fosdem/fazantix/lib/config"
@@ -88,8 +89,9 @@ func (a *Api) Serve() error {
 	a.mux.HandleFunc("/api/scene/{stage}/{scene}", a.handleScene)
 	a.mux.HandleFunc("/api/config", a.handleConfig)
 	a.mux.HandleFunc("/api/ws", a.handleWebsocket)
-	a.mux.HandleFunc("/api/media/{source}", a.handleMediaSource)
-	a.mux.HandleFunc("/api/media/{source}/{format}", a.handleMediaSource)
+	a.mux.HandleFunc("/api/media/source/{source}", a.handleMediaSource)
+	a.mux.HandleFunc("/api/media/sink/{sink}", a.handleMediaSource)
+	a.mux.HandleFunc("/api/media/source/{source}/{format}", a.handleMediaSource)
 	a.mux.Handle("/", http.FileServer(http.FS(contentFS)))
 	return a.srv.ListenAndServe()
 }
@@ -99,17 +101,32 @@ type SceneReq struct {
 	Stage string
 }
 
+type FrameForwarderObject interface {
+	Frames() *layer.FrameForwarder
+}
+
 func (a *Api) handleMediaSource(w http.ResponseWriter, req *http.Request) {
 	sourceName := req.PathValue("source")
+	sinkName := req.PathValue("sink")
 	formatName := req.PathValue("format")
-	if sourceName == "" {
+	if sourceName == "" && sinkName == "" {
 		http.Error(w, "Missing source name", http.StatusBadRequest)
 		return
 	}
-	source := a.theatre.Sources[sourceName]
-	if source == nil {
-		http.Error(w, "Source does not exist", http.StatusNotFound)
-		return
+	var source FrameForwarderObject
+	if sourceName != "" {
+		source = a.theatre.Sources[sourceName]
+		if source == nil {
+			http.Error(w, "Source does not exist", http.StatusNotFound)
+			return
+		}
+	} else {
+		stage := a.theatre.Stages[sinkName]
+		if stage == nil {
+			http.Error(w, "Sink does not exist", http.StatusNotFound)
+			return
+		}
+		source = stage.Sink
 	}
 
 	if req.Method == "GET" {
