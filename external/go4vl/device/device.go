@@ -25,7 +25,7 @@ type Device struct {
 // Open creates opens the underlying device at specified path for streaming.
 // It returns a *Device or an error if unable to open device.
 func Open(path string, options ...Option) (*Device, error) {
-	fd, err := v4l2.OpenDevice(path, sys.O_RDWR|sys.O_NONBLOCK, 0)
+	fd, err := v4l2.OpenDevice(path, sys.O_RDWR, 0)
 	if err != nil {
 		return nil, fmt.Errorf("device open: %w", err)
 	}

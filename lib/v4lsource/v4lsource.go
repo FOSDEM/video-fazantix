@@ -30,6 +30,9 @@ type V4LSource struct {
 	requestedFrameCfg  *encdec.FrameCfg
 	numFramesInWriting int
 	framesInWriting    []*encdec.Frame
+
+	hadValidFrame      bool
+	brokenFrameCounter uint64
 }
 
 func New(name string, cfg *config.V4LSourceCfg) *V4LSource {
@@ -59,6 +62,7 @@ func (s *V4LSource) Start() bool {
 	}
 
 	s.log("Loading v4l2 device %s with %d frames in transit", s.path, s.requestedFrameCfg.NumAllocatedFrames)
+	s.hadValidFrame = false
 
 	if !strings.HasPrefix(s.path, "/") {
 		lookup, err := utils.LocateUSBDevice(s.path)
@@ -99,9 +103,6 @@ func (s *V4LSource) Start() bool {
 		s.log("camera start: %s", err)
 	}
 	s.Device = camera
-	// TODO: Wait until the device is actually streaming
-
-	s.log("Got first frame")
 
 	format, err := s.Device.GetPixFormat()
 	if err != nil {
@@ -109,13 +110,9 @@ func (s *V4LSource) Start() bool {
 	}
 
 	s.log("format: %s", format)
-	s.log(
-		"requested resolution is %dx%d, actual is %dx%d",
-		s.requestedFrameCfg.Width,
-		s.requestedFrameCfg.Height,
-		int(format.Width),
-		int(format.Height),
-	)
+	if s.requestedFrameCfg.Width != int(format.Width) || s.requestedFrameCfg.Height != int(format.Height) || (format.PixelFormat != pixfmt) {
+		s.Frames().Error("driver changed format")
+	}
 
 	frameCfg := encdec.FrameCfg{
 		Width:              int(format.Width),
@@ -218,6 +215,47 @@ func (s *V4LSource) releaseFrames() {
 	}
 }
 
+func v4l2BufFlagsToStrings(flags uint32) []string {
+	result := make([]string, 0)
+	if flags&v4l2.BufFlagMapped > 0 {
+		result = append(result, "mapped")
+	}
+	if flags&v4l2.BufFlagQueued > 0 {
+		result = append(result, "queued")
+	}
+	if flags&v4l2.BufFlagDone > 0 {
+		result = append(result, "done")
+	}
+	if flags&v4l2.BufFlagError > 0 {
+		result = append(result, "error")
+	}
+	if flags&v4l2.BufFlagKeyFrame > 0 {
+		result = append(result, "keyframe")
+	}
+	if flags&v4l2.BufFlagPFrame > 0 {
+		result = append(result, "pframe")
+	}
+	if flags&v4l2.BufFlagBFrame > 0 {
+		result = append(result, "bframe")
+	}
+	if flags&v4l2.BufFlagTimeCode > 0 {
+		result = append(result, "timecode")
+	}
+	if flags&v4l2.BufFlagPrepared > 0 {
+		result = append(result, "prepared")
+	}
+	if flags&v4l2.BufFlagNoCacheInvalidate > 0 {
+		result = append(result, "no-cache-invalidate")
+	}
+	if flags&v4l2.BufFlagNoCacheClean > 0 {
+		result = append(result, "no-cache-clean")
+	}
+	if flags&v4l2.BufFlagLast > 0 {
+		result = append(result, "last")
+	}
+	return result
+}
+
 func (s *V4LSource) dequeueFrame() error {
 	var buff v4l2.Buffer
 	var err error
@@ -231,32 +269,49 @@ func (s *V4LSource) dequeueFrame() error {
 			if errors.Is(err, syscall.EAGAIN) {
 				continue
 			}
+			s.brokenFrameCounter++
 			return fmt.Errorf("device: stream loop dequeue: %w", err)
+		}
+		if buff.Flags&v4l2.BufFlagError != 0 {
+			s.brokenFrameCounter++
+			return nil
+		}
+		if buff.BytesUsed == 0 {
+			s.brokenFrameCounter++
+			return nil
+		}
+		if buff.BytesUsed != buff.Length {
+			s.brokenFrameCounter++
+			return nil
+		}
+		if int(buff.Length) != (s.requestedFrameCfg.Width * s.requestedFrameCfg.Height * 2) {
+			s.frames.Error("Buffer size incorrect")
+			s.brokenFrameCounter++
+			return nil
 		}
 		break
 	}
-
-	if buff.Flags&v4l2.BufFlagMapped != 0 && buff.Flags&v4l2.BufFlagError == 0 {
+	if !s.hadValidFrame {
+		s.hadValidFrame = true
+		if s.brokenFrameCounter > 0 {
+			s.frames.Debug("Got %d invalid frames at start", s.brokenFrameCounter)
+		}
+	}
+	if buff.Flags&v4l2.BufFlagMapped != 0 {
 		frame := s.framesInWriting[buff.Index]
 		frame.Data = frame.Data[:buff.BytesUsed]
 		s.framesInWriting[buff.Index] = nil
 		err := s.finaliseFrame(frame)
 		if err != nil {
-			return fmt.Errorf("could not prepare frame: %w", err)
 			s.Frames().FailedWriting(frame)
+			return fmt.Errorf("could not prepare frame: %w", err)
 		} else {
 			s.Frames().FinishedWriting(frame)
 		}
 	} else {
-		// I'm not sure whether we should call FailedWriting on the frame at
-		// s.framesInWriting[buff.Index] here, or if buff is not related to any
-		// buffer (thus buff.Index being invalid) and we should just return an
-		// error without calling FailedWriting
-		// My hunch is that BufFlagMapped means that buff.Index refers to a real
-		// buffer that wasn't written to and we should call FailedWriting only if
-		// BufFlagMapped is true, but I'm on a plane right now and I can't
-		// read the kernel docs to verify
-		panic("FIXME: read the source and follow the instructions in the comment")
+		// We probably got old buffers from v4l2, ignore them
+		s.Frames().Error("Got invalid buffer, flags %v", v4l2BufFlagsToStrings(buff.Flags))
+		return nil
 	}
 	return nil
 }
@@ -264,35 +319,36 @@ func (s *V4LSource) dequeueFrame() error {
 func (s *V4LSource) streamLoopLoop() {
 	for {
 		err := s.streamLoop()
-		s.Frames().Log("stream loop died, starting again in a second: %s", err)
+		s.Frames().Error("stream loop died, starting again in a second: %s", err)
+		// Stop the streaming and let V4L clean up
+		err = v4l2.StreamOff(s.Device)
+		if err != nil {
+			s.Frames().Error(err.Error())
+			return
+		}
 		time.Sleep(1 * time.Second)
 	}
 }
 
 func (s *V4LSource) streamLoop() error {
-	if err := v4l2.StreamOn(s.Device); err != nil {
-		return fmt.Errorf("device: stream on: %w", err)
-	}
-
 	err := s.enqueueFrames()
 	if err != nil {
 		panic(fmt.Sprintf("could not enqueue frames: %s", err))
 	}
 	defer s.releaseFrames()
 
-	waitForRead := v4l2.WaitForRead(s.Device)
+	if err := v4l2.StreamOn(s.Device); err != nil {
+		return fmt.Errorf("device: stream on: %w", err)
+	}
+
 	for {
-		select {
-		// handle stream capture (read from driver)
-		case <-waitForRead:
-			err = s.enqueueFrame()
-			if err != nil {
-				return fmt.Errorf("could not enqueue frame: %w", err)
-			}
-			err = s.dequeueFrame()
-			if err != nil {
-				return fmt.Errorf("could not dequeue frame: %w", err)
-			}
+		err = s.dequeueFrame()
+		if err != nil {
+			return fmt.Errorf("could not dequeue frame: %w", err)
+		}
+		err = s.enqueueFrame()
+		if err != nil {
+			return fmt.Errorf("could not enqueue frame: %w", err)
 		}
 	}
 }
