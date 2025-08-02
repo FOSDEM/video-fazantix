@@ -180,6 +180,16 @@ func (f *FrameForwarder) Log(msg string, args ...interface{}) {
 	log.Printf("[%s] %s\n", f.Name, fmt.Sprintf(msg, args...))
 }
 
+func (f *FrameForwarder) Debug(msg string, args ...interface{}) {
+	// TODO: Implement debug loglevel
+	log.Printf("[%s] %s\n", f.Name, fmt.Sprintf(msg, args...))
+}
+
+func (f *FrameForwarder) Error(msg string, args ...interface{}) {
+	// TODO: Implement error loglevel
+	log.Printf("[%s] %s\n", f.Name, fmt.Sprintf(msg, args...))
+}
+
 func (f *FrameForwarder) Age(dt time.Duration) {
 	f.FrameAge += dt
 	if f.HoldFrame == NoHold && f.FrameAge > 1*time.Second {
