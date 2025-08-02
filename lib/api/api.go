@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/jpeg"
 	"image/png"
 	"io/fs"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/imgsource"
 	"github.com/gorilla/websocket"
 
@@ -87,6 +89,7 @@ func (a *Api) Serve() error {
 	a.mux.HandleFunc("/api/config", a.handleConfig)
 	a.mux.HandleFunc("/api/ws", a.handleWebsocket)
 	a.mux.HandleFunc("/api/media/{source}", a.handleMediaSource)
+	a.mux.HandleFunc("/api/media/{source}/{format}", a.handleMediaSource)
 	a.mux.Handle("/", http.FileServer(http.FS(contentFS)))
 	return a.srv.ListenAndServe()
 }
@@ -98,6 +101,7 @@ type SceneReq struct {
 
 func (a *Api) handleMediaSource(w http.ResponseWriter, req *http.Request) {
 	sourceName := req.PathValue("source")
+	formatName := req.PathValue("format")
 	if sourceName == "" {
 		http.Error(w, "Missing source name", http.StatusBadRequest)
 		return
@@ -108,16 +112,72 @@ func (a *Api) handleMediaSource(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if req.Method == "GET" {
+		frame := source.Frames().GetAnyFrameForReading()
+		if frame == nil {
+			http.Error(w, "No frame returned", http.StatusFailedDependency)
+			return
+		}
+		defer source.Frames().FinishedReading(frame)
+
+		bounds := image.Rectangle{
+			Min: image.Point{},
+			Max: image.Point{X: frame.Width, Y: frame.Height},
+		}
+
+		var img image.Image
+		switch frame.Type {
+		case encdec.RGBAFrames:
+			img = image.NewNRGBA(bounds)
+			copy(img.(*image.NRGBA).Pix, frame.Data)
+		case encdec.RGBFrames:
+			img = image.NewNRGBA(bounds)
+			pix := img.(*image.NRGBA).Pix
+			for i := range len(frame.Data) / 3 {
+				pix[i*4+0] = frame.Data[i*3+0]
+				pix[i*4+1] = frame.Data[i*3+1]
+				pix[i*4+2] = frame.Data[i*3+2]
+				pix[i*4+3] = 255
+			}
+		case encdec.YUV422Frames:
+			img = image.NewYCbCr(bounds, image.YCbCrSubsampleRatio422)
+			textureY, _, _ := frame.Texture(0)
+			textureCb, _, _ := frame.Texture(1)
+			textureCr, _, _ := frame.Texture(2)
+			copy(img.(*image.YCbCr).Y, textureY)
+			copy(img.(*image.YCbCr).Cb, textureCb)
+			copy(img.(*image.YCbCr).Cr, textureCr)
+		default:
+			http.Error(w, "Unhandled frame type", http.StatusInternalServerError)
+			return
+		}
+		switch formatName {
+		case "":
+			fallthrough
+		case "jpeg":
+			err := jpeg.Encode(w, img, &jpeg.Options{Quality: 80})
+			if err != nil {
+				http.Error(w, "Could not jpeg encode this frame", http.StatusInternalServerError)
+				return
+			}
+		case "png":
+			err := png.Encode(w, img)
+			if err != nil {
+				http.Error(w, "Could not png encode this frame", http.StatusInternalServerError)
+				return
+			}
+		default:
+			http.Error(w, "Unsupported format", http.StatusBadRequest)
+		}
+		return
+	}
+
 	imgSource, ok := source.(*imgsource.ImgSource)
 	if !ok {
 		http.Error(w, "not a valid image source", http.StatusBadRequest)
 		return
 	}
 
-	if req.Method == "GET" {
-		png.Encode(w, imgSource.GetImage())
-		return
-	}
 	if req.Method == "PUT" {
 		newImage, ftype, err := image.Decode(req.Body)
 		if err != nil {

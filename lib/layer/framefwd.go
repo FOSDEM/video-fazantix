@@ -23,7 +23,7 @@ type FrameForwarder struct {
 	Name      string
 	Allocator encdec.FrameAllocator
 
-	IsReady bool
+	IsReady   bool
 	HoldFrame FrameHold
 
 	curReadingFrame *encdec.Frame
@@ -69,6 +69,20 @@ func (f *FrameForwarder) GetFrameForReading() *encdec.Frame {
 		// Don't send this frame again on the next request
 		f.HoldFrame = Hold
 	}
+	return frame
+}
+
+func (f *FrameForwarder) GetAnyFrameForReading() *encdec.Frame {
+	f.Lock()
+	defer f.Unlock()
+
+	frame := f.curReadingFrame
+	if !f.IsReady || frame == nil {
+		return nil
+	}
+
+	frame.NumReaders.Add(1)
+
 	return frame
 }
 
