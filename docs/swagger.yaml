@@ -1,0 +1,339 @@
+definitions:
+  api.Config:
+    properties:
+      scenes:
+        items:
+          $ref: '#/definitions/api.SceneInfo'
+        type: array
+      stages:
+        items:
+          $ref: '#/definitions/api.StageInfo'
+        type: array
+    type: object
+  api.SceneInfo:
+    properties:
+      code:
+        example: side-by-side
+        type: string
+      label:
+        example: Side by side
+        type: string
+      tag:
+        example: SbS
+        type: string
+    type: object
+  api.SceneReq:
+    properties:
+      scene:
+        example: side-by-side
+        type: string
+      stage:
+        example: projector
+        type: string
+    type: object
+  api.StageInfo:
+    properties:
+      name:
+        example: projector
+        type: string
+      previewFor:
+        type: string
+    type: object
+  stats.Stats:
+    properties:
+      fps:
+        example: 60
+        type: integer
+      texture_upload:
+        example: 211507200
+        type: integer
+      texture_upload_avg_gb:
+        example: 0.03411996282883119
+        type: number
+      uptime:
+        example: 22.355897797
+        type: number
+      ws_clients:
+        example: 1
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: This is the control API for the Fazantix vision mixer
+  title: Fazantix API
+  version: "1.0"
+paths:
+  /api/config:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Config'
+      summary: Get list of stages and scenes
+      tags:
+      - base
+  /api/kill:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/stats.Stats'
+      summary: Shut down Fazantix
+      tags:
+      - base
+  /api/media/sink/{name}:
+    get:
+      parameters:
+      - description: Name of the source to get the still from
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - image/jpeg
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: The requested image format is not supported
+          schema:
+            type: string
+        "404":
+          description: The specified source does not exist in the configuration
+          schema:
+            type: string
+        "424":
+          description: The source does not have a frame ready to show
+          schema:
+            type: string
+        "500":
+          description: The API does not know how to convert this buffer to an image
+          schema:
+            type: string
+      summary: fetch a frame from a source or sink
+      tags:
+      - media
+  /api/media/sink/{name}/{format}:
+    get:
+      parameters:
+      - description: Name of the source to get the still from
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: The image type to return
+        enum:
+        - jpeg
+        - png
+        in: path
+        name: format
+        required: true
+        type: string
+      produces:
+      - image/jpeg
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: The requested image format is not supported
+          schema:
+            type: string
+        "404":
+          description: The specified source does not exist in the configuration
+          schema:
+            type: string
+        "424":
+          description: The source does not have a frame ready to show
+          schema:
+            type: string
+        "500":
+          description: The API does not know how to convert this buffer to an image
+          schema:
+            type: string
+      summary: fetch a frame from a source or sink
+      tags:
+      - media
+  /api/media/source/{name}:
+    get:
+      parameters:
+      - description: Name of the source to get the still from
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - image/jpeg
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: The requested image format is not supported
+          schema:
+            type: string
+        "404":
+          description: The specified source does not exist in the configuration
+          schema:
+            type: string
+        "424":
+          description: The source does not have a frame ready to show
+          schema:
+            type: string
+        "500":
+          description: The API does not know how to convert this buffer to an image
+          schema:
+            type: string
+      summary: fetch a frame from a source or sink
+      tags:
+      - media
+    put:
+      parameters:
+      - description: Name of the source to get the still from
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - image/jpeg
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: The requested image format is not supported
+          schema:
+            type: string
+        "404":
+          description: The specified source does not exist in the configuration
+          schema:
+            type: string
+        "424":
+          description: The source does not have a frame ready to show
+          schema:
+            type: string
+        "500":
+          description: The API does not know how to convert this buffer to an image
+          schema:
+            type: string
+      summary: fetch a frame from a source or sink
+      tags:
+      - media
+  /api/media/source/{name}/{format}:
+    get:
+      parameters:
+      - description: Name of the source to get the still from
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: The image type to return
+        enum:
+        - jpeg
+        - png
+        in: path
+        name: format
+        required: true
+        type: string
+      produces:
+      - image/jpeg
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: The requested image format is not supported
+          schema:
+            type: string
+        "404":
+          description: The specified source does not exist in the configuration
+          schema:
+            type: string
+        "424":
+          description: The source does not have a frame ready to show
+          schema:
+            type: string
+        "500":
+          description: The API does not know how to convert this buffer to an image
+          schema:
+            type: string
+      summary: fetch a frame from a source or sink
+      tags:
+      - media
+  /api/scene:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Transition
+        in: body
+        name: sceneReq
+        required: true
+        schema:
+          $ref: '#/definitions/api.SceneReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Could not decode json request
+          schema:
+            type: string
+      summary: Start a transition to a specific scene on one of the outputs
+      tags:
+      - scene
+  /api/scene/{stage}/{scene}:
+    post:
+      parameters:
+      - description: Output name to switch the scene for
+        in: path
+        name: stage
+        required: true
+        type: string
+      - description: The name of the scene to transition to
+        in: path
+        name: scene
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Could not decode json request
+          schema:
+            type: string
+      summary: Start a transition to a specific scene on one of the outputs
+      tags:
+      - scene
+  /api/stats:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/stats.Stats'
+      summary: Get internal runtime statistics
+      tags:
+      - base
+  /api/ws:
+    get:
+      parameters:
+      - description: websocket
+        in: header
+        name: Upgrade
+        required: true
+        type: string
+      responses:
+        "101":
+          description: Switching Protocols
+      summary: Open websocket for realtime status information
+      tags:
+      - base
+swagger: "2.0"
