@@ -7,11 +7,11 @@ import (
 )
 
 type Stats struct {
-	TextureUpload      uint64  `json:"texture_upload"`
-	TextureUploadAvgGb float64 `json:"texture_upload_avg_gb"`
-	Uptime             float64 `json:"uptime"`
-	FPS                uint64  `json:"fps"`
-	WsClients          int     `json:"ws_clients"`
+	TextureUpload      uint64  `json:"texture_upload" example:"211507200"`
+	TextureUploadAvgGb float64 `json:"texture_upload_avg_gb" example:"0.03411996282883119"`
+	Uptime             float64 `json:"uptime" example:"22.355897797"`
+	FPS                uint64  `json:"fps" example:"60"`
+	WsClients          int     `json:"ws_clients" example:"1"`
 
 	frameCounter uint64
 	frameTimer   time.Time

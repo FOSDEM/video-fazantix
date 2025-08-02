@@ -1,0 +1,515 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is the control API for the Fazantix vision mixer",
+        "title": "Fazantix API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "paths": {
+        "/api/config": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "base"
+                ],
+                "summary": "Get list of stages and scenes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Config"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/kill": {
+            "post": {
+                "tags": [
+                    "base"
+                ],
+                "summary": "Shut down Fazantix",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/stats.Stats"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/media/sink/{name}": {
+            "get": {
+                "produces": [
+                    "image/jpeg"
+                ],
+                "tags": [
+                    "media"
+                ],
+                "summary": "fetch a frame from a source or sink",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the source to get the still from",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "The requested image format is not supported",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "The specified source does not exist in the configuration",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "424": {
+                        "description": "The source does not have a frame ready to show",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "The API does not know how to convert this buffer to an image",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/media/sink/{name}/{format}": {
+            "get": {
+                "produces": [
+                    "image/jpeg"
+                ],
+                "tags": [
+                    "media"
+                ],
+                "summary": "fetch a frame from a source or sink",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the source to get the still from",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "jpeg",
+                            "png"
+                        ],
+                        "type": "string",
+                        "description": "The image type to return",
+                        "name": "format",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "The requested image format is not supported",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "The specified source does not exist in the configuration",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "424": {
+                        "description": "The source does not have a frame ready to show",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "The API does not know how to convert this buffer to an image",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/media/source/{name}": {
+            "get": {
+                "produces": [
+                    "image/jpeg"
+                ],
+                "tags": [
+                    "media"
+                ],
+                "summary": "fetch a frame from a source or sink",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the source to get the still from",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "The requested image format is not supported",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "The specified source does not exist in the configuration",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "424": {
+                        "description": "The source does not have a frame ready to show",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "The API does not know how to convert this buffer to an image",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "produces": [
+                    "image/jpeg"
+                ],
+                "tags": [
+                    "media"
+                ],
+                "summary": "fetch a frame from a source or sink",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the source to get the still from",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "The requested image format is not supported",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "The specified source does not exist in the configuration",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "424": {
+                        "description": "The source does not have a frame ready to show",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "The API does not know how to convert this buffer to an image",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/media/source/{name}/{format}": {
+            "get": {
+                "produces": [
+                    "image/jpeg"
+                ],
+                "tags": [
+                    "media"
+                ],
+                "summary": "fetch a frame from a source or sink",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the source to get the still from",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "jpeg",
+                            "png"
+                        ],
+                        "type": "string",
+                        "description": "The image type to return",
+                        "name": "format",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "The requested image format is not supported",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "The specified source does not exist in the configuration",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "424": {
+                        "description": "The source does not have a frame ready to show",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "The API does not know how to convert this buffer to an image",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/scene": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scene"
+                ],
+                "summary": "Start a transition to a specific scene on one of the outputs",
+                "parameters": [
+                    {
+                        "description": "Transition",
+                        "name": "sceneReq",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SceneReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Could not decode json request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/scene/{stage}/{scene}": {
+            "post": {
+                "tags": [
+                    "scene"
+                ],
+                "summary": "Start a transition to a specific scene on one of the outputs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Output name to switch the scene for",
+                        "name": "stage",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "The name of the scene to transition to",
+                        "name": "scene",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Could not decode json request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stats": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "base"
+                ],
+                "summary": "Get internal runtime statistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/stats.Stats"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ws": {
+            "get": {
+                "tags": [
+                    "base"
+                ],
+                "summary": "Open websocket for realtime status information",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "websocket",
+                        "name": "Upgrade",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "api.Config": {
+            "type": "object",
+            "properties": {
+                "scenes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SceneInfo"
+                    }
+                },
+                "stages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.StageInfo"
+                    }
+                }
+            }
+        },
+        "api.SceneInfo": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "side-by-side"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "Side by side"
+                },
+                "tag": {
+                    "type": "string",
+                    "example": "SbS"
+                }
+            }
+        },
+        "api.SceneReq": {
+            "type": "object",
+            "properties": {
+                "scene": {
+                    "type": "string",
+                    "example": "side-by-side"
+                },
+                "stage": {
+                    "type": "string",
+                    "example": "projector"
+                }
+            }
+        },
+        "api.StageInfo": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "projector"
+                },
+                "previewFor": {
+                    "type": "string"
+                }
+            }
+        },
+        "stats.Stats": {
+            "type": "object",
+            "properties": {
+                "fps": {
+                    "type": "integer",
+                    "example": 60
+                },
+                "texture_upload": {
+                    "type": "integer",
+                    "example": 211507200
+                },
+                "texture_upload_avg_gb": {
+                    "type": "number",
+                    "example": 0.03411996282883119
+                },
+                "uptime": {
+                    "type": "number",
+                    "example": 22.355897797
+                },
+                "ws_clients": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        }
+    }
+}

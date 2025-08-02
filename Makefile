@@ -1,12 +1,14 @@
 CONFIG=examples/imagesource.yaml
 
 fazantix: builddir
+	swag init -g lib/api/api.go
 	go build -o build/fazantix ./cmd/fazantix
 
 builddir:
 	mkdir -p build
 
 fazantix-wayland: builddir
+	swag init -g lib/api/api.go
 	go build -o build/fazantix -tags "wayland,vulkan" ./cmd/fazantix
 
 fazantix-window: builddir
