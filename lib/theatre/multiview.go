@@ -57,6 +57,29 @@ func drawMultiviewBox(img *image.RGBA, x, y, width, height float32, label string
 	gc.FillStringAt(label, px+(pw/2)-(twidth/2), py+ph-10)
 }
 
+func makeLayerCfg(x, y, scale float32) *config.LayerCfg {
+	return &config.LayerCfg{
+		LayerStateCfg: config.LayerStateCfg{
+			LayerTransform: layer.LayerTransform{
+				X:       x,
+				Y:       y,
+				Scale:   scale,
+				Opacity: 1,
+			},
+		},
+		LayerCfgStub: config.LayerCfgStub{
+			Warp: &config.LayerStateCfg{
+				LayerTransform: layer.LayerTransform{
+					X:       x,
+					Y:       y,
+					Scale:   scale,
+					Opacity: 0,
+				},
+			},
+		},
+	}
+}
+
 func buildMultiviews(cfg *config.Config) {
 	for multiviewName, multiview := range cfg.Multiviews {
 		fontPath, err := findfont.Find(multiview.Font)
@@ -78,7 +101,7 @@ func buildMultiviews(cfg *config.Config) {
 		layerCfg := make(map[string]*config.LayerCfg)
 		overlay := image.NewRGBA(image.Rect(0, 0, multiview.Width, multiview.Height))
 		index := 0
-		positions := make([]*layer.LayerState, 16)
+		positions := make([]*config.LayerCfg, 16)
 		names := make([]string, 16)
 		offsetX := float32(0.0)
 		offsetY := float32(0.0)
@@ -94,48 +117,24 @@ func buildMultiviews(cfg *config.Config) {
 				offsetY = 0
 			}
 			if quadrantSplit {
-				positions[index] = &layer.LayerState{
-					X:       offsetX,
-					Y:       offsetY,
-					Scale:   0.25,
-					Opacity: 1,
-				}
+				positions[index] = makeLayerCfg(offsetX, offsetY, 0.25)
 				index++
-				positions[index] = &layer.LayerState{
-					X:       offsetX + 0.25,
-					Y:       offsetY,
-					Scale:   0.25,
-					Opacity: 1,
-				}
+				positions[index] = makeLayerCfg(offsetX+0.25, offsetY, 0.25)
 				index++
-				positions[index] = &layer.LayerState{
-					X:       offsetX,
-					Y:       offsetY + 0.25,
-					Scale:   0.25,
-					Opacity: 1,
-				}
+				positions[index] = makeLayerCfg(offsetX, offsetY+0.25, 0.25)
 				index++
-				positions[index] = &layer.LayerState{
-					X:       offsetX + 0.25,
-					Y:       offsetY + 0.25,
-					Scale:   0.25,
-					Opacity: 1,
-				}
+				positions[index] = makeLayerCfg(offsetX+0.25, offsetY+0.25, 0.25)
 				index++
 			} else {
-				positions[index] = &layer.LayerState{
-					X:       offsetX,
-					Y:       offsetY,
-					Scale:   0.5,
-					Opacity: 1,
-				}
+				positions[index] = makeLayerCfg(offsetX, offsetY, 0.5)
 				index++
 			}
 		}
 		for idx, input := range multiview.Source {
 			if input.Source != "" {
 				layerCfg[input.Source] = &config.LayerCfg{
-					LayerState: *positions[idx],
+					LayerStateCfg: positions[idx].LayerStateCfg,
+					LayerCfgStub:  positions[idx].LayerCfgStub,
 				}
 				names[idx] = input.Source
 			}
@@ -172,15 +171,7 @@ func buildMultiviews(cfg *config.Config) {
 				Inotify: false,
 			},
 		}
-		layerCfg[overlayName] = &config.LayerCfg{
-			LayerState: layer.LayerState{
-				X:       0,
-				Y:       0,
-				Scale:   1,
-				Opacity: 1,
-
-			},
-		}
+		layerCfg[overlayName] = makeLayerCfg(0, 0, 1)
 
 		cfg.Scenes[multiviewName] = &config.SceneCfg{
 			Tag:     "MV",
