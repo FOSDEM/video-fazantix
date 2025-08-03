@@ -137,6 +137,9 @@ func buildMultiviews(cfg *config.Config) {
 					LayerCfgStub:  positions[idx].LayerCfgStub,
 				}
 				names[idx] = input.Source
+				if cfg.Sources[input.Source].Label != "" {
+					names[idx] = cfg.Sources[input.Source].Label
+				}
 			}
 			if input.Label != "" {
 				names[idx] = input.Label
