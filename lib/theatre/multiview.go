@@ -75,7 +75,7 @@ func buildMultiviews(cfg *config.Config) {
 			continue
 		}
 
-		scene := make(map[string]*config.LayerCfg)
+		layerCfg := make(map[string]*config.LayerCfg)
 		overlay := image.NewRGBA(image.Rect(0, 0, multiview.Width, multiview.Height))
 		index := 0
 		positions := make([]*layer.LayerState, 16)
@@ -134,7 +134,7 @@ func buildMultiviews(cfg *config.Config) {
 		}
 		for idx, input := range multiview.Source {
 			if input.Source != "" {
-				scene[input.Source] = &config.LayerCfg{
+				layerCfg[input.Source] = &config.LayerCfg{
 					LayerState: *positions[idx],
 				}
 				names[idx] = input.Source
@@ -172,15 +172,20 @@ func buildMultiviews(cfg *config.Config) {
 				Inotify: false,
 			},
 		}
-		scene[overlayName] = &config.LayerCfg{
+		layerCfg[overlayName] = &config.LayerCfg{
 			LayerState: layer.LayerState{
 				X:       0,
 				Y:       0,
 				Scale:   1,
 				Opacity: 1,
+
 			},
 		}
 
-		cfg.Scenes[multiviewName] = scene
+		cfg.Scenes[multiviewName] = &config.SceneCfg{
+			Tag:     "MV",
+			Label:   multiviewName,
+			Sources: layerCfg,
+		}
 	}
 }
