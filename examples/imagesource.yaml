@@ -61,8 +61,11 @@ scenes:
         left: -0.03
         right: -0.03
         opacity: 1
-      test2:
-        opacity: 0
+        warp:
+          x: 0.03
+          y: 0.03
+          scale: 0.9
+          opacity: 0
   full-3:
     sources:
       background:
@@ -97,9 +100,6 @@ scenes:
           y: 0.03
           scale: 0.93
           opacity: 0
-
-      test1:
-        opacity: 0
   default:
     tag: "dflt"
     sources:
