@@ -149,7 +149,7 @@ func (a *Api) handleScene(w http.ResponseWriter, req *http.Request) {
 		sceneReq.Stage = req.PathValue("stage")
 	}
 
-	err := a.theatre.SetScene(sceneReq.Stage, sceneReq.Scene)
+	err := a.theatre.SetScene(sceneReq.Stage, sceneReq.Scene, true)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not set scene: %s", err), http.StatusBadRequest)
 		return

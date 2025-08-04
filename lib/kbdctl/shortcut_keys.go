@@ -39,7 +39,7 @@ func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window
 					return
 				}
 				log.Printf("set scene %s", names[selected])
-				err := theatre.SetScene(stageName, names[selected])
+				err := theatre.SetScene(stageName, names[selected], mods&glfw.ModShift != 0)
 				if err != nil {
 					log.Println(err)
 					return

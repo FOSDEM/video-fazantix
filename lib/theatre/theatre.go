@@ -3,6 +3,7 @@ package theatre
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
@@ -73,6 +74,7 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 	stages := make(map[string]*layer.Stage)
 	for stageName, stageCfg := range cfg.Stages {
 		stage := &layer.Stage{}
+		stage.SetSpeed(time.Second)
 		stage.Layers = make([]*layer.Layer, len(sources))
 		stage.DefaultScene = stageCfg.DefaultScene
 		stage.PreviewFor = stageCfg.StageCfgStub.PreviewFor
@@ -230,12 +232,21 @@ func (t *Theatre) Start() {
 func (t *Theatre) Animate(delta float32) {
 	for _, s := range t.Stages {
 		for _, l := range s.Layers {
-			l.Animate(delta)
+			l.Animate(delta, s.Speed)
 		}
 	}
 }
 
-func (t *Theatre) SetScene(stageName string, sceneName string) error {
+func (t *Theatre) SetTransitionSpeed(stageName string, transitionDuration time.Duration) error {
+	if stage, ok := t.Stages[stageName]; ok {
+		stage.SetSpeed(transitionDuration)
+		return nil
+	} else {
+		return fmt.Errorf("no such stage: %s", stageName)
+	}
+}
+
+func (t *Theatre) SetScene(stageName string, sceneName string, transition bool) error {
 	if stage, ok := t.Stages[stageName]; ok {
 		if scene, ok := t.Scenes[sceneName]; ok {
 			t.invoke("set-scene", EventDataSetScene{
@@ -243,7 +254,7 @@ func (t *Theatre) SetScene(stageName string, sceneName string) error {
 				Scene: sceneName,
 			})
 			for i, l := range stage.Layers {
-				l.ApplyState(scene.LayerStates[i])
+				l.ApplyState(scene.LayerStates[i], transition)
 			}
 			return nil
 		} else {
@@ -256,7 +267,7 @@ func (t *Theatre) SetScene(stageName string, sceneName string) error {
 
 func (t *Theatre) ResetToDefaultScenes() error {
 	for name, stage := range t.Stages {
-		err := t.SetScene(name, stage.DefaultScene)
+		err := t.SetScene(name, stage.DefaultScene, false)
 		if err != nil {
 			return fmt.Errorf(
 				"could not apply default scene (%s) to stage %s: %w",

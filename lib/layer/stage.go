@@ -1,5 +1,7 @@
 package layer
 
+import "time"
+
 type Stage struct {
 	Layers       []*Layer
 	HFlip        bool
@@ -7,11 +9,16 @@ type Stage struct {
 	Sink         Sink
 	DefaultScene string
 	PreviewFor   string
+	Speed        float32
 }
 
 type Sink interface {
 	Frames() *FrameForwarder
 	Start() bool
+}
+
+func (s *Stage) SetSpeed(d time.Duration) {
+	s.Speed = float32(7.0 / d.Seconds())
 }
 
 func (s *Stage) StageData() uint32 {
