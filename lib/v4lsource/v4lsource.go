@@ -191,7 +191,7 @@ func (s *V4LSource) enqueueFrames() error {
 }
 
 func (s *V4LSource) enqueueFrame() error {
-	frame := s.frames.GetFrameForWriting()
+	frame := s.Frames().GetFrameForWriting()
 	s.framesInWriting[frame.SoulID] = frame
 
 	_, err := v4l2.QueueBuffer(
@@ -272,25 +272,30 @@ func (s *V4LSource) dequeueFrame() error {
 			s.brokenFrameCounter++
 			return fmt.Errorf("device: stream loop dequeue: %w", err)
 		}
-		if buff.Flags&v4l2.BufFlagError != 0 {
-			s.brokenFrameCounter++
-			return nil
-		}
-		if buff.BytesUsed == 0 {
-			s.brokenFrameCounter++
-			return nil
-		}
-		if buff.BytesUsed != buff.Length {
-			s.brokenFrameCounter++
-			return nil
-		}
-		if int(buff.Length) != (s.requestedFrameCfg.Width * s.requestedFrameCfg.Height * 2) {
-			s.frames.Error("Buffer size incorrect")
-			s.brokenFrameCounter++
-			return nil
-		}
 		break
 	}
+
+	frame := s.framesInWriting[buff.Index]
+
+	if buff.Flags&v4l2.BufFlagError != 0 {
+		s.brokenFrameCounter++
+		return nil
+	}
+	if buff.BytesUsed == 0 {
+		s.brokenFrameCounter++
+		return nil
+	}
+	if buff.BytesUsed != buff.Length {
+		s.brokenFrameCounter++
+		return nil
+	}
+	if int(buff.Length) != (s.requestedFrameCfg.Width * s.requestedFrameCfg.Height * 2) {
+		s.frames.Error("Buffer size incorrect")
+		s.brokenFrameCounter++
+		s.Frames().FailedWriting(frame) // definitely needed, buffers with wrong size are still buffers
+		return nil
+	}
+
 	if !s.hadValidFrame {
 		s.hadValidFrame = true
 		if s.brokenFrameCounter > 0 {
@@ -298,7 +303,6 @@ func (s *V4LSource) dequeueFrame() error {
 		}
 	}
 	if buff.Flags&v4l2.BufFlagMapped != 0 {
-		frame := s.framesInWriting[buff.Index]
 		frame.Data = frame.Data[:buff.BytesUsed]
 		s.framesInWriting[buff.Index] = nil
 		err := s.finaliseFrame(frame)
@@ -311,6 +315,7 @@ func (s *V4LSource) dequeueFrame() error {
 	} else {
 		// We probably got old buffers from v4l2, ignore them
 		s.Frames().Error("Got invalid buffer, flags %v", v4l2BufFlagsToStrings(buff.Flags))
+		s.Frames().FailedWriting(frame) // FIXME: needed?
 		return nil
 	}
 	return nil
