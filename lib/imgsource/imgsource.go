@@ -29,9 +29,13 @@ func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *Im
 	s.frames.Name = name
 	s.inotify = cfg.Inotify
 
-	err := s.LoadImage(string(cfg.Path))
-	if err != nil {
-		return nil
+	if cfg.Path != "" {
+		err := s.LoadImage(string(cfg.Path))
+		if err != nil {
+			return nil
+		}
+	} else {
+		s.CreateImage(cfg.Width, cfg.Height)
 	}
 	s.frames.Init(
 		name,
@@ -142,6 +146,17 @@ func (s *ImgSource) LoadImage(newPath string) error {
 
 	s.rgba = image.NewNRGBA(s.img.Bounds())
 	return nil
+}
+
+func (s *ImgSource) CreateImage(width, height int) {
+	s.img = image.NewNRGBA(image.Rectangle{
+		Min: image.Point{},
+		Max: image.Point{
+			X: width,
+			Y: height,
+		},
+	})
+	s.rgba = s.img.(*image.NRGBA)
 }
 
 func (s *ImgSource) SetImage(newImage image.Image) error {

@@ -155,6 +155,8 @@ type WindowSinkCfg struct {
 
 type ImgSourceCfg struct {
 	Path    CfgPath
+	Width   int
+	Height  int
 	Inotify bool
 }
 
@@ -235,7 +237,16 @@ func (s *SourceCfg) Validate() error {
 
 func (s *ImgSourceCfg) Validate() error {
 	if s.Path == "" {
-		return fmt.Errorf("image path must be specified")
+		if s.Width == 0 && s.Height == 0 {
+			return fmt.Errorf("image path or size must be specified")
+		}
+		if s.Inotify {
+			return fmt.Errorf("cannot enable inotify for an imagesource without path")
+		}
+	} else {
+		if s.Width != 0 || s.Height != 0 {
+			return fmt.Errorf("image path or size can't both be specified")
+		}
 	}
 	return nil
 }
