@@ -328,8 +328,7 @@ func (s *V4LSource) streamLoopLoop() {
 		// Stop the streaming and let V4L clean up
 		err = v4l2.StreamOff(s.Device)
 		if err != nil {
-			s.Frames().Error(err.Error())
-			return
+			s.Frames().Error("could not turn off stream: %s; restarting will probably fail", err.Error())
 		}
 		time.Sleep(1 * time.Second)
 	}
