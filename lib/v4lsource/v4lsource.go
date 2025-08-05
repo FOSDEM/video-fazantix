@@ -320,10 +320,8 @@ func (s *V4LSource) dequeueFrame() error {
 			s.Frames().FinishedWriting(frame)
 		}
 	} else {
-		// We probably got old buffers from v4l2, ignore them
-		s.Frames().Error("Got invalid buffer, flags %v", v4l2BufFlagsToStrings(buff.Flags))
-		s.Frames().FailedWriting(frame)
-		return nil
+		// something really bad happened, restart the stream
+		return fmt.Errorf("Got invalid buffer, flags %v", v4l2BufFlagsToStrings(buff.Flags))
 	}
 	return nil
 }
