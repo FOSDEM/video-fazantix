@@ -281,25 +281,9 @@ func (s *V4LSource) dequeueFrame() error {
 
 	frame := s.framesInWriting[buff.Index]
 
-	if buff.Flags&v4l2.BufFlagError != 0 {
+	if !s.v4l2BufOK(&buff) {
 		s.brokenFrameCounter++
 		s.Frames().FailedWriting(frame)
-		return nil
-	}
-	if buff.BytesUsed == 0 {
-		s.brokenFrameCounter++
-		s.Frames().FailedWriting(frame)
-		return nil
-	}
-	if buff.BytesUsed != buff.Length {
-		s.Frames().FailedWriting(frame)
-		s.brokenFrameCounter++
-		return nil
-	}
-	if int(buff.Length) != (s.requestedFrameCfg.Width * s.requestedFrameCfg.Height * 2) {
-		s.Frames().Error("Buffer size incorrect")
-		s.brokenFrameCounter++
-		s.Frames().FailedWriting(frame) // definitely needed, buffers with wrong size are still buffers
 		return nil
 	}
 
@@ -309,19 +293,19 @@ func (s *V4LSource) dequeueFrame() error {
 			s.Frames().Debug("Got %d invalid frames at start", s.brokenFrameCounter)
 		}
 	}
-	if buff.Flags&v4l2.BufFlagMapped != 0 {
-		frame.Data = frame.Data[:buff.BytesUsed]
-		s.framesInWriting[buff.Index] = nil
-		err := s.finaliseFrame(frame)
-		if err != nil {
-			s.Frames().FailedWriting(frame)
-			return fmt.Errorf("could not prepare frame: %w", err)
-		} else {
-			s.Frames().FinishedWriting(frame)
-		}
-	} else {
+	if buff.Flags&v4l2.BufFlagMapped == 0 {
 		// something really bad happened, restart the stream
 		return fmt.Errorf("Got invalid buffer, flags %v", v4l2BufFlagsToStrings(buff.Flags))
+	}
+
+	frame.Data = frame.Data[:buff.BytesUsed]
+	s.framesInWriting[buff.Index] = nil
+	err = s.finaliseFrame(frame)
+	if err != nil {
+		s.Frames().FailedWriting(frame)
+		return fmt.Errorf("could not prepare frame: %w", err)
+	} else {
+		s.Frames().FinishedWriting(frame)
 	}
 	return nil
 }
@@ -360,4 +344,21 @@ func (s *V4LSource) streamLoop() error {
 			return fmt.Errorf("could not enqueue frame: %w", err)
 		}
 	}
+}
+
+func (s *V4LSource) v4l2BufOK(buff *v4l2.Buffer) bool {
+	if buff.Flags&v4l2.BufFlagError != 0 {
+		return false
+	}
+	if buff.BytesUsed == 0 {
+		return false
+	}
+	if buff.BytesUsed != buff.Length {
+		return false
+	}
+	if int(buff.Length) != (s.requestedFrameCfg.Width * s.requestedFrameCfg.Height * 2) {
+		s.Frames().Error("Buffer size incorrect")
+		return false
+	}
+	return true
 }
