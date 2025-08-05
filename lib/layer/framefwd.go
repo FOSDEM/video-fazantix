@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fosdem/fazantix/lib/encdec"
+	"github.com/fosdem/fazantix/lib/metrics"
 )
 
 type FrameHold int
@@ -39,6 +40,8 @@ type FrameForwarder struct {
 
 	DroppedFramesIn  uint64
 	DroppedFramesOut uint64
+
+	metrics metrics.StreamMetrics
 }
 
 func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.FrameAllocator) {
@@ -47,6 +50,7 @@ func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.
 	f.FrameInfo = *info
 	f.FrameAge = 0
 	f.allocateFrames(info.NumAllocatedFrames)
+	f.metrics = metrics.NewStreamMetrics(name)
 }
 
 func (f *FrameForwarder) GetFrameForReading() *encdec.Frame {
@@ -105,6 +109,7 @@ func (f *FrameForwarder) GetFrameForWriting() *encdec.Frame {
 
 	if len(f.bin) == 0 {
 		f.DroppedFramesOut += 1
+		f.metrics.FramesDropped.Inc()
 		return nil
 	}
 
@@ -131,6 +136,7 @@ func (f *FrameForwarder) FinishedWriting(frame *encdec.Frame) {
 	}
 
 	f.curReadingFrame = frame
+	f.metrics.FramesForwarded.Inc()
 
 	f.FrameAge = 0
 	f.IsReady = true
@@ -144,6 +150,7 @@ func (f *FrameForwarder) FailedWriting(frame *encdec.Frame) {
 	defer f.Unlock()
 
 	f.DroppedFramesIn += 1
+	f.metrics.FramesDropped.Inc()
 
 	f.recycleFrame(frame)
 }

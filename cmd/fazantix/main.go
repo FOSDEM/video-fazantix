@@ -6,7 +6,6 @@ import (
 	"runtime"
 
 	"github.com/fosdem/fazantix/lib/config"
-	"github.com/fosdem/fazantix/lib/metrics"
 	"github.com/fosdem/fazantix/lib/mixer"
 )
 
@@ -23,8 +22,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	metrics.ServeInBackground()
 
 	mixer.MakeWindowAndMix(cfg)
 }
