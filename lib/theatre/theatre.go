@@ -74,7 +74,7 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 	stages := make(map[string]*layer.Stage)
 	for stageName, stageCfg := range cfg.Stages {
 		stage := &layer.Stage{}
-		stage.SetSpeed(time.Second)
+		stage.SetSpeed(time.Duration(*stageCfg.TransitionTimeMs) * time.Millisecond)
 		stage.Layers = make([]*layer.Layer, len(sources))
 		stage.DefaultScene = stageCfg.DefaultScene
 		stage.PreviewFor = stageCfg.StageCfgStub.PreviewFor
