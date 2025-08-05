@@ -295,7 +295,7 @@ func (s *V4LSource) dequeueFrame() error {
 	}
 	if buff.Flags&v4l2.BufFlagMapped == 0 {
 		// something really bad happened, restart the stream
-		return fmt.Errorf("Got invalid buffer, flags %v", v4l2BufFlagsToStrings(buff.Flags))
+		return fmt.Errorf("got invalid buffer, flags %v", v4l2BufFlagsToStrings(buff.Flags))
 	}
 
 	frame.Data = frame.Data[:buff.BytesUsed]
