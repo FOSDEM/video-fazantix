@@ -1,2 +1,4 @@
 /build
 /result
+/docs/docs.go
+/docs/swagger.*

@@ -1,13 +1,18 @@
 CONFIG=examples/imagesource.yaml
 
 fazantix: builddir
+	swag init -g lib/api/api.go
 	go build -o build/fazantix ./cmd/fazantix
 
 builddir:
 	mkdir -p build
 
 fazantix-wayland: builddir
+	swag init -g lib/api/api.go
 	go build -o build/fazantix -tags "wayland,vulkan" ./cmd/fazantix
+
+fazantix-window: builddir
+	go build -o build/fazantix-window ./cmd/fazantix-window
 
 run: fazantix
 	./build/fazantix $(CONFIG)
@@ -22,6 +27,11 @@ lint:
 	golangci-lint run
 	golangci-lint fmt
 
+examples/%.yaml: FORCE
+	go run ./cmd/fazantix-validate-config $@
+
+validate-examples: $(wildcard examples/*.yaml)
+
 clean:
 	rm -rvf build
 
@@ -29,4 +39,7 @@ all: fazantix
 
 build: fazantix
 
-.PHONY: clean run lint fazantix fazantix-wayland builddir
+.PHONY: FORCE
+FORCE:;
+
+.PHONY: clean run lint fazantix fazantix-wayland builddir validate-examples

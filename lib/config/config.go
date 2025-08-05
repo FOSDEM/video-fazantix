@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/fosdem/fazantix/lib/encdec"
 	yaml "github.com/goccy/go-yaml"
@@ -11,7 +12,7 @@ import (
 
 type Config struct {
 	Sources map[string]*SourceCfg
-	Scenes  map[string]map[string]*LayerCfg
+	Scenes  map[string]*SceneCfg
 	Stages  map[string]*StageCfg `yaml:"sinks"`
 	Api     *ApiCfg
 }
@@ -62,7 +63,7 @@ func (c *Config) Validate() error {
 		}
 	}
 	for k, v := range c.Scenes {
-		for ks, vs := range v {
+		for ks, vs := range v.Sources {
 			err = vs.Validate()
 			if err != nil {
 				return fmt.Errorf("scene %s layer %s is invalid: %w", k, ks, err)
@@ -81,14 +82,45 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+func (c *Config) String() string {
+	var b strings.Builder
+	b.WriteString("Sources:\n")
+
+	for k, v := range c.Sources {
+		b.WriteString(fmt.Sprintf("  %s (%s)\n", k, v.Type))
+	}
+
+	b.WriteString("\nSinks:\n")
+	for k, v := range c.Stages {
+		b.WriteString(fmt.Sprintf("  %s (%s)\n", k, v.Type))
+	}
+
+	b.WriteString("\nScenes:\n")
+	for k := range c.Scenes {
+		b.WriteString(fmt.Sprintf("  %s\n", k))
+	}
+
+	return b.String()
+}
+
 type SourceCfgStub struct {
-	Type string
-	Z    float32
+	Type      string
+	Z         float32
+	MakeScene bool
+	Tag       string
+	Label     string
+}
+
+type SceneCfg struct {
+	Tag     string
+	Label   string
+	Sources map[string]*LayerCfg
 }
 
 type StageCfgStub struct {
 	Type            string
 	DefaultScene    string `yaml:"default_scene"`
+	PreviewFor      string `yaml:"preview_for"`
 	encdec.FrameCfg `yaml:"frames"`
 }
 
@@ -123,6 +155,8 @@ type WindowSinkCfg struct {
 
 type ImgSourceCfg struct {
 	Path    CfgPath
+	Width   int
+	Height  int
 	Inotify bool
 }
 
@@ -203,7 +237,16 @@ func (s *SourceCfg) Validate() error {
 
 func (s *ImgSourceCfg) Validate() error {
 	if s.Path == "" {
-		return fmt.Errorf("image path must be specified")
+		if s.Width == 0 && s.Height == 0 {
+			return fmt.Errorf("image path or size must be specified")
+		}
+		if s.Inotify {
+			return fmt.Errorf("cannot enable inotify for an imagesource without path")
+		}
+	} else {
+		if s.Width != 0 || s.Height != 0 {
+			return fmt.Errorf("image path or size can't both be specified")
+		}
 	}
 	return nil
 }

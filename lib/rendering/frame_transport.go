@@ -10,6 +10,9 @@ import (
 
 func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 	channelType := uint32(gl.RED)
+	if frame.Type == encdec.RGBFrames {
+		channelType = gl.RGB
+	}
 	if frame.Type == encdec.RGBAFrames || frame.Type == encdec.YUV422pFrames {
 		channelType = gl.RGBA
 	}
@@ -25,7 +28,7 @@ func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 }
 
 func GetFrameFromGPU(frame *encdec.Frame) {
-	gl.ReadPixels(0, 0, int32(frame.Width), int32(frame.Height), gl.RGB, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
+	gl.ReadPixels(0, 0, int32(frame.Width), int32(frame.Height), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
 }
 
 type ThingWithFrames interface {

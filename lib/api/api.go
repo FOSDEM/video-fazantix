@@ -4,23 +4,26 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"image"
-	"image/png"
 	"io/fs"
 	"log"
-	"maps"
 	"net/http"
 	"runtime/pprof"
-	"slices"
+	"sync"
 	"time"
 
-	"github.com/fosdem/fazantix/lib/imgsource"
 	"github.com/gorilla/websocket"
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/stats"
 	"github.com/fosdem/fazantix/lib/theatre"
+
+	_ "github.com/fosdem/fazantix/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+//	@title			Fazantix API
+//	@version		1.0
+//	@description	This is the control API for the Fazantix vision mixer
 
 //go:embed static/*
 var content embed.FS
@@ -34,6 +37,9 @@ type Api struct {
 
 	Stats *stats.Stats
 
+	InitialState map[string][]byte
+	stateMutex   sync.Mutex
+
 	wsClients map[*websocket.Conn]bool
 }
 
@@ -45,14 +51,18 @@ func New(cfg *config.ApiCfg, t *theatre.Theatre) *Api {
 	a.srv.Addr = cfg.Bind
 	a.srv.Handler = a.mux
 	a.wsClients = make(map[*websocket.Conn]bool)
+	a.InitialState = make(map[string][]byte)
 
 	t.AddEventListener("set-scene", func(t *theatre.Theatre, data interface{}) {
+		a.stateMutex.Lock()
+		defer a.stateMutex.Unlock()
 		event := data.(theatre.EventDataSetScene)
 		event.Event = "set-scene"
 		log.Printf("Scene switched on stage %s to scene %s\n", event.Stage, event.Scene)
+		packet, err := json.Marshal(event)
+		a.InitialState[fmt.Sprintf("active-scene-%s", event.Stage)] = packet
 
 		for ws := range a.wsClients {
-			packet, err := json.Marshal(event)
 			if err != nil {
 				return
 			}
@@ -76,84 +86,16 @@ func (a *Api) Serve() error {
 	}
 	a.mux.HandleFunc("/api/kill", a.suicide)
 	a.mux.HandleFunc("/api/stats", a.getStats)
-	a.mux.HandleFunc("/api/scene", a.handleScene)
+	a.mux.HandleFunc("/api/scene", a.handleSceneJson)
 	a.mux.HandleFunc("/api/scene/{stage}/{scene}", a.handleScene)
 	a.mux.HandleFunc("/api/config", a.handleConfig)
 	a.mux.HandleFunc("/api/ws", a.handleWebsocket)
-	a.mux.HandleFunc("/api/media/{source}", a.handleMediaSource)
+	a.mux.HandleFunc("/api/media/source/{source}", a.handleMediaSource)
+	a.mux.HandleFunc("/api/media/sink/{sink}", a.handleMediaSource)
+	a.mux.HandleFunc("/api/media/source/{source}/{format}", a.handleMediaSource)
+	a.mux.Handle("/swagger/", httpSwagger.Handler())
 	a.mux.Handle("/", http.FileServer(http.FS(contentFS)))
 	return a.srv.ListenAndServe()
-}
-
-type SceneReq struct {
-	Scene string
-	Stage string
-}
-
-func (a *Api) handleMediaSource(w http.ResponseWriter, req *http.Request) {
-	sourceName := req.PathValue("source")
-	if sourceName == "" {
-		http.Error(w, "Missing source name", http.StatusBadRequest)
-		return
-	}
-	source := a.theatre.Sources[sourceName]
-	if source == nil {
-		http.Error(w, "Source does not exist", http.StatusNotFound)
-		return
-	}
-
-	imgSource, ok := source.(*imgsource.ImgSource)
-	if !ok {
-		http.Error(w, "not a valid image source", http.StatusBadRequest)
-		return
-	}
-
-	if req.Method == "GET" {
-		png.Encode(w, imgSource.GetImage())
-		return
-	}
-	if req.Method == "PUT" {
-		newImage, ftype, err := image.Decode(req.Body)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("not a valid image: %s", err), http.StatusBadRequest)
-			return
-		}
-		log.Printf("Image source %s was updated with new %s image (%dx%d)\n", sourceName, ftype, newImage.Bounds().Dx(), newImage.Bounds().Dy())
-		err = imgSource.SetImage(newImage)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("could not update image: %s", err), http.StatusBadRequest)
-			return
-		}
-		return
-	}
-
-	http.Error(w, "Invalid method, only GET and PUT supported", http.StatusMethodNotAllowed)
-}
-
-func (a *Api) handleScene(w http.ResponseWriter, req *http.Request) {
-	var sceneReq SceneReq
-	if req.PathValue("scene") == "" && req.PathValue("stage") == "" {
-		err := json.NewDecoder(req.Body).Decode(&sceneReq)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("could not decode json request: %s", err), http.StatusBadRequest)
-			return
-		}
-	} else {
-		sceneReq.Scene = req.PathValue("scene")
-		sceneReq.Stage = req.PathValue("stage")
-	}
-
-	err := a.theatre.SetScene(sceneReq.Stage, sceneReq.Scene)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("could not set scene: %s", err), http.StatusForbidden)
-		return
-	}
-
-	_, err = fmt.Fprintf(w, "\"ok\"\n")
-	if err != nil {
-		log.Printf("could not write response: %s\n", err.Error())
-		return
-	}
 }
 
 func (a *Api) profileCPU(w http.ResponseWriter, _ *http.Request) {
@@ -166,6 +108,11 @@ func (a *Api) profileCPU(w http.ResponseWriter, _ *http.Request) {
 	pprof.StopCPUProfile()
 }
 
+// @Summary	Shut down Fazantix
+// @Router		/api/kill [post]
+// @Tags		base
+// @Success	200
+// @Success	200	{object}	stats.Stats
 func (a *Api) suicide(w http.ResponseWriter, _ *http.Request) {
 	log.Printf("shutting down as per api request")
 	a.theatre.ShutdownRequested = true
@@ -176,11 +123,18 @@ func (a *Api) suicide(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+// @Summary	Get internal runtime statistics
+// @Router		/api/stats [get]
+// @Tags		base
+// @Accept		json
+// @Produce	json
+// @Success	200	{object}	stats.Stats
 func (a *Api) getStats(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Add("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 	err := encoder.Encode(a.Stats)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("could encode stats: %s", err), http.StatusForbidden)
+		http.Error(w, fmt.Sprintf("could encode stats: %s", err), http.StatusInternalServerError)
 		return
 	}
 	_, err = fmt.Fprintf(w, "\n")
@@ -191,83 +145,49 @@ func (a *Api) getStats(w http.ResponseWriter, _ *http.Request) {
 }
 
 type Config struct {
-	Stages []string `json:"stages"`
-	Scenes []string `json:"scenes"`
+	Stages []StageInfo `json:"stages"`
+	Scenes []SceneInfo `json:"scenes"`
+}
+type StageInfo struct {
+	Name       string `example:"projector"`
+	PreviewFor string
+}
+type SceneInfo struct {
+	Code  string `example:"side-by-side"`
+	Tag   string `example:"SbS"`
+	Label string `example:"Side by side"`
 }
 
+// @Summary	Get list of stages and scenes
+// @Router		/api/config [get]
+// @Tags		base
+// @Accept		json
+// @Produce	json
+// @Success	200	{object}	api.Config
 func (a *Api) handleConfig(w http.ResponseWriter, _ *http.Request) {
 	result := &Config{
-		Stages: slices.Collect(maps.Keys(a.theatre.Stages)),
-		Scenes: slices.Collect(maps.Keys(a.theatre.Scenes)),
+		Stages: make([]StageInfo, len(a.theatre.Stages)),
+		Scenes: make([]SceneInfo, len(a.theatre.Scenes)),
 	}
+	idx := 0
+	for name, scene := range a.theatre.Scenes {
+		result.Scenes[idx].Code = name
+		result.Scenes[idx].Label = scene.Label
+		result.Scenes[idx].Tag = scene.Tag
+		idx++
+	}
+	idx = 0
+	for name, stage := range a.theatre.Stages {
+		result.Stages[idx].Name = name
+		result.Stages[idx].PreviewFor = stage.PreviewFor
+		idx++
+	}
+	w.Header().Add("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 	err := encoder.Encode(result)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("couldn't encode config: %s", err), http.StatusForbidden)
 		return
-	}
-}
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(req *http.Request) bool {
-		return true
-	},
-}
-
-func (a *Api) handleWebsocket(w http.ResponseWriter, req *http.Request) {
-	ws, err := upgrader.Upgrade(w, req, nil)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("couldn't make websocket: %s", err), 400)
-		return
-	}
-	defer func(ws *websocket.Conn) {
-		err := ws.Close()
-		if err != nil {
-			log.Printf("could not close websocket: %s\n", err.Error())
-		}
-	}(ws)
-	a.wsClients[ws] = true
-
-	go a.websocketWriter(ws)
-
-	a.Stats.WsClients = len(a.wsClients)
-
-	for {
-		_, msg, err := ws.ReadMessage()
-		if err != nil {
-			delete(a.wsClients, ws)
-			a.Stats.WsClients = len(a.wsClients)
-			break
-		}
-		fmt.Printf("Received: %s\n", msg)
-	}
-}
-
-func (a *Api) websocketWriter(ws *websocket.Conn) {
-	pingTicker := time.NewTicker(2 * time.Second)
-	defer func() {
-		pingTicker.Stop()
-		err := ws.Close()
-		if err != nil {
-			log.Printf("could not close websocket: %s\n", err.Error())
-			return
-		}
-	}()
-	timeout := 10 * time.Second
-	for range pingTicker.C {
-		packet, err := json.Marshal(a.Stats)
-
-		if err != nil {
-			return
-		}
-		err = ws.SetWriteDeadline(time.Now().Add(timeout))
-		if err != nil {
-			log.Printf("could not set write deadline: %s\n", err.Error())
-			return
-		}
-		if err := ws.WriteMessage(websocket.TextMessage, packet); err != nil {
-			return
-		}
 	}
 }
 

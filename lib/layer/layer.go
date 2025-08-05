@@ -29,10 +29,15 @@ type Layer struct {
 
 	Source Source
 
-	targetState *LayerState
+	targetTransform *LayerTransform
 }
 
 type LayerState struct {
+	LayerTransform
+	Warp *LayerTransform
+}
+
+type LayerTransform struct {
 	X       float32
 	Y       float32
 	Scale   float32
@@ -60,35 +65,49 @@ func (s *Layer) Name() string {
 }
 
 func (s *Layer) ApplyState(state *LayerState) {
+	var transform LayerTransform
 	if state == nil {
-		state = &LayerState{}
-		if s.targetState != nil {
-			*state = *s.targetState
+		if s.targetTransform != nil {
+			transform = *s.targetTransform
 		}
-		state.Opacity = 0
+		transform.Opacity = 0
+	} else {
+		transform = state.LayerTransform
 	}
 
-	if s.targetState == nil {
-		s.Position.X = state.X
-		s.Position.Y = state.Y
-		s.Size.X = state.Scale
-		s.Size.Y = state.Scale / s.Squeeze
-		s.Opacity = state.Opacity
+	if s.Opacity < 0.001 && state != nil && state.Warp != nil {
+		s.Position.X = state.Warp.X
+		s.Position.Y = state.Warp.Y
+		s.Size.X = state.Warp.Scale
+		s.Size.Y = state.Warp.Scale / s.Squeeze
+		s.Opacity = state.Warp.Opacity
 	}
-	s.targetState = state
+
+	if s.targetTransform == nil {
+		base := &transform
+		if state != nil && state.Warp != nil {
+			base = state.Warp
+		}
+		s.Position.X = base.X
+		s.Position.Y = base.Y
+		s.Size.X = base.Scale
+		s.Size.Y = base.Scale / s.Squeeze
+		s.Opacity = base.Opacity
+	}
+	s.targetTransform = &transform
 }
 
 func (s *Layer) Animate(delta float32) {
-	if s.targetState == nil {
+	if s.targetTransform == nil {
 		return
 	}
 	speed := float32(7)
 	s.Squeeze = (float32(s.OutputWidth) / float32(s.OutputHeight)) / (float32(s.Source.Frames().Width) / float32(s.Source.Frames().Height))
-	s.Position.X = ramp(s.Position.X, s.targetState.X, delta, speed)
-	s.Position.Y = ramp(s.Position.Y, s.targetState.Y, delta, speed)
-	s.Size.X = ramp(s.Size.X, s.targetState.Scale, delta, speed)
-	s.Size.Y = ramp(s.Size.Y, s.targetState.Scale/s.Squeeze, delta, speed)
-	s.Opacity = ramp(s.Opacity, s.targetState.Opacity, delta, speed)
+	s.Position.X = ramp(s.Position.X, s.targetTransform.X, delta, speed)
+	s.Position.Y = ramp(s.Position.Y, s.targetTransform.Y, delta, speed)
+	s.Size.X = ramp(s.Size.X, s.targetTransform.Scale, delta, speed)
+	s.Size.Y = ramp(s.Size.Y, s.targetTransform.Scale/s.Squeeze, delta, speed)
+	s.Opacity = ramp(s.Opacity, s.targetTransform.Opacity, delta, speed)
 }
 
 func (s *Layer) Frames() *FrameForwarder {

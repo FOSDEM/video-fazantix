@@ -1,0 +1,29 @@
+name: nix
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: nixbuild/nix-quick-install-action@v32
+      with:
+        nix_conf: |
+          keep-env-derivations = true
+          keep-outputs = true
+
+    - uses: nix-community/cache-nix-action@v6
+      with:
+        primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-
+
+    - run: nix build
+    - run: nix flake check --all-systems
