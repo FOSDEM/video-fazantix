@@ -48,6 +48,11 @@
               # needing X11 stuff, but they still get used
               xorg.libX11.dev
             ];
+
+            patchPhase = ''
+              # generate docs
+              ${pkgs.go-swag}/bin/swag init -g lib/api/api.go
+            '';
           };
           default = packages.fazantix;
         };
