@@ -192,6 +192,10 @@ func (s *V4LSource) enqueueFrames() error {
 
 func (s *V4LSource) enqueueFrame() error {
 	frame := s.Frames().GetFrameForWriting()
+	if frame == nil {
+		// Frame dropped, warning about this should be done by the frameforwarder
+		return nil
+	}
 	s.framesInWriting[frame.SoulID] = frame
 
 	_, err := v4l2.QueueBuffer(
@@ -279,13 +283,16 @@ func (s *V4LSource) dequeueFrame() error {
 
 	if buff.Flags&v4l2.BufFlagError != 0 {
 		s.brokenFrameCounter++
+		s.Frames().FailedWriting(frame)
 		return nil
 	}
 	if buff.BytesUsed == 0 {
 		s.brokenFrameCounter++
+		s.Frames().FailedWriting(frame)
 		return nil
 	}
 	if buff.BytesUsed != buff.Length {
+		s.Frames().FailedWriting(frame)
 		s.brokenFrameCounter++
 		return nil
 	}
@@ -315,7 +322,7 @@ func (s *V4LSource) dequeueFrame() error {
 	} else {
 		// We probably got old buffers from v4l2, ignore them
 		s.Frames().Error("Got invalid buffer, flags %v", v4l2BufFlagsToStrings(buff.Flags))
-		s.Frames().FailedWriting(frame) // FIXME: needed?
+		s.Frames().FailedWriting(frame)
 		return nil
 	}
 	return nil
