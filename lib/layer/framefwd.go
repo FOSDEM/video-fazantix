@@ -18,6 +18,14 @@ const (
 	Hold
 )
 
+// FrameForwarder takes care of synchronising frames between a single
+// writer and multiple readers.
+// It is suitable for streaming, not recording, because it is designed
+// to drop unused source frames instead of queueing them, thus achieving
+// minimal latency.
+// TODO: implement another FrameForwarder that works in latency-agnostic
+// queueing mode and let the user choose to use it when they use fazantix for
+// recording instead of streaming.
 type FrameForwarder struct {
 	encdec.FrameInfo
 
@@ -53,6 +61,16 @@ func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.
 	f.metrics = metrics.NewStreamMetrics(name)
 }
 
+// GetFrameForReading gets the latest fully-written frame and blocks
+// the writer from using it. Multiple readers can get the same frame
+// concurrently, and the frame is released as available for writing
+// into only after all readers have released it.
+// Users must ensure that NumAllocatedFrames is big enough for cases
+// when some readers are slower than others and hold older frames
+// for reading for long enough that those frames are still unavailable
+// during the next writing cycle.
+// For each call of GetFrameForReading() there should be a corresponding
+// call of exactly one of FinishedReading() or FailedReading().
 func (f *FrameForwarder) GetFrameForReading() *encdec.Frame {
 	f.Lock()
 	defer f.Unlock()
@@ -103,6 +121,14 @@ func (f *FrameForwarder) FinishedReading(frame *encdec.Frame) {
 	}
 }
 
+// GetFrameForWriting gets an unused frame for writing into.
+// The writer may call GetFrameForWriting() multiple times to get multiple
+// frames for writing, but they have to ensure that there are enough frames
+// left in the pool for readers to hold.
+// For each call of GetFrameForWriting() there should be exactly one corresponding
+// call of either FinishedWriting() or FailedWriting() to put the frame back into
+// the pool. Failure to do so will result in frames leaking and eventually a panic
+// when the pool becomes empty.
 func (f *FrameForwarder) GetFrameForWriting() *encdec.Frame {
 	f.Lock()
 	defer f.Unlock()
@@ -123,6 +149,10 @@ func (f *FrameForwarder) GetFrameForWriting() *encdec.Frame {
 	return frame
 }
 
+// FinishedWriting sets the given frame as a "latest frame", so that
+// new readers will use that frame. The previous "latest frame" is
+// put back into the pool of frames that can be taken out with
+// GetFrameForWriting()
 func (f *FrameForwarder) FinishedWriting(frame *encdec.Frame) {
 	f.Lock()
 	defer f.Unlock()
@@ -145,6 +175,8 @@ func (f *FrameForwarder) FinishedWriting(frame *encdec.Frame) {
 	}
 }
 
+// FailedWriting puts a frame back into the pool without updating
+// the latest frame pointer
 func (f *FrameForwarder) FailedWriting(frame *encdec.Frame) {
 	f.Lock()
 	defer f.Unlock()
