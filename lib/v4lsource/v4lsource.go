@@ -38,7 +38,7 @@ type V4LSource struct {
 func New(name string, cfg *config.V4LSourceCfg) *V4LSource {
 	s := &V4LSource{}
 	s.path = cfg.Path
-	s.frames.Name = name
+	s.Frames().Name = name
 
 	s.Format = cfg.Fmt
 
@@ -125,8 +125,8 @@ func (s *V4LSource) Start() bool {
 	switch strings.ToLower(s.Format) {
 	case "mjpeg":
 		dummyImg := image.NewNRGBA(image.Rect(0, 0, 1, 1))
-		s.frames.Init(
-			s.frames.Name,
+		s.Frames().Init(
+			s.Frames().Name,
 			&encdec.FrameInfo{
 				FrameType: encdec.RGBAFrames,
 				PixFmt:    dummyImg.Pix,
@@ -135,8 +135,8 @@ func (s *V4LSource) Start() bool {
 			alloc,
 		)
 	case "yuyv":
-		s.frames.Init(
-			s.frames.Name,
+		s.Frames().Init(
+			s.Frames().Name,
 			&encdec.FrameInfo{
 				FrameType: encdec.YUV422pFrames,
 				PixFmt:    []uint8{},
@@ -297,7 +297,7 @@ func (s *V4LSource) dequeueFrame() error {
 		return nil
 	}
 	if int(buff.Length) != (s.requestedFrameCfg.Width * s.requestedFrameCfg.Height * 2) {
-		s.frames.Error("Buffer size incorrect")
+		s.Frames().Error("Buffer size incorrect")
 		s.brokenFrameCounter++
 		s.Frames().FailedWriting(frame) // definitely needed, buffers with wrong size are still buffers
 		return nil
@@ -306,7 +306,7 @@ func (s *V4LSource) dequeueFrame() error {
 	if !s.hadValidFrame {
 		s.hadValidFrame = true
 		if s.brokenFrameCounter > 0 {
-			s.frames.Debug("Got %d invalid frames at start", s.brokenFrameCounter)
+			s.Frames().Debug("Got %d invalid frames at start", s.brokenFrameCounter)
 		}
 	}
 	if buff.Flags&v4l2.BufFlagMapped != 0 {
