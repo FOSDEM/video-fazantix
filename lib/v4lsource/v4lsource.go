@@ -14,6 +14,7 @@ import (
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/utils"
 )
 
 type V4LSource struct {
@@ -56,6 +57,20 @@ func (s *V4LSource) Start() bool {
 
 	s.log("Loading v4l2 device %s", s.path)
 
+	if !strings.HasPrefix(s.path, "/") {
+		lookup, err := utils.LocateUSBDevice(s.path)
+		if err != nil {
+			s.log("Failed to find device: %s", err)
+			return false
+		}
+		v4l2dev := lookup.GetFirst(utils.V4L2Device)
+		if v4l2dev == nil {
+			s.log("USB device in port %s does not have a V4L2 driver", s.path)
+			return false
+		}
+		s.log("Found V4L2 device %s at port %s", v4l2dev.Path, s.path)
+		s.path = v4l2dev.Path
+	}
 	camera, err := device.Open(
 		s.path,
 		device.WithPixFormat(v4l2.PixFormat{
