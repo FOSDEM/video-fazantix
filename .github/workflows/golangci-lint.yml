@@ -28,7 +28,4 @@ jobs:
           libglx-dev \
           libgl-dev \
           libxxf86vm-dev
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v8
-      with:
-        version: v2.2
+    - run: make lint

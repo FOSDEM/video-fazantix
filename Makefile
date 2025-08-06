@@ -18,7 +18,7 @@ run-wayland: fazantix-wayland
 run-cage: fazantix-wayland
 	cage -- ./build/fazantix $(CONFIG)
 
-lint:
+lint: prereqs
 	golangci-lint run
 	golangci-lint fmt
 
