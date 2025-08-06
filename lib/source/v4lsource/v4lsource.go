@@ -38,6 +38,7 @@ func New(name string, cfg *config.V4LSourceCfg) *V4LSource {
 	s := &V4LSource{}
 	s.path = cfg.Path
 	s.Frames().Name = name
+	s.frames.InitLogging()
 
 	s.Format = cfg.Fmt
 
