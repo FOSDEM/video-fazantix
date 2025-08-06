@@ -57,7 +57,7 @@ func (f *StdinSource) processStdin() {
 		ftime = time.Now()
 		_, err := io.ReadFull(f.reader, frame.Data)
 		if err != nil {
-			f.log("could not read from stdin: %s", err)
+			f.Frames().Error("could not read from stdin: %s", err)
 			f.frames.FailedWriting(frame)
 			return
 		}
@@ -68,8 +68,4 @@ func (f *StdinSource) processStdin() {
 
 func (f *StdinSource) Frames() *layer.FrameForwarder {
 	return &f.frames
-}
-
-func (f *StdinSource) log(msg string, args ...interface{}) {
-	f.Frames().Log(msg, args...)
 }

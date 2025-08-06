@@ -3,7 +3,6 @@ package v4lsource
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"syscall"
 	"time"
@@ -67,15 +66,15 @@ func (s *V4LSource) Start() bool {
 	if !strings.HasPrefix(s.path, "/") {
 		lookup, err := utils.LocateUSBDevice(s.path)
 		if err != nil {
-			s.log("Failed to find device: %s", err)
+			s.Frames().Error("Failed to find device: %s", err)
 			return false
 		}
 		v4l2dev := lookup.GetFirst(utils.V4L2Device)
 		if v4l2dev == nil {
-			s.log("USB device in port %s does not have a V4L2 driver", s.path)
+			s.Frames().Error("USB device in port %s does not have a V4L2 driver", s.path)
 			return false
 		}
-		s.log("Found V4L2 device %s at port %s", v4l2dev.Path, s.path)
+		s.Frames().Error("Found V4L2 device %s at port %s", v4l2dev.Path, s.path)
 		s.path = v4l2dev.Path
 	}
 	camera, err := device.Open(
@@ -88,25 +87,25 @@ func (s *V4LSource) Start() bool {
 		device.WithBufferSize(uint32(s.requestedFrameCfg.NumAllocatedFrames)),
 	)
 	if err != nil {
-		s.log("Failed to open device: %s", err)
+		s.Frames().Error("Failed to open device: %s", err)
 		return false
 	}
-	s.log("Opened device")
+	s.Frames().Debug("Opened device")
 
 	fps, err := camera.GetFrameRate()
 	if err != nil {
-		s.log("Failed to get framerate: %s", err)
+		s.Frames().Error("Failed to get framerate: %s", err)
 	}
-	s.log("framerate: %d", fps)
+	s.Frames().Debug("framerate: %d", fps)
 
 	if err := camera.InitForStreaming(); err != nil {
-		s.log("camera start: %s", err)
+		s.Frames().Error("camera start: %s", err)
 	}
 	s.Device = camera
 
 	format, err := s.Device.GetPixFormat()
 	if err != nil {
-		s.log("Could not get pixfmt: %s", err)
+		s.Frames().Error("Could not get pixfmt: %s", err)
 	}
 
 	s.log("format: %s", format)
@@ -154,7 +153,7 @@ func (s *V4LSource) Start() bool {
 func (s *V4LSource) Stop() {
 	err := s.Device.Close()
 	if err != nil {
-		log.Printf("Could not close device: %s", err)
+		s.Frames().Error("Could not close device: %s", err)
 		return
 	}
 }

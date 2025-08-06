@@ -1,13 +1,19 @@
 package main
 
 import (
-	"log"
+	"flag"
+	"fmt"
+	"log/slog"
 	"os"
 	"runtime"
 
 	"github.com/fosdem/fazantix/lib/config"
+	fazantixLog "github.com/fosdem/fazantix/lib/log"
 	"github.com/fosdem/fazantix/lib/mixer"
 )
+
+var programLevel = new(slog.LevelVar) // Info by default
+var debugFlag = flag.Bool("debug", false, "Set loglevel to debug")
 
 func init() {
 	// The OpenGL stuff must be in one thread
@@ -15,12 +21,22 @@ func init() {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatalf("Usage: %s <config file>", os.Args[0])
+	slog.SetDefault(slog.New(fazantixLog.NewHandler(&slog.HandlerOptions{
+		Level: programLevel,
+	})))
+	flag.Parse()
+	if *debugFlag {
+		programLevel.Set(slog.LevelDebug)
 	}
-	cfg, err := config.Parse(os.Args[1])
+
+	if flag.NArg() != 1 {
+		slog.Error(fmt.Sprintf("Usage: %s <config file>", os.Args[0]))
+		os.Exit(1)
+	}
+	cfg, err := config.Parse(flag.Arg(0))
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 
 	mixer.MakeWindowAndMix(cfg)

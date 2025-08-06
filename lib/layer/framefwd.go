@@ -2,7 +2,7 @@ package layer
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -50,6 +50,7 @@ type FrameForwarder struct {
 	DroppedFramesOut uint64
 
 	metrics metrics.StreamMetrics
+	logger  *slog.Logger
 }
 
 func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.FrameAllocator) {
@@ -59,6 +60,7 @@ func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.
 	f.FrameAge = 0
 	f.allocateFrames(info.NumAllocatedFrames)
 	f.metrics = metrics.NewStreamMetrics(name)
+	f.InitLogging()
 }
 
 // GetFrameForReading gets the latest fully-written frame and blocks
@@ -208,18 +210,21 @@ func (f *FrameForwarder) allocateFrames(num int) {
 	}
 }
 
+func (f *FrameForwarder) InitLogging() {
+	logger := slog.Default()
+	f.logger = logger.With(slog.String("module", f.Name))
+}
+
 func (f *FrameForwarder) Log(msg string, args ...interface{}) {
-	log.Printf("[%s] %s\n", f.Name, fmt.Sprintf(msg, args...))
+	f.logger.Info(fmt.Sprintf(msg, args...))
 }
 
 func (f *FrameForwarder) Debug(msg string, args ...interface{}) {
-	// TODO: Implement debug loglevel
-	log.Printf("[%s] %s\n", f.Name, fmt.Sprintf(msg, args...))
+	f.logger.Debug(fmt.Sprintf(msg, args...))
 }
 
 func (f *FrameForwarder) Error(msg string, args ...interface{}) {
-	// TODO: Implement error loglevel
-	log.Printf("[%s] %s\n", f.Name, fmt.Sprintf(msg, args...))
+	f.logger.Error(fmt.Sprintf(msg, args...))
 }
 
 func (f *FrameForwarder) Age(dt time.Duration) {

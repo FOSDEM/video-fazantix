@@ -1,7 +1,9 @@
 package kbdctl
 
 import (
+	"fmt"
 	"log"
+	"log/slog"
 	"maps"
 	"slices"
 
@@ -27,7 +29,7 @@ func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window
 			if key == glfw.KeyQ &&
 				mods&glfw.ModControl != 0 &&
 				mods&glfw.ModShift != 0 {
-				log.Println("told to quit, exiting")
+				slog.Warn("told to quit, exiting")
 				theatre.ShutdownRequested = true
 			}
 		}
@@ -35,10 +37,10 @@ func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window
 			if key >= glfw.Key0 && key <= glfw.Key9 {
 				selected := int(key - glfw.Key0)
 				if selected > len(theatre.Scenes)-1 {
-					log.Printf("Scene %d out of range\n", selected)
+					slog.Error(fmt.Sprintf("Scene %d out of range\n", selected))
 					return
 				}
-				log.Printf("set scene %s", names[selected])
+				slog.Debug(fmt.Sprintf("set scene %s", names[selected]))
 				err := theatre.SetScene(stageName, names[selected], mods&glfw.ModShift != 0)
 				if err != nil {
 					log.Println(err)
