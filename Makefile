@@ -32,7 +32,7 @@ lib/api/static/index.html:
 
 lib/api/docs/swagger.json: lib/api/static/index.html
 	# requires index.html because swag wants a non-failing go build
-	swag init -g lib/api/api.go -o lib/api/docs
+	go tool swag init -g lib/api/api.go -o lib/api/docs
 
 builddir:
 	mkdir -p build
