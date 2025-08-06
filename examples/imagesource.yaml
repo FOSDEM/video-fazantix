@@ -138,6 +138,16 @@ sinks:
       height: 720
     default_scene: default
     transition_time_ms: 1500
+  multiviewer:
+    type: ffmpeg_stdin
+    cmd: "ffplay -f rawvideo -video_size 1280x720 -pixel_format rgba -framerate 60 -i -"
+    frames:
+      width: 1280
+      height: 720
+      num_allocated_frames: 5
+    default_scene: default
+    transition_time_ms: 1500
+
 
 api:
   bind: ':8000'
@@ -149,7 +159,7 @@ multiviews:
     height: 720
     font: Ubuntu
     fontsize: 14
-    split: [false, false, true, true]
+    split: [ false, false, true, true ]
     source:
       - sink: test1
         label: Preview
@@ -159,3 +169,7 @@ multiviews:
       - source: test2
       - source: test3
       - source: background
+    tally:
+      projector:
+        color: "#ff0000"
+        priority: 10
