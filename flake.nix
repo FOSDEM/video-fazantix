@@ -21,7 +21,7 @@
             src = ./.;
 
             # This currently needs to be manually updated when go.sum is changed
-            vendorHash = "sha256-xuDgsIxFfiEWk9Va/tJJrVx02AUwSFjPruIkOS4ayZw=";
+            vendorHash = "sha256-1qsKLh9PIPkcWj8rAuYhbEf3/Z/P1jTlIvY20gjCJSE=";
             goSum = ./go.sum;
             subPackages = [ "cmd/fazantix" ];
 
@@ -48,6 +48,11 @@
               # needing X11 stuff, but they still get used
               xorg.libX11.dev
             ];
+
+            patchPhase = ''
+              # generate docs
+              ${pkgs.go-swag}/bin/swag init -g lib/api/api.go
+            '';
           };
           default = packages.fazantix;
         };
