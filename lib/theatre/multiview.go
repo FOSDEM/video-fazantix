@@ -17,12 +17,20 @@ import (
 	"github.com/llgcode/draw2d/draw2dimg"
 )
 
+type TallyData struct {
+	Color color.RGBA
+	Tally map[string]bool
+}
 type Multiview struct {
-	Name         string
+	Name string
+	cfg  *config.MultiviewCfg
+
 	overlayLayer string
 	overlay      *imgsource.ImgSource
 	overlayImage *image.RGBA
 	theatre      *Theatre
+	tallyToLayer map[string]*config.LayerCfg
+	tallyCache   map[string]*TallyData
 }
 
 func drawRectangle(gc *draw2dimg.GraphicContext, x, y, w, h float64) {
@@ -31,6 +39,43 @@ func drawRectangle(gc *draw2dimg.GraphicContext, x, y, w, h float64) {
 	gc.LineTo(x+w, y+h)
 	gc.LineTo(x, y+h)
 	gc.Close()
+}
+
+func drawTally(img *image.RGBA, x, y, width, height float32, colors []color.RGBA) {
+	px := float64(x*float32(img.Bounds().Dx()) + 1)
+	py := float64(y*float32(img.Bounds().Dy()) + 1)
+	pw := float64(width*float32(img.Bounds().Dx()) - 2)
+	ph := float64(height*float32(img.Bounds().Dy()) - 2)
+
+	gc := draw2dimg.NewGraphicContext(img)
+	gc.Save()
+	if len(colors) == 0 {
+		gc.SetStrokeColor(color.RGBA{R: 160, G: 160, B: 160, A: 255})
+	} else {
+		gc.SetStrokeColor(colors[0])
+	}
+	gc.SetFillColor(color.Transparent)
+	gc.SetLineWidth(2)
+	drawRectangle(gc, px, py, pw, ph)
+	gc.Stroke()
+}
+
+func parseHexColor(s string) (c color.RGBA, err error) {
+	c.A = 0xff
+	switch len(s) {
+	case 7:
+		_, err = fmt.Sscanf(s, "#%02x%02x%02x", &c.R, &c.G, &c.B)
+	case 4:
+		_, err = fmt.Sscanf(s, "#%1x%1x%1x", &c.R, &c.G, &c.B)
+		// Double the hex digits:
+		c.R *= 17
+		c.G *= 17
+		c.B *= 17
+	default:
+		err = fmt.Errorf("invalid length, must be 7 or 4")
+
+	}
+	return
 }
 
 func drawMultiviewBox(img *image.RGBA, x, y, width, height float32, label string, size int, font *truetype.Font) {
@@ -44,6 +89,7 @@ func drawMultiviewBox(img *image.RGBA, x, y, width, height float32, label string
 
 	gc := draw2dimg.NewGraphicContext(img)
 	gc.Save()
+
 	gc.SetStrokeColor(color.RGBA{R: 160, G: 160, B: 160, A: 255})
 	gc.SetFillColor(color.Transparent)
 	gc.SetLineWidth(4)
@@ -93,7 +139,12 @@ func makeLayerCfg(x, y, scale float32) *config.LayerCfg {
 func buildMultiviews(cfg *config.Config) []*Multiview {
 	result := make([]*Multiview, 0)
 	for multiviewName, multiview := range cfg.Multiviews {
-		mv := &Multiview{Name: multiviewName}
+		mv := &Multiview{
+			Name:         multiviewName,
+			cfg:          multiview,
+			tallyToLayer: make(map[string]*config.LayerCfg),
+			tallyCache:   make(map[string]*TallyData),
+		}
 		result = append(result, mv)
 		fontPath, err := findfont.Find(multiview.Font)
 		if err != nil {
@@ -116,6 +167,7 @@ func buildMultiviews(cfg *config.Config) []*Multiview {
 		index := 0
 		positions := make([]*config.LayerCfg, 16)
 		names := make([]string, 16)
+		layers := make([]string, 16)
 		offsetX := float32(0.0)
 		offsetY := float32(0.0)
 		for quadrant, quadrantSplit := range multiview.Split {
@@ -150,6 +202,7 @@ func buildMultiviews(cfg *config.Config) []*Multiview {
 					LayerCfgStub:  positions[idx].LayerCfgStub,
 				}
 				names[idx] = input.Source
+				layers[idx] = input.Source
 				if cfg.Sources[input.Source].Label != "" {
 					names[idx] = cfg.Sources[input.Source].Label
 				}
@@ -163,6 +216,7 @@ func buildMultiviews(cfg *config.Config) []*Multiview {
 				break
 			}
 			drawMultiviewBox(overlay, box.X, box.Y, box.Scale, box.Scale, names[idx], multiview.FontSize, font)
+			mv.tallyToLayer[layers[idx]] = box
 		}
 		mv.overlayImage = overlay
 
@@ -194,6 +248,41 @@ func buildMultiviews(cfg *config.Config) []*Multiview {
 func (m *Multiview) Start(theatre *Theatre) {
 	m.theatre = theatre
 	m.overlay = theatre.Sources[m.overlayLayer].(*imgsource.ImgSource)
+	err := m.overlay.SetImage(m.overlayImage)
+	if err != nil {
+		slog.Error(fmt.Sprintf("Failed to update overlay: %s", err.Error()), slog.String("module", m.Name))
+		return
+	}
+
+	for stage, tallyConfig := range m.cfg.Tally {
+		col, err := parseHexColor(tallyConfig.Color)
+		if err != nil {
+			panic("Invalid color")
+		}
+		m.tallyCache[stage] = &TallyData{
+			Color: col,
+			Tally: make(map[string]bool),
+		}
+	}
+
+	theatre.AddEventListener("tally", m.onTally)
+}
+
+func (m *Multiview) onTally(t *Theatre, data interface{}) {
+	tally := data.(*EventTallyData)
+	if _, ok := m.cfg.Tally[tally.Stage]; ok {
+		m.tallyCache[tally.Stage].Tally = tally.Tally
+	}
+	for name, box := range m.tallyToLayer {
+		colors := make([]color.RGBA, 0)
+		for _, tallyData := range m.tallyCache {
+			if tallyData.Tally[name] {
+				colors = append(colors, tallyData.Color)
+			}
+		}
+		drawTally(m.overlayImage, box.X, box.Y, box.Scale, box.Scale, colors)
+	}
+
 	err := m.overlay.SetImage(m.overlayImage)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Failed to update overlay: %s", err.Error()), slog.String("module", m.Name))

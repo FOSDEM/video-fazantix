@@ -220,6 +220,7 @@ func (t *Theatre) Start() {
 	}
 
 	for _, stage := range t.WindowStageList {
+		stage.Tally = make(map[string]bool, t.NumSources())
 		stage.Sink.Start()
 	}
 	for _, src := range t.Sources {
@@ -228,6 +229,7 @@ func (t *Theatre) Start() {
 		}
 	}
 	for _, stage := range t.NonWindowStageList {
+		stage.Tally = make(map[string]bool, t.NumSources())
 		stage.Sink.Start()
 	}
 
@@ -237,9 +239,22 @@ func (t *Theatre) Start() {
 }
 
 func (t *Theatre) Animate(delta float32) {
-	for _, s := range t.Stages {
+	for sName, s := range t.Stages {
 		for _, l := range s.Layers {
 			l.Animate(delta, s.Speed)
+		}
+		tallyUpdate := false
+		for _, l := range s.Layers {
+			if l.Visible != s.Tally[l.Name()] {
+				s.Tally[l.Name()] = l.Visible
+				tallyUpdate = true
+			}
+		}
+		if tallyUpdate {
+			t.invoke("tally", &EventTallyData{
+				Stage: sName,
+				Tally: s.Tally,
+			})
 		}
 	}
 }

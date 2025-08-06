@@ -26,6 +26,7 @@ type Layer struct {
 	Squeeze      float32
 
 	Opacity float32
+	Visible bool
 
 	Source Source
 
@@ -119,6 +120,7 @@ func (s *Layer) Animate(delta float32, speed float32) {
 	s.Size.X = ramp(s.Size.X, s.targetTransform.Scale, delta, speed)
 	s.Size.Y = ramp(s.Size.Y, s.targetTransform.Scale/s.Squeeze, delta, speed)
 	s.Opacity = ramp(s.Opacity, s.targetTransform.Opacity, delta, speed)
+	s.Visible = s.Opacity > float32(1.0/256.0)
 }
 
 func (s *Layer) Frames() *FrameForwarder {

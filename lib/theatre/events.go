@@ -8,6 +8,11 @@ type EventDataSetScene struct {
 	Scene string
 }
 
+type EventTallyData struct {
+	Stage string
+	Tally map[string]bool
+}
+
 func (t *Theatre) AddEventListener(event string, callback EventListener) {
 	t.listener[event] = append(t.listener[event], callback)
 }

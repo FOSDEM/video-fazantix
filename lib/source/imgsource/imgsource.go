@@ -166,6 +166,9 @@ func (s *ImgSource) SetImage(newImage image.Image) error {
 	s.img = newImage
 	s.rgba = image.NewNRGBA(s.img.Bounds())
 	frame := s.frames.GetFrameForWriting()
+	if frame == nil {
+		return nil
+	}
 	err := encdec.FrameFromImage(s.img, frame)
 	if err != nil {
 		s.Frames().Error("Decode error: %s", err)
