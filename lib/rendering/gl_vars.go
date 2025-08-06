@@ -82,11 +82,14 @@ func (g *GLVars) allocate() {
 	g.LayerDataUniform = gl.GetUniformLocation(g.Program, gl.Str("layerData\x00"))
 	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
 
+	g.SourceIndicesUniform = gl.GetUniformLocation(g.Program, gl.Str("sourceIndices\x00"))
+	gl.Uniform1uiv(g.SourceIndicesUniform, g.NumLayers, &g.SourceIndices[0])
+
 	g.StageDataUniform = gl.GetUniformLocation(g.Program, gl.Str("stageData\x00"))
 	gl.Uniform1ui(g.StageDataUniform, 0)
 
-	// Allocate 3 textures for every layer in case of planar YUV
-	g.NumTextures = g.NumLayers * 3
+	// Allocate 3 textures for every source in case of planar YUV
+	g.NumTextures = g.NumSources * 3
 	g.Textures = make([]int32, g.NumTextures)
 	for i := range g.NumTextures {
 		g.Textures[i] = int32(i)
@@ -102,6 +105,7 @@ func (g *GLVars) readLayers(layers []*layer.Layer) {
 		g.LayerPos[(i*4)+2] = layers[i].Size.X
 		g.LayerPos[(i*4)+3] = layers[i].Size.Y
 		g.LayerData[(i*4)+0] = layers[i].Opacity
+		g.SourceIndices[i] = layers[i].SourceIdx
 	}
 }
 
