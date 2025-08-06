@@ -10,9 +10,9 @@ import (
 	"github.com/fosdem/fazantix/lib/layer"
 	"github.com/fosdem/fazantix/lib/rendering"
 	"github.com/fosdem/fazantix/lib/rendering/shaders"
-	"github.com/fosdem/fazantix/lib/stdinsource"
+	"github.com/fosdem/fazantix/lib/sink/windowsink"
+	"github.com/fosdem/fazantix/lib/source/stdinsource"
 	"github.com/fosdem/fazantix/lib/utils"
-	"github.com/fosdem/fazantix/lib/windowsink"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
