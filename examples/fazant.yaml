@@ -110,6 +110,7 @@ sinks:
       width: 1280
       height: 720
     default_scene: foo
+    transition_time_ms: 1500
 
 api:
   bind: ':8000'
