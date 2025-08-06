@@ -1,14 +1,9 @@
 CONFIG=examples/imagesource.yaml
 
-fazantix: builddir
-	swag init -g lib/api/api.go
+fazantix: prereqs
 	go build -o build/fazantix ./cmd/fazantix
 
-builddir:
-	mkdir -p build
-
-fazantix-wayland: builddir
-	swag init -g lib/api/api.go
+fazantix-wayland: prereqs
 	go build -o build/fazantix -tags "wayland,vulkan" ./cmd/fazantix
 
 fazantix-window: builddir
@@ -32,6 +27,17 @@ examples/%.yaml: FORCE
 
 validate-examples: $(wildcard examples/*.yaml)
 
+lib/api/static/index.html:
+	./web_ui/build.sh
+
+docs/swagger.json:
+	swag init -g lib/api/api.go
+
+builddir:
+	mkdir -p build
+
+prereqs: builddir docs/swagger.json lib/api/static/index.html
+
 clean:
 	rm -rvf build
 
@@ -42,4 +48,4 @@ build: fazantix
 .PHONY: FORCE
 FORCE:;
 
-.PHONY: clean run lint fazantix fazantix-wayland builddir validate-examples
+.PHONY: clean run lint fazantix fazantix-wayland builddir validate-examples prereqs
