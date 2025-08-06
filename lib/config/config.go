@@ -11,11 +11,11 @@ import (
 )
 
 type Config struct {
-	Sources map[string]*SourceCfg
-	Scenes  map[string]*SceneCfg
-	Stages  map[string]*StageCfg `yaml:"sinks"`
+	Sources    map[string]*SourceCfg
+	Scenes     map[string]*SceneCfg
+	Stages     map[string]*StageCfg `yaml:"sinks"`
 	Multiviews map[string]*MultiviewCfg
-	Api     *ApiCfg
+	Api        *ApiCfg
 }
 
 func Parse(filename string) (*Config, error) {
@@ -180,6 +180,11 @@ type SourceRef struct {
 	Sink   string
 	Label  string
 }
+
+type TallyCfg struct {
+	Color    string
+	Priority int
+}
 type MultiviewCfg struct {
 	Font     string
 	FontSize int
@@ -187,6 +192,7 @@ type MultiviewCfg struct {
 	Height   int
 	Split    [4]bool
 	Source   []*SourceRef
+	Tally    map[string]*TallyCfg
 }
 
 func (s *SourceCfg) UnmarshalYAML(b []byte) error {
