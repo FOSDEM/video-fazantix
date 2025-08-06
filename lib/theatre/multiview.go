@@ -5,15 +5,25 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/flopp/go-findfont"
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/source/imgsource"
 	"github.com/golang/freetype/truetype"
 	"github.com/llgcode/draw2d"
 	"github.com/llgcode/draw2d/draw2dimg"
 )
+
+type Multiview struct {
+	Name         string
+	overlayLayer string
+	overlay      *imgsource.ImgSource
+	overlayImage *image.RGBA
+	theatre      *Theatre
+}
 
 func drawRectangle(gc *draw2dimg.GraphicContext, x, y, w, h float64) {
 	gc.MoveTo(x, y)
@@ -80,8 +90,11 @@ func makeLayerCfg(x, y, scale float32) *config.LayerCfg {
 	}
 }
 
-func buildMultiviews(cfg *config.Config) {
+func buildMultiviews(cfg *config.Config) []*Multiview {
+	result := make([]*Multiview, 0)
 	for multiviewName, multiview := range cfg.Multiviews {
+		mv := &Multiview{Name: multiviewName}
+		result = append(result, mv)
 		fontPath, err := findfont.Find(multiview.Font)
 		if err != nil {
 			log.Printf("[%s] error finding font. %s\n", multiviewName, err)
@@ -151,18 +164,10 @@ func buildMultiviews(cfg *config.Config) {
 			}
 			drawMultiviewBox(overlay, box.X, box.Y, box.Scale, box.Scale, names[idx], multiview.FontSize, font)
 		}
-		f, err := os.CreateTemp("", "multiview_*.png")
-		if err != nil {
-			log.Printf("[%s] error creating temp source. %s\n", multiviewName, err)
-			continue
-		}
-		err = draw2dimg.SaveToPngFile(f.Name(), overlay)
-		if err != nil {
-			log.Printf("[%s] error writing overlay. %s\n", multiviewName, err)
-			continue
-		}
+		mv.overlayImage = overlay
 
 		overlayName := fmt.Sprintf("%s-overlay", multiviewName)
+		mv.overlayLayer = overlayName
 		cfg.Sources[overlayName] = &config.SourceCfg{
 			SourceCfgStub: config.SourceCfgStub{
 				Type:      "image",
@@ -170,7 +175,8 @@ func buildMultiviews(cfg *config.Config) {
 				MakeScene: false,
 			},
 			Cfg: &config.ImgSourceCfg{
-				Path:    config.CfgPath(f.Name()),
+				Width:   multiview.Width,
+				Height:  multiview.Height,
 				Inotify: false,
 			},
 		}
@@ -181,5 +187,16 @@ func buildMultiviews(cfg *config.Config) {
 			Label:   multiviewName,
 			Sources: layerCfg,
 		}
+	}
+	return result
+}
+
+func (m *Multiview) Start(theatre *Theatre) {
+	m.theatre = theatre
+	m.overlay = theatre.Sources[m.overlayLayer].(*imgsource.ImgSource)
+	err := m.overlay.SetImage(m.overlayImage)
+	if err != nil {
+		slog.Error(fmt.Sprintf("Failed to update overlay: %s", err.Error()), slog.String("module", m.Name))
+		return
 	}
 }
