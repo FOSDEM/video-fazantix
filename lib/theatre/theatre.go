@@ -22,6 +22,7 @@ type Theatre struct {
 	SourceList []layer.Source
 	Scenes     map[string]*Scene
 	Stages     map[string]*layer.Stage
+	Multiviews []*Multiview
 
 	WindowStageList    []*layer.Stage
 	NonWindowStageList []*layer.Stage
@@ -34,6 +35,7 @@ type Theatre struct {
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
+	multiviews := buildMultiviews(cfg)
 	sourceList, err := buildSourceList(cfg, alloc)
 	if err != nil {
 		return nil, err
@@ -61,6 +63,7 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		SourceList:         sourceList,
 		Scenes:             sceneMap,
 		Stages:             stageMap,
+		Multiviews:         multiviews,
 		WindowStageList:    windowStageList,
 		NonWindowStageList: nonWindowStageList,
 		listener:           make(map[string][]EventListener),
@@ -217,6 +220,7 @@ func (t *Theatre) Start() {
 	}
 
 	for _, stage := range t.WindowStageList {
+		stage.Tally = make(map[string]bool, t.NumSources())
 		stage.Sink.Start()
 	}
 	for _, src := range t.Sources {
@@ -225,14 +229,32 @@ func (t *Theatre) Start() {
 		}
 	}
 	for _, stage := range t.NonWindowStageList {
+		stage.Tally = make(map[string]bool, t.NumSources())
 		stage.Sink.Start()
+	}
+
+	for _, mv := range t.Multiviews {
+		mv.Start(t)
 	}
 }
 
 func (t *Theatre) Animate(delta float32) {
-	for _, s := range t.Stages {
+	for sName, s := range t.Stages {
 		for _, l := range s.Layers {
 			l.Animate(delta, s.Speed)
+		}
+		tallyUpdate := false
+		for _, l := range s.Layers {
+			if l.Visible != s.Tally[l.Name()] {
+				s.Tally[l.Name()] = l.Visible
+				tallyUpdate = true
+			}
+		}
+		if tallyUpdate {
+			t.invoke("tally", &EventTallyData{
+				Stage: sName,
+				Tally: s.Tally,
+			})
 		}
 	}
 }

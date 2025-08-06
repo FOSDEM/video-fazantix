@@ -10,6 +10,7 @@ type Stage struct {
 	DefaultScene string
 	PreviewFor   string
 	Speed        float32
+	Tally        map[string]bool
 }
 
 type Sink interface {
