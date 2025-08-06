@@ -35,7 +35,8 @@ vec4 sampleLayerYUYV(vec2 uv, int layer, vec4 dve, vec4 data) {
 	vec2 uvpos = (uv / dve.z) - (dve.xy / dve.zw);
 	vec4 src = texture(tex[layer*3], uvpos);
 	int width = textureSize(tex[layer*3], 0).x;
-	float Y = fract(uvpos.x * width) >= 0.5 ? src.b : src.r;
+	float fpix = fract(uvpos.x * width);
+	float Y = fpix * src.b + (1.0-fpix) * src.r;
 	float Cr = src.g - 0.5;
 	float Cb = src.a - 0.5;
 	vec3 yuv = vec3(Y, Cr, Cb);
