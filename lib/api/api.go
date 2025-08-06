@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/fosdem/fazantix/lib/config"
+	"github.com/fosdem/fazantix/lib/metrics"
 	"github.com/fosdem/fazantix/lib/stats"
 	"github.com/fosdem/fazantix/lib/theatre"
 
@@ -94,6 +95,7 @@ func (a *Api) Serve() error {
 	a.mux.HandleFunc("/api/media/sink/{sink}", a.handleMediaSource)
 	a.mux.HandleFunc("/api/media/source/{source}/{format}", a.handleMediaSource)
 	a.mux.Handle("/swagger/", httpSwagger.Handler())
+	a.mux.Handle("/metrics", metrics.Handler())
 	a.mux.Handle("/", http.FileServer(http.FS(contentFS)))
 	return a.srv.ListenAndServe()
 }

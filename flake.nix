@@ -21,7 +21,7 @@
             src = ./.;
 
             # This currently needs to be manually updated when go.sum is changed
-            vendorHash = "sha256-1qsKLh9PIPkcWj8rAuYhbEf3/Z/P1jTlIvY20gjCJSE=";
+            vendorHash = "sha256-H52DXd+soZGll2mIj92Tj9uMlU+xZCaTYK60n/breJE=";
             goSum = ./go.sum;
             subPackages = [ "cmd/fazantix" ];
 
