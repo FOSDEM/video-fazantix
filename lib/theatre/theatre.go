@@ -22,6 +22,7 @@ type Theatre struct {
 	SourceList []layer.Source
 	Scenes     map[string]*Scene
 	Stages     map[string]*layer.Stage
+	Multiviews []*Multiview
 
 	WindowStageList    []*layer.Stage
 	NonWindowStageList []*layer.Stage
@@ -34,7 +35,7 @@ type Theatre struct {
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
-	buildMultiviews(cfg)
+	multiviews := buildMultiviews(cfg)
 	sourceList, err := buildSourceList(cfg, alloc)
 	if err != nil {
 		return nil, err
@@ -62,6 +63,7 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		SourceList:         sourceList,
 		Scenes:             sceneMap,
 		Stages:             stageMap,
+		Multiviews:         multiviews,
 		WindowStageList:    windowStageList,
 		NonWindowStageList: nonWindowStageList,
 		listener:           make(map[string][]EventListener),
@@ -227,6 +229,10 @@ func (t *Theatre) Start() {
 	}
 	for _, stage := range t.NonWindowStageList {
 		stage.Sink.Start()
+	}
+
+	for _, mv := range t.Multiviews {
+		mv.Start(t)
 	}
 }
 
