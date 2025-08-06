@@ -39,7 +39,7 @@ func New(name string, cfg *config.FFmpegSinkCfg, frameCfg *encdec.FrameCfg, allo
 func (f *FFmpegSink) Start() bool {
 	err := f.setupCmd()
 	if err != nil {
-		f.log("could not setup ffmpeg command: %s", err)
+		f.Frames().Error("could not setup ffmpeg command: %s", err)
 		return false
 	}
 
@@ -72,17 +72,17 @@ func (f *FFmpegSink) setupCmd() error {
 
 func (f *FFmpegSink) runFFmpeg() {
 	for {
-		f.log("starting ffmpeg")
+		f.Frames().Debug("starting ffmpeg")
 
 		err := f.cmd.Run()
 		if err != nil {
-			f.log("ffmpeg error: %s", err)
+			f.Frames().Error("ffmpeg error: %s", err)
 		}
 
-		f.log("ffmpeg died")
+		f.Frames().Error("ffmpeg died")
 		err = f.setupCmd()
 		if err != nil {
-			f.log("could not setup ffmpeg command: %s", err)
+			f.Frames().Error("could not setup ffmpeg command: %s", err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -114,7 +114,7 @@ func (f *FFmpegSink) processStdin() {
 		_, err := f.stdin.Write(frame.Data)
 		f.Frames().FinishedReading(frame)
 		if err != nil {
-			f.log("Could not write to ffmpeg stdin")
+			f.Frames().Error("Could not write to ffmpeg stdin")
 			return
 		}
 	}

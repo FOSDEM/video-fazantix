@@ -59,7 +59,6 @@ func New(cfg *config.ApiCfg, t *theatre.Theatre) *Api {
 		defer a.stateMutex.Unlock()
 		event := data.(theatre.EventDataSetScene)
 		event.Event = "set-scene"
-		log.Printf("Scene switched on stage %s to scene %s\n", event.Stage, event.Scene)
 		packet, err := json.Marshal(event)
 		a.InitialState[fmt.Sprintf("active-scene-%s", event.Stage)] = packet
 

@@ -27,6 +27,7 @@ type ImgSource struct {
 func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *ImgSource {
 	s := &ImgSource{}
 	s.frames.Name = name
+	s.frames.InitLogging()
 	s.inotify = cfg.Inotify
 
 	if cfg.Path != "" {
@@ -52,7 +53,7 @@ func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *Im
 	)
 
 	if s.rgba.Stride != s.frames.Width*4 {
-		s.log("Unsupported stride")
+		s.Frames().Error("Unsupported stride")
 		return s
 	}
 
@@ -74,23 +75,23 @@ func (s *ImgSource) watch() {
 
 	_, err = watcher.Watch(s.path)
 	if err != nil {
-		s.log("Could not start inotify watcher: %s", err)
+		s.Frames().Error("Could not start inotify watcher: %s", err)
 		return
 	}
 
 	for ev := range watcher.Event {
 		if ev.Mask&inotify.IN_CLOSE_WRITE != 0 {
-			s.log("Reloading image due to inotify event")
+			s.Frames().Debug("Reloading image due to inotify event")
 			time.Sleep(100 * time.Millisecond)
 
 			err := s.LoadImage(s.path)
 			if err != nil {
-				s.log("Error loading image: %s", err)
+				s.Frames().Error("Error loading image: %s", err)
 				continue
 			}
 			err = s.SetImage(s.img)
 			if err != nil {
-				s.log("Error setting image: %s", err)
+				s.Frames().Error("Error setting image: %s", err)
 				continue
 			}
 		}
@@ -104,7 +105,7 @@ func (s *ImgSource) Start() bool {
 
 	w := s.img.Bounds().Dx()
 	h := s.img.Bounds().Dy()
-	s.log("Size: %dx%d", w, h)
+	s.Frames().Debug("Size: %dx%d", w, h)
 
 	s.frames.IsReady = true
 	s.frames.HoldFrame = layer.Hold
@@ -122,7 +123,9 @@ func (s *ImgSource) Frames() *layer.FrameForwarder {
 }
 
 func (s *ImgSource) log(msg string, args ...interface{}) {
-	s.Frames().Log(msg, args...)
+	if s.Frames() != nil {
+		s.Frames().Log(msg, args...)
+	}
 }
 
 func (s *ImgSource) GetImage() image.Image {
@@ -134,13 +137,13 @@ func (s *ImgSource) LoadImage(newPath string) error {
 	s.log("Loading %s", s.path)
 	imgFile, err := os.Open(s.path)
 	if err != nil {
-		s.log("Error opening: %s", err)
+		s.Frames().Error("Error opening: %s", err)
 		return err
 	}
 
 	s.img, _, err = image.Decode(imgFile)
 	if err != nil {
-		s.log("Error decoding: %s", err)
+		s.Frames().Error("Error decoding: %s", err)
 		return err
 	}
 
@@ -165,7 +168,7 @@ func (s *ImgSource) SetImage(newImage image.Image) error {
 	frame := s.frames.GetFrameForWriting()
 	err := encdec.FrameFromImage(s.img, frame)
 	if err != nil {
-		s.log("Decode error: %s", err)
+		s.Frames().Error("Decode error: %s", err)
 		s.frames.FailedWriting(frame)
 		return err
 	}

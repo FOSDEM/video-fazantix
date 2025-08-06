@@ -38,7 +38,7 @@ func New(name string, cfg *config.FFmpegSourceCfg, alloc encdec.FrameAllocator) 
 func (f *FFmpegSource) Start() bool {
 	err := f.setupCmd()
 	if err != nil {
-		f.log("could not setup ffmpeg command: %s", err)
+		f.Frames().Error("could not setup ffmpeg command: %s", err)
 		return false
 	}
 
@@ -66,17 +66,17 @@ func (f *FFmpegSource) setupCmd() error {
 
 func (f *FFmpegSource) runFFmpeg() {
 	for {
-		f.log("starting ffmpeg")
+		f.Frames().Debug("starting ffmpeg")
 
 		err := f.cmd.Run()
 		if err != nil {
-			f.log("ffmpeg error: %s", err)
+			f.Frames().Error("ffmpeg error: %s", err)
 		}
 
-		f.log("ffmpeg died")
+		f.Frames().Error("ffmpeg died")
 		err = f.setupCmd()
 		if err != nil {
-			f.log("could not setup ffmpeg command: %s", err)
+			f.Frames().Error("could not setup ffmpeg command: %s", err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -101,13 +101,13 @@ func (f *FFmpegSource) processStdout() {
 		}
 		err := encdec.PrepareYUYV422p(frame)
 		if err != nil {
-			f.log("Could not prepare YUV422 buffer: %s", err)
+			f.Frames().Error("Could not prepare YUV422 buffer: %s", err)
 			f.frames.FailedWriting(frame)
 			return
 		}
 		_, err = io.ReadFull(f.stdout, frame.Data)
 		if err != nil {
-			f.log("could not read from ffmpeg's output: %s", err)
+			f.Frames().Error("could not read from ffmpeg's output: %s", err)
 			f.frames.FailedWriting(frame)
 			return
 		}

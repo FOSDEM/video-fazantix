@@ -41,7 +41,7 @@ func (w *WindowSink) Frames() *layer.FrameForwarder {
 }
 
 func (w *WindowSink) makeWindow() *glfw.Window {
-	w.log("Initializing window")
+	w.Frames().Debug("Initializing window")
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
 	}
