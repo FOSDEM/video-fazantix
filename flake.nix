@@ -52,6 +52,11 @@
             patchPhase = ''
               # generate docs
               ${pkgs.go-swag}/bin/swag init -g lib/api/api.go
+
+              # generate web ui
+              mkdir -p lib/api/static
+              echo 'oops, web ui through nix not supported yet' > lib/api/static/index.html
+              # TODO: use node2nix or similar to do whatever web_ui/build.sh does but with nix
             '';
           };
           default = packages.fazantix;
