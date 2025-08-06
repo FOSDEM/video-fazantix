@@ -7,14 +7,14 @@ import (
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
-	"github.com/fosdem/fazantix/lib/ffmpegsink"
-	"github.com/fosdem/fazantix/lib/ffmpegsource"
-	"github.com/fosdem/fazantix/lib/imgsource"
 	"github.com/fosdem/fazantix/lib/layer"
 	"github.com/fosdem/fazantix/lib/rendering"
 	"github.com/fosdem/fazantix/lib/rendering/shaders"
-	"github.com/fosdem/fazantix/lib/v4lsource"
-	"github.com/fosdem/fazantix/lib/windowsink"
+	"github.com/fosdem/fazantix/lib/sink/ffmpegsink"
+	"github.com/fosdem/fazantix/lib/sink/windowsink"
+	"github.com/fosdem/fazantix/lib/source/ffmpegsource"
+	"github.com/fosdem/fazantix/lib/source/imgsource"
+	"github.com/fosdem/fazantix/lib/source/v4lsource"
 )
 
 type Theatre struct {
