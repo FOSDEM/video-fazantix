@@ -30,13 +30,14 @@ validate-examples: $(wildcard examples/*.yaml)
 lib/api/static/index.html:
 	./web_ui/build.sh
 
-docs/swagger.json:
-	swag init -g lib/api/api.go
+lib/api/docs/swagger.json: lib/api/static/index.html
+	# requires index.html because swag wants a non-failing go build
+	swag init -g lib/api/api.go -o lib/api/docs
 
 builddir:
 	mkdir -p build
 
-prereqs: builddir docs/swagger.json lib/api/static/index.html
+prereqs: builddir lib/api/docs/swagger.json lib/api/static/index.html
 
 clean:
 	rm -rvf build

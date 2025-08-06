@@ -18,7 +18,7 @@ import (
 	"github.com/fosdem/fazantix/lib/stats"
 	"github.com/fosdem/fazantix/lib/theatre"
 
-	_ "github.com/fosdem/fazantix/docs"
+	_ "github.com/fosdem/fazantix/lib/api/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
