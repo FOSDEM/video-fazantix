@@ -9,8 +9,8 @@ import (
 	"net/http"
 
 	"github.com/fosdem/fazantix/lib/encdec"
-	"github.com/fosdem/fazantix/lib/imgsource"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/source/imgsource"
 )
 
 type FrameForwarderObject interface {
