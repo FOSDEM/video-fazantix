@@ -64,7 +64,7 @@ func (s *Layer) Name() string {
 	return s.Source.Frames().Name
 }
 
-func (s *Layer) ApplyState(state *LayerState) {
+func (s *Layer) ApplyState(state *LayerState, transition bool) {
 	var transform LayerTransform
 	if state == nil {
 		if s.targetTransform != nil {
@@ -75,7 +75,19 @@ func (s *Layer) ApplyState(state *LayerState) {
 		transform = state.LayerTransform
 	}
 
-	if s.Opacity < 0.001 && state != nil && state.Warp != nil {
+	if !transition {
+		if state != nil {
+			s.Position.X = state.X
+			s.Position.Y = state.Y
+			s.Size.X = state.Scale
+			s.Size.Y = state.Scale / s.Squeeze
+			s.Opacity = state.Opacity
+		} else {
+			s.Opacity = 0.0
+		}
+	}
+
+	if s.Opacity < (1.0/256.0) && state != nil && state.Warp != nil {
 		s.Position.X = state.Warp.X
 		s.Position.Y = state.Warp.Y
 		s.Size.X = state.Warp.Scale
@@ -97,11 +109,10 @@ func (s *Layer) ApplyState(state *LayerState) {
 	s.targetTransform = &transform
 }
 
-func (s *Layer) Animate(delta float32) {
+func (s *Layer) Animate(delta float32, speed float32) {
 	if s.targetTransform == nil {
 		return
 	}
-	speed := float32(7)
 	s.Squeeze = (float32(s.OutputWidth) / float32(s.OutputHeight)) / (float32(s.Source.Frames().Width) / float32(s.Source.Frames().Height))
 	s.Position.X = ramp(s.Position.X, s.targetTransform.X, delta, speed)
 	s.Position.Y = ramp(s.Position.Y, s.targetTransform.Y, delta, speed)

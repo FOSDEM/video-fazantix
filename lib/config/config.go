@@ -118,10 +118,11 @@ type SceneCfg struct {
 }
 
 type StageCfgStub struct {
-	Type            string
-	DefaultScene    string `yaml:"default_scene"`
-	PreviewFor      string `yaml:"preview_for"`
-	encdec.FrameCfg `yaml:"frames"`
+	Type             string
+	DefaultScene     string `yaml:"default_scene"`
+	PreviewFor       string `yaml:"preview_for"`
+	TransitionTimeMs *int   `yaml:"transition_time_ms"`
+	encdec.FrameCfg  `yaml:"frames"`
 }
 
 type Valid interface {
@@ -218,6 +219,12 @@ type ApiCfg struct {
 func (s *StageCfg) Validate() error {
 	if s.DefaultScene == "" {
 		return fmt.Errorf("default scene must be specified")
+	}
+
+	if s.TransitionTimeMs == nil {
+		return fmt.Errorf("transition_time_ms must be specified")
+	} else if *s.TransitionTimeMs < 0 {
+		return fmt.Errorf("transition_time_ms must be nonnegative")
 	}
 
 	isWindow := false
