@@ -81,6 +81,11 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 
 		for i, src := range sources {
 			stage.Layers[i] = layer.New(src, stageCfg.Width, stageCfg.Height)
+			panic("for each source they may be multiple layers, if the source appears multiple times in some scene")
+			// here, build stage.LayersByScene and stage.SourceIndicesByScene
+			// use a new z-order determined by the order in each scene instead of global
+			// then, set stage.Layers and stage.SourceIndices in ApplyScene()
+			panic("need to compute stage.SourceIndices")
 		}
 
 		switch sc := stageCfg.SinkCfg.(type) {
@@ -135,6 +140,7 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 		if scene.Tag == "" {
 			scene.Tag = sceneName[0:3] + sceneName[len(sceneName)-1:]
 		}
+		panic("need to make sure that layerStates has the correct number of elements")
 		scenes[sceneName] = &Scene{
 			Name:        sceneName,
 			Label:       scene.Label,
