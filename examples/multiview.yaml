@@ -1,0 +1,73 @@
+sources:
+  background:
+    type: image
+    path: images/background.png
+    z: 0
+  test1:
+    tag: tst1
+    type: image
+    path: images/testsrc1.png
+    makescene: true
+    z: 1
+  test2:
+    type: v4l
+    path: /dev/video0
+    fmt: yuyv
+    makescene: true
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 6
+    num_frames_in_writing: 3
+    z: 2
+  test3:
+    tag: tst3
+    type: image
+    path: images/testsrc3.png
+    makescene: true
+    z: 3
+  video_listen:
+    type: ffmpeg_stdout
+    cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
+    z: 8
+
+scenes: {}
+
+sinks:
+  multiview:
+    type: window
+    frames:
+      width: 1280
+      height: 720
+    default_scene: multiview1
+    transition_time_ms: 1500
+
+
+api:
+  bind: ':8000'
+  enable_profiler: false
+
+multiviews:
+  multiview1:
+    width: 1280
+    height: 720
+    font: Ubuntu
+    fontsize: 14
+    split: [ false, false, true, true ]
+    source:
+      - sink: test1
+        label: Preview
+      - sink: projector
+        label: Program
+      - source: test1
+      - source: test2
+      - source: test3
+      - source: background
+    tally:
+      projector:
+        color: "#ff0000"
+        priority: 10
