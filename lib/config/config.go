@@ -77,7 +77,9 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("sink %s is invalid: %w", k, err)
 		}
 		if _, ok := c.Scenes[v.DefaultScene]; !ok {
-			return fmt.Errorf("scene %s, which is %s's default scene, does not exist", v.DefaultScene, k)
+			if _, ok := c.Multiviews[v.DefaultScene]; !ok {
+				return fmt.Errorf("scene %s, which is %s's default scene, does not exist", v.DefaultScene, k)
+			}
 		}
 	}
 	for k, v := range c.Multiviews {
