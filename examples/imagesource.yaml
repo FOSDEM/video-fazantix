@@ -21,6 +21,10 @@ sources:
     path: images/testsrc3.png
     makescene: true
     z: 3
+  libav_video2:
+    type: libav
+    path: rtsp://example
+    #hardware_device_type: qsv
   video_listen:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
@@ -44,7 +48,7 @@ scenes:
         cy: 0.5
         left: 0.01
         opacity: 1
-      test2:
+      libav_video2:
         cx: 0.75
         cy: 0.5
         right: 0.01

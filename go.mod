@@ -3,6 +3,7 @@ module github.com/fosdem/fazantix
 go 1.24.4
 
 require (
+	github.com/asticode/go-astiav v0.38.0
 	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20250301202403-da16c1255728
 	github.com/go-gl/mathgl v1.2.0
@@ -11,11 +12,13 @@ require (
 	github.com/jhenstridge/go-inotify v0.0.0-20221229091821-b0d1463614ad
 	github.com/prometheus/client_golang v1.23.0
 	github.com/swaggo/http-swagger v1.3.4
+	github.com/swaggo/swag v1.16.6
 	golang.org/x/sys v0.33.0
 )
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
+	github.com/asticode/go-astikit v0.42.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
@@ -32,12 +35,12 @@ require (
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe // indirect
-	github.com/swaggo/swag v1.16.6 // indirect
 	github.com/urfave/cli/v2 v2.3.0 // indirect
-	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
-	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
+	golang.org/x/tools v0.25.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
