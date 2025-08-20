@@ -110,19 +110,28 @@ func (f *FrameCfg) Validate(isWindow bool) error {
 }
 
 func calcFrameSize(info *FrameInfo) (int, int, int) {
-	t := info.FrameType
 	w := info.Width
 	h := info.Height
+	return info.GetBufferSize(), w, h
+}
 
-	switch t {
+func (f FrameInfo) GetBufferSize() int {
+	w := f.Width
+	h := f.Height
+	area := w * h
+	switch f.FrameType {
 	case YUV422Frames:
-		return w * h * 2, w, h
+		fallthrough
 	case YUV422pFrames:
-		return w * h * 2, w, h
+		return area * 2
+	case YUV420Frames:
+		fallthrough
+	case YUV420pFrames:
+		return area*2 - (w / 2 * h)
 	case RGBAFrames:
-		return w * h * 4, w, h
+		return area * 4
 	case RGBFrames:
-		return w * h * 3, w, h
+		return area * 3
 	default:
 		panic("unknown frame type")
 	}

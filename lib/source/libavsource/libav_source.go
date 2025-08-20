@@ -159,12 +159,24 @@ func (s *LibavSource) Start() bool {
 		log.Println("Formats:", validHardwarePixelFormats)
 	}
 
+	pf := decCodecContext.PixelFormat()
+	log.Println(decCodecContext.String())
+	log.Println(pf.Descriptor().Name())
 	err = decCodecContext.Open(s.decoderCodec, nil)
 	if err != nil {
 		s.Frames().Error("Unable to start decoder codec: %s", err)
 		return false
 	}
 	s.decoderContext = decCodecContext
+
+	var frametype encdec.FrameType
+	switch decCodecContext.PixelFormat().Name() {
+	case "yuv420p":
+		// 4:2:0 planar
+		frametype = encdec.YUV420Frames
+	default:
+		panic(decCodecContext.PixelFormat().Name())
+	}
 
 	s.frames.Init(
 		s.frames.Name,
@@ -174,7 +186,7 @@ func (s *LibavSource) Start() bool {
 				Height:             s.height,
 				NumAllocatedFrames: 2,
 			},
-			FrameType: encdec.YUV422Frames,
+			FrameType: frametype,
 			PixFmt:    []uint8{},
 		},
 		s.alloc,
@@ -231,8 +243,7 @@ func (s *LibavSource) processFrames() {
 					defer s.hwframe.Unref()
 
 					frame := s.Frames().GetFrameForWriting()
-					frame.Clear()
-					frame.MakeTexture((s.width * s.height * 2), s.width, s.height)
+					encdec.PrepareYUV420(frame)
 					raw, err := s.hwframe.Data().Bytes(4)
 					if err != nil {
 						s.Frames().FailedWriting(frame)
