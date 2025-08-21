@@ -13,6 +13,8 @@ type FrameType int
 const (
 	YUV422Frames FrameType = iota
 	YUV422pFrames
+	YUV420Frames
+	YUV420pFrames
 	RGBAFrames
 	RGBFrames
 )
@@ -100,6 +102,16 @@ func PrepareYUYV422p(into *Frame) error {
 	return nil
 }
 
+func PrepareYUV420(into *Frame) {
+	into.Clear()
+	numPixels := into.Width * into.Height
+	numChromaPixels := numPixels / 4 // the chroma plane is quarter-sized
+
+	into.MakeTexture(numPixels, into.Width, into.Height)
+	into.MakeTexture(numChromaPixels, into.Width/4, into.Height)
+	into.MakeTexture(numChromaPixels, into.Width/4, into.Height)
+}
+
 func PrepareYUYV(into *Frame) error {
 	into.Clear()
 
@@ -146,6 +158,27 @@ func (f FrameType) String() string {
 	switch f {
 	case YUV422Frames:
 		return "YUV422"
+	case YUV422pFrames:
+		return "YUYV"
+	case YUV420Frames:
+		return "YUV420"
+	case YUV420pFrames:
+		return "YV8"
+	case RGBAFrames:
+		return "RGBA"
+	case RGBFrames:
+		return "RGB"
+	default:
+		panic("unknown frame type")
+	}
+}
+
+func (f FrameType) Shader() string {
+	switch f {
+	case YUV422Frames:
+		fallthrough
+	case YUV420Frames:
+		return "YUV"
 	case YUV422pFrames:
 		return "YUYV"
 	case RGBAFrames:

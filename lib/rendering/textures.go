@@ -19,6 +19,10 @@ func SetupTextures(f *layer.FrameForwarder) {
 		f.TextureIDs[0] = SetupYUVTexture(width, height)
 		f.TextureIDs[1] = SetupYUVTexture(width/2, height)
 		f.TextureIDs[2] = SetupYUVTexture(width/2, height)
+	case encdec.YUV420Frames:
+		f.TextureIDs[0] = SetupYUVTexture(width, height)
+		f.TextureIDs[1] = SetupYUVTexture(width/4, height)
+		f.TextureIDs[2] = SetupYUVTexture(width/4, height)
 	case encdec.RGBAFrames:
 		f.TextureIDs[0] = SetupRGBATexture(width, height)
 	case encdec.YUV422pFrames:

@@ -8,7 +8,7 @@ uniform sampler2D tex[{{ .NumSources }} * 3];
 uniform vec4 layerPosition[{{ .NumSources }}];
 uniform vec4 layerData[{{ .NumSources }}];
 
-vec4 sampleLayerYUV422(vec2 uv, int layer, vec4 dve, vec4 data) {
+vec4 sampleLayerYUV(vec2 uv, int layer, vec4 dve, vec4 data) {
 	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
 	float Y = texture(tex[layer*3], tpos).r;
 	float Cb = texture(tex[layer*3+2], tpos).r - 0.5;
@@ -71,7 +71,7 @@ vec4 sampleLayerRGB(vec2 uv, int layer, vec4 dve, vec4 data) {
 void main() {
     vec4 composite;
     {{ range $i, $source := .Sources }}
-        vec4 layer_{{ $i }} = sampleLayer{{ $source.Frames.FrameType.String }}(UV, {{ $i }}, layerPosition[{{ $i }}], layerData[{{ $i }}]);
+        vec4 layer_{{ $i }} = sampleLayer{{ $source.Frames.FrameType.Shader }}(UV, {{ $i }}, layerPosition[{{ $i }}], layerData[{{ $i }}]);
 
         {{ if eq $i 0 }}
             composite = layer_{{ $i }};

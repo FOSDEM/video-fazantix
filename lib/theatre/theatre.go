@@ -14,6 +14,7 @@ import (
 	"github.com/fosdem/fazantix/lib/sink/windowsink"
 	"github.com/fosdem/fazantix/lib/source/ffmpegsource"
 	"github.com/fosdem/fazantix/lib/source/imgsource"
+	"github.com/fosdem/fazantix/lib/source/libavsource"
 	"github.com/fosdem/fazantix/lib/source/v4lsource"
 )
 
@@ -179,6 +180,8 @@ func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.S
 			sources = append(sources, imgsource.New(srcName, sc, alloc))
 		case *config.V4LSourceCfg:
 			sources = append(sources, v4lsource.New(srcName, sc))
+		case *config.LibavSourceCfg:
+			sources = append(sources, libavsource.New(srcName, sc, alloc))
 		default:
 			panic(fmt.Sprintf("unhandled source type: %+v", srcCfg.Cfg))
 		}

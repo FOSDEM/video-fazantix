@@ -168,6 +168,14 @@ type V4LSourceCfg struct {
 	NumFramesInWriting int `yaml:"num_frames_in_writing"`
 }
 
+type LibavSourceCfg struct {
+	Path               string
+	HardwareDeviceType string `yaml:"hardware_device_type"`
+	HardwareDeviceName string `yaml:"hardware_device_name"`
+	InputFormat        string `yaml:"input_format"`
+	DecoderCodec       string `yaml:"decoder_codec"`
+}
+
 func (s *SourceCfg) UnmarshalYAML(b []byte) error {
 	err := yaml.Unmarshal(b, &s.SourceCfgStub)
 	if err != nil {
@@ -185,6 +193,10 @@ func (s *SourceCfg) UnmarshalYAML(b []byte) error {
 		return yaml.Unmarshal(b, &cfg)
 	case "v4l":
 		cfg := V4LSourceCfg{}
+		s.Cfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	case "libav":
+		cfg := LibavSourceCfg{}
 		s.Cfg = &cfg
 		return yaml.Unmarshal(b, &cfg)
 	default:
@@ -289,6 +301,16 @@ func (s *V4LSourceCfg) Validate() error {
 
 	if s.NumFramesInWriting < 2 || s.NumFramesInWriting > s.FrameCfg.NumAllocatedFrames-2 {
 		return fmt.Errorf("a v4l source should have at least two frames in writing (%d) (`num_frames_in_writing`) but also at least two allocated frames that are not for writing", s.NumFramesInWriting)
+	}
+	return nil
+}
+
+func (s *LibavSourceCfg) Validate() error {
+	if s.Path == "" {
+		return fmt.Errorf("path must be specified")
+	}
+	if s.HardwareDeviceName == "" {
+		s.HardwareDeviceName = "/dev/dri/renderD128"
 	}
 	return nil
 }
