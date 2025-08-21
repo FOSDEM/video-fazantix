@@ -108,7 +108,7 @@ func (s *LibavSource) Start() bool {
 		s.width = stream.CodecParameters().Width()
 		s.height = stream.CodecParameters().Height()
 		if s.decoderCodecName == "" {
-			if s.hardwareDecode {
+			if s.hardwareDecode && s.hardwareDeviceTypeName != "vaapi" {
 				s.decoderCodecName = fmt.Sprintf("%s_%s", stream.CodecParameters().CodecID().Name(), s.hardwareDeviceTypeName)
 			} else {
 				s.decoderCodecName = stream.CodecParameters().CodecID().Name()
@@ -243,15 +243,18 @@ func (s *LibavSource) processFrames() {
 					defer s.hwframe.Unref()
 
 					frame := s.Frames().GetFrameForWriting()
-					encdec.PrepareYUV420(frame)
-					raw, err := s.hwframe.Data().Bytes(4)
-					if err != nil {
-						s.Frames().FailedWriting(frame)
-						panic(err)
+					if frame != nil {
+						encdec.PrepareYUV420(frame)
+						raw, err := s.hwframe.Data().Bytes(4)
+						if err != nil {
+							s.Frames().FailedWriting(frame)
+							panic(err)
+						}
+						copy(frame.Data, raw)
+						s.Frames().FinishedWriting(frame)
+					} else {
+						s.Frames().Error("Dropped frame")
 					}
-					copy(frame.Data, raw)
-					s.Frames().FinishedWriting(frame)
-
 					return false
 				}(); !run {
 					break
