@@ -62,14 +62,6 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("source %s is invalid: %w", k, err)
 		}
 	}
-	for k, v := range c.Scenes {
-		for ks, vs := range v.Sources {
-			err = vs.Validate()
-			if err != nil {
-				return fmt.Errorf("scene %s layer %s is invalid: %w", k, ks, err)
-			}
-		}
-	}
 	for k, v := range c.Stages {
 		err = v.Validate()
 		if err != nil {
@@ -77,6 +69,24 @@ func (c *Config) Validate() error {
 		}
 		if _, ok := c.Scenes[v.DefaultScene]; !ok {
 			return fmt.Errorf("scene %s, which is %s's default scene, does not exist", v.DefaultScene, k)
+		}
+	}
+	for k, v := range c.Scenes {
+		for i, layerCfg := range v.Layers {
+			err = layerCfg.Validate()
+			if err != nil {
+				return fmt.Errorf("scene %s layer %d is invalid: %w", k, i, err)
+			}
+			if layerCfg.SourceName != "" {
+				if _, ok := c.Sources[layerCfg.SourceName]; !ok {
+					return fmt.Errorf("scene %s layer %d refers to non-existant source %s", k, i, layerCfg.SourceName)
+				}
+			}
+			if layerCfg.StageName != "" {
+				if _, ok := c.Stages[layerCfg.StageName]; !ok {
+					return fmt.Errorf("scene %s layer %d refers to non-existant source %s", k, i, layerCfg.SourceName)
+				}
+			}
 		}
 	}
 	return nil
@@ -112,9 +122,9 @@ type SourceCfgStub struct {
 }
 
 type SceneCfg struct {
-	Tag     string
-	Label   string
-	Sources map[string]*LayerCfg
+	Tag    string
+	Label  string
+	Layers []*LayerCfg
 }
 
 type StageCfgStub struct {

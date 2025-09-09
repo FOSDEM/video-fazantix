@@ -105,22 +105,22 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 func buildDynamicScenes(cfg *config.Config) {
 	for sourceName, source := range cfg.Sources {
 		if source.MakeScene {
-			scene := make(map[string]*config.LayerCfg)
-			sourceLayer := &config.LayerCfg{
-				LayerStateCfg: config.LayerStateCfg{
-					LayerTransform: layer.LayerTransform{
-						X:       0,
-						Y:       0,
-						Scale:   1,
-						Opacity: 1,
+			cfg.Scenes[sourceName] = &config.SceneCfg{
+				Tag:   source.Tag,
+				Label: source.Label,
+				Layers: []*config.LayerCfg{
+					{
+						SourceName: sourceName,
+						Transform: &config.LayerTransformCfg{
+							LayerTransform: layer.LayerTransform{
+								X:       0,
+								Y:       0, // if I put a comment here this code will look pointy
+								Scale:   1,
+								Opacity: 1,
+							},
+						},
 					},
 				},
-			}
-			scene[sourceName] = sourceLayer
-			cfg.Scenes[sourceName] = &config.SceneCfg{
-				Tag:     source.Tag,
-				Label:   source.Label,
-				Sources: scene,
 			}
 		}
 	}
@@ -205,7 +205,7 @@ type Scene struct {
 	Name        string
 	Tag         string
 	Label       string
-	LayerStates []*layer.LayerState
+	LayerStates map[int]*layer.LayerState // key is source index
 }
 
 func (t *Theatre) NumLayers() int {
@@ -259,9 +259,7 @@ func (t *Theatre) SetScene(stageName string, sceneName string, transition bool) 
 				Stage: stageName,
 				Scene: sceneName,
 			})
-			for i, l := range stage.Layers {
-				l.ApplyState(scene.LayerStates[i], transition)
-			}
+			stage.ActivateScene(scene)
 			return nil
 		} else {
 			return fmt.Errorf("no such scene: %s", sceneName)
