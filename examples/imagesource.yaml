@@ -5,8 +5,10 @@ sources:
     z: 0
   test1:
     tag: tst1
-    type: image
-    path: images/testsrc1.png
+    type: html
+    url: "https://fosdem.org"
+    width: 1280
+    height: 720
     makescene: true
     z: 1
   test2:
