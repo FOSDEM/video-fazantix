@@ -19,12 +19,27 @@ type OmtSink struct {
 	stdin  io.WriteCloser
 	frames layer.FrameForwarder
 
-	send  *libomt.OmtSend
-	frame *libomt.OmtMediaFrame
+	quality libomt.Quality
+	send    *libomt.OmtSend
+	frame   *libomt.OmtMediaFrame
 }
 
 func New(name string, cfg *config.OmtSinkCfg, frameCfg *encdec.FrameCfg, alloc encdec.FrameAllocator) *OmtSink {
-	f := &OmtSink{name: cfg.Name}
+	f := &OmtSink{name: cfg.Name, quality: libomt.QualityDefault}
+
+	if cfg.Quality != "" {
+		switch cfg.Quality {
+		case "low":
+			f.quality = libomt.QualityLow
+		case "medium":
+			f.quality = libomt.QualityMedium
+		case "high":
+			f.quality = libomt.QualityHigh
+		default:
+			f.quality = libomt.QualityDefault
+		}
+	}
+
 	f.frames.Init(
 		name,
 		&encdec.FrameInfo{
@@ -37,7 +52,7 @@ func New(name string, cfg *config.OmtSinkCfg, frameCfg *encdec.FrameCfg, alloc e
 }
 
 func (f *OmtSink) Start() bool {
-	send, err := libomt.OmtSendCreate(f.name, libomt.QualityLow)
+	send, err := libomt.OmtSendCreate(f.name, f.quality)
 	if err != nil {
 		panic(err)
 	}
