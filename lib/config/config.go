@@ -152,7 +152,8 @@ type FFmpegSinkCfg struct {
 }
 
 type OmtSinkCfg struct {
-	Name string
+	Name    string
+	Quality string
 }
 
 type WindowSinkCfg struct {
@@ -284,6 +285,9 @@ func (s *FFmpegSinkCfg) Validate() error {
 func (s *OmtSinkCfg) Validate() error {
 	if s.Name == "" {
 		return fmt.Errorf("OMT sink name must be specified")
+	}
+	if s.Quality != "" && s.Quality != "low" && s.Quality != "medium" && s.Quality != "high" {
+		return fmt.Errorf("OMT sink quality must be one of: low, medium, high")
 	}
 	return nil
 }
