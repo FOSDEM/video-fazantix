@@ -2,8 +2,8 @@ package omtsink
 
 import (
 	"io"
-	"os"
 	"os/exec"
+	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
@@ -37,16 +37,12 @@ func New(name string, cfg *config.OmtSinkCfg, frameCfg *encdec.FrameCfg, alloc e
 }
 
 func (f *OmtSink) Start() bool {
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "unknown"
-	}
-	f.Frames().Debug("Starting OMT sender: %s (%s)", hostname, f.name)
 	send, err := libomt.OmtSendCreate(f.name, libomt.QualityLow)
 	if err != nil {
 		panic(err)
 	}
 	f.send = send
+	f.Frames().Log("Starting OMT sender: %s", f.send.GetAddress())
 
 	f.frame = &libomt.OmtMediaFrame{
 		Width:             f.frames.Width,
@@ -72,6 +68,7 @@ func (f *OmtSink) Start() bool {
 }
 
 func (f *OmtSink) sendFrames() {
+	interval := time.Now()
 	for {
 		frame := f.Frames().GetFrameForReading()
 		if frame == nil {
@@ -79,6 +76,11 @@ func (f *OmtSink) sendFrames() {
 		}
 		f.send.Send(f.frame, frame.Data)
 		f.Frames().FinishedReading(frame)
+		if time.Since(interval).Seconds() > 1 {
+			interval = time.Now()
+			stats := f.send.GetVideoStatistics()
+			f.Frames().Debug("%d connections, %.2f MB/s", f.send.Connections(), float64(stats.BytesSentSinceLast)/1024.0/1024.0)
+		}
 	}
 }
 
