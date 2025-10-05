@@ -14,6 +14,7 @@ const (
 	YUV422Frames FrameType = iota
 	YUV422pFrames
 	RGBAFrames
+	BGRAFrames
 	RGBFrames
 )
 

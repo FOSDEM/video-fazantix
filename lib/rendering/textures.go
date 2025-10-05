@@ -20,16 +20,20 @@ func SetupTextures(f *layer.FrameForwarder) {
 		f.TextureIDs[1] = SetupYUVTexture(width/2, height)
 		f.TextureIDs[2] = SetupYUVTexture(width/2, height)
 	case encdec.RGBAFrames:
-		f.TextureIDs[0] = SetupRGBATexture(width, height)
+		f.TextureIDs[0] = SetupRGBATexture(width, height, gl.RGBA)
+	case encdec.BGRAFrames:
+		f.TextureIDs[0] = SetupRGBATexture(width, height, gl.BGRA)
 	case encdec.YUV422pFrames:
-		f.TextureIDs[0] = SetupRGBATexture(width/2, height)
+		f.TextureIDs[0] = SetupRGBATexture(width/2, height, gl.RGBA)
 	case encdec.RGBFrames:
 		f.TextureIDs[0] = SetupRGBTexture(width, height)
+	default:
+		panic("Unknown pixel format")
 	}
 }
 
 func UseAsFramebuffer(f *layer.FrameForwarder) {
-	if f.FrameType != encdec.RGBAFrames {
+	if f.FrameType != encdec.RGBAFrames && f.FrameType != encdec.BGRAFrames {
 		panic("trying to use a non-rgba frame forwarder as a framebuffer")
 	}
 	f.FramebufferID = UseTextureAsFramebuffer(f.TextureIDs[0])
@@ -62,7 +66,7 @@ func SetupYUVTexture(width int, height int) uint32 {
 	return id
 }
 
-func SetupRGBATexture(width int, height int) uint32 {
+func SetupRGBATexture(width int, height int, packing uint32) uint32 {
 	var id uint32
 	gl.GenTextures(1, &id)
 	gl.ActiveTexture(gl.TEXTURE0)
@@ -82,7 +86,7 @@ func SetupRGBATexture(width int, height int) uint32 {
 		int32(width),
 		int32(height),
 		0,
-		gl.RGBA,
+		packing,
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(&buf[0]),
 	)

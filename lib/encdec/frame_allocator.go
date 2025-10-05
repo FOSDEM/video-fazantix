@@ -120,6 +120,8 @@ func calcFrameSize(info *FrameInfo) (int, int, int) {
 	case YUV422pFrames:
 		return w * h * 2, w, h
 	case RGBAFrames:
+		fallthrough
+	case BGRAFrames:
 		return w * h * 4, w, h
 	case RGBFrames:
 		return w * h * 3, w, h
