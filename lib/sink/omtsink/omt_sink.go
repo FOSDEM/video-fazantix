@@ -1,0 +1,91 @@
+package omtsink
+
+import (
+	"io"
+	"os"
+	"os/exec"
+
+	"github.com/fosdem/fazantix/lib/config"
+	"github.com/fosdem/fazantix/lib/encdec"
+	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/sink/omtsink/libomt"
+)
+
+type OmtSink struct {
+	name   string
+	cmd    *exec.Cmd
+	stdout io.ReadCloser
+	stderr io.ReadCloser
+	stdin  io.WriteCloser
+	frames layer.FrameForwarder
+
+	send  *libomt.OmtSend
+	frame *libomt.OmtMediaFrame
+}
+
+func New(name string, cfg *config.OmtSinkCfg, frameCfg *encdec.FrameCfg, alloc encdec.FrameAllocator) *OmtSink {
+	f := &OmtSink{name: cfg.Name}
+	f.frames.Init(
+		name,
+		&encdec.FrameInfo{
+			FrameType: encdec.BGRAFrames,
+			FrameCfg:  *frameCfg,
+		},
+		alloc,
+	)
+	return f
+}
+
+func (f *OmtSink) Start() bool {
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+	f.Frames().Debug("Starting OMT sender: %s (%s)", hostname, f.name)
+	send, err := libomt.OmtSendCreate(f.name, libomt.QualityLow)
+	if err != nil {
+		panic(err)
+	}
+	f.send = send
+
+	f.frame = &libomt.OmtMediaFrame{
+		Width:             f.frames.Width,
+		Height:            f.frames.Height,
+		Codec:             libomt.CodecBGRA,
+		Timestamp:         -1,
+		ColorSpace:        libomt.ColorSpaceBT709,
+		Flags:             0,
+		Stride:            f.frames.Width * 4,
+		DataLength:        f.frames.Width * f.frames.Height * 4,
+		FrameRateN:        60000,
+		FrameRateD:        1000,
+		AspectRatio:       float32(f.frames.Width) / float32(f.frames.Height), // Assume square pixels
+		FrameMetadata:     nil,
+		SampleRate:        0,
+		Channels:          0,
+		SamplesPerChannel: 0,
+	}
+
+	go f.sendFrames()
+
+	return true
+}
+
+func (f *OmtSink) sendFrames() {
+	for {
+		frame := f.Frames().GetFrameForReading()
+		if frame == nil {
+			continue
+		}
+		f.send.Send(f.frame, frame.Data)
+		f.Frames().FinishedReading(frame)
+	}
+}
+
+func (f *OmtSink) Frames() *layer.FrameForwarder {
+	return &f.frames
+}
+
+func (f *OmtSink) log(msg string, args ...interface{}) {
+	f.Frames().Log(msg, args...)
+}
