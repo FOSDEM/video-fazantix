@@ -11,6 +11,7 @@ import (
 	"github.com/fosdem/fazantix/lib/rendering"
 	"github.com/fosdem/fazantix/lib/rendering/shaders"
 	"github.com/fosdem/fazantix/lib/sink/ffmpegsink"
+	"github.com/fosdem/fazantix/lib/sink/omtsink"
 	"github.com/fosdem/fazantix/lib/sink/windowsink"
 	"github.com/fosdem/fazantix/lib/source/ffmpegsource"
 	"github.com/fosdem/fazantix/lib/source/imgsource"
@@ -88,6 +89,8 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 			stage.Sink = ffmpegsink.New(stageName, sc, &stageCfg.FrameCfg, alloc)
 		case *config.WindowSinkCfg:
 			stage.Sink = windowsink.New(stageName, sc, &stageCfg.FrameCfg, alloc)
+		case *config.OmtSinkCfg:
+			stage.Sink = omtsink.New(stageName, sc, &stageCfg.FrameCfg, alloc)
 		default:
 			panic(fmt.Sprintf("unhandled sink type: %+v", stageCfg.SinkCfg))
 		}

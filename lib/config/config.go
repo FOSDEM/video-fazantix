@@ -151,6 +151,10 @@ type FFmpegSinkCfg struct {
 	Cmd string
 }
 
+type OmtSinkCfg struct {
+	Name string
+}
+
 type WindowSinkCfg struct {
 }
 
@@ -201,6 +205,10 @@ func (s *StageCfg) UnmarshalYAML(b []byte) error {
 	switch s.Type {
 	case "ffmpeg_stdin":
 		cfg := FFmpegSinkCfg{}
+		s.SinkCfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	case "omt":
+		cfg := OmtSinkCfg{}
 		s.SinkCfg = &cfg
 		return yaml.Unmarshal(b, &cfg)
 	case "window":
@@ -269,6 +277,13 @@ func (s *FFmpegSourceCfg) Validate() error {
 func (s *FFmpegSinkCfg) Validate() error {
 	if s.Cmd == "" {
 		return fmt.Errorf("ffmpeg cmd must be specified")
+	}
+	return nil
+}
+
+func (s *OmtSinkCfg) Validate() error {
+	if s.Name == "" {
+		return fmt.Errorf("OMT sink name must be specified")
 	}
 	return nil
 }
