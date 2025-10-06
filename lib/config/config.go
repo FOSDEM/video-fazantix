@@ -10,6 +10,8 @@ import (
 	yaml "github.com/goccy/go-yaml"
 )
 
+var EnablePlutobook = true
+
 type Config struct {
 	Sources map[string]*SourceCfg
 	Scenes  map[string]*SceneCfg
@@ -162,10 +164,10 @@ type ImgSourceCfg struct {
 }
 
 type HtmlSourceCfg struct {
-	Url string
-	Html string
-	Css string
-	Width int
+	Url    string
+	Html   string
+	Css    string
+	Width  int
 	Height int
 }
 
@@ -272,6 +274,9 @@ func (s *ImgSourceCfg) Validate() error {
 }
 
 func (s *HtmlSourceCfg) Validate() error {
+	if !EnablePlutobook {
+		return fmt.Errorf("plutobook source is not compiled in")
+	}
 	if s.Width == 0 || s.Height == 0 {
 		return fmt.Errorf("render width and height must be defined for the html source")
 	}

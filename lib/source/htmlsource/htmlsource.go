@@ -1,3 +1,5 @@
+//go:build plutobook
+
 package htmlsource
 
 import (
