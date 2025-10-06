@@ -153,6 +153,10 @@ type FFmpegSinkCfg struct {
 	Cmd string
 }
 
+type OmtSourceCfg struct {
+	encdec.FrameCfg `yaml:"frames"`
+	Name            string
+}
 type OmtSinkCfg struct {
 	Name    string
 	Quality string
@@ -192,6 +196,10 @@ func (s *SourceCfg) UnmarshalYAML(b []byte) error {
 		return yaml.Unmarshal(b, &cfg)
 	case "v4l":
 		cfg := V4LSourceCfg{}
+		s.Cfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	case "omt":
+		cfg := OmtSourceCfg{}
 		s.Cfg = &cfg
 		return yaml.Unmarshal(b, &cfg)
 	default:
@@ -282,6 +290,16 @@ func (s *FFmpegSinkCfg) Validate() error {
 		return fmt.Errorf("ffmpeg cmd must be specified")
 	}
 	return nil
+}
+
+func (s *OmtSourceCfg) Validate() error {
+	if !EnableOmt {
+		return fmt.Errorf("OMT source is not compiled in")
+	}
+	if s.Name == "" {
+		return fmt.Errorf("OMT source name must be specified")
+	}
+	return s.FrameCfg.Validate(false)
 }
 
 func (s *OmtSinkCfg) Validate() error {

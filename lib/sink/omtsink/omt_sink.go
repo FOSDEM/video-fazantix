@@ -5,10 +5,10 @@ package omtsink
 import (
 	"time"
 
+	"github.com/fosdem/fazantix/external/libomt"
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
-	"github.com/fosdem/fazantix/lib/sink/omtsink/libomt"
 )
 
 type OmtSink struct {
