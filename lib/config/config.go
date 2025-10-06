@@ -10,6 +10,8 @@ import (
 	yaml "github.com/goccy/go-yaml"
 )
 
+var EnableOmt = true
+
 type Config struct {
 	Sources map[string]*SourceCfg
 	Scenes  map[string]*SceneCfg
@@ -283,6 +285,9 @@ func (s *FFmpegSinkCfg) Validate() error {
 }
 
 func (s *OmtSinkCfg) Validate() error {
+	if !EnableOmt {
+		return fmt.Errorf("OMT sink is not compiled in")
+	}
 	if s.Name == "" {
 		return fmt.Errorf("OMT sink name must be specified")
 	}

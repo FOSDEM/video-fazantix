@@ -1,3 +1,5 @@
+//go:build omt
+
 package libomt
 
 /*
