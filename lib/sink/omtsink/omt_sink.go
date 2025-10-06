@@ -1,8 +1,8 @@
+//go:build omt
+
 package omtsink
 
 import (
-	"io"
-	"os/exec"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
@@ -13,10 +13,6 @@ import (
 
 type OmtSink struct {
 	name   string
-	cmd    *exec.Cmd
-	stdout io.ReadCloser
-	stderr io.ReadCloser
-	stdin  io.WriteCloser
 	frames layer.FrameForwarder
 
 	quality libomt.Quality
