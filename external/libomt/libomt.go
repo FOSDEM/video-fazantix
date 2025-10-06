@@ -14,6 +14,66 @@ import (
 	"unsafe"
 )
 
+type OmtReceive struct {
+	recv *C.omt_receive_t
+}
+
+type PreferredVideoFormat int
+
+const (
+	PreferredVideoFormatUYVY                   PreferredVideoFormat = C.OMTPreferredVideoFormat_UYVY
+	PreferredVideoFormatUYVYorBGRA                                  = C.OMTPreferredVideoFormat_UYVYorBGRA
+	PreferredVideoFormatBGRA                                        = C.OMTPreferredVideoFormat_BGRA
+	PreferredVideoFormatUYVYorUYVA                                  = C.OMTPreferredVideoFormat_UYVYorUYVA
+	PreferredVideoFormatUYVYorUYVAorP215orPA16                      = C.OMTPreferredVideoFormat_UYVYorUYVAorP216orPA16
+	PreferredVideoFormatP216                                        = C.OMTPreferredVideoFormat_P216
+)
+
+type ReceiveFlags int
+
+const (
+	ReceiveFlagsNone              ReceiveFlags = C.OMTReceiveFlags_None
+	ReceiveFlagsPreview                        = C.OMTReceiveFlags_Preview
+	ReceiveFlagsIncludeCompressed              = C.OMTReceiveFlags_IncludeCompressed
+	ReceiveFlagsCompressedOnly                 = C.OMTReceiveFlags_CompressedOnly
+)
+
+func OmtReceiveCreate(name string, frameTypes FrameType, preferredFormat PreferredVideoFormat, flags ReceiveFlags) (*OmtReceive, error) {
+	result := &OmtReceive{}
+	result.recv = C.omt_receive_create(C.CString(name), C.OMTFrameType(frameTypes), C.OMTPreferredVideoFormat(preferredFormat), C.OMTReceiveFlags(flags))
+	if result.recv == nil {
+		return nil, fmt.Errorf("failed to create OmtReceive")
+	}
+	return result, nil
+}
+
+func (r *OmtReceive) Receive(frameTypes FrameType, timeoutMilliseconds int, data []byte) *OmtMediaFrame {
+	mf := C.omt_receive(r.recv, C.OMTFrameType(frameTypes), C.int(timeoutMilliseconds))
+	if mf == nil {
+		return nil
+	}
+	res := &OmtMediaFrame{
+		Width:             int(mf.Width),
+		Height:            int(mf.Height),
+		Codec:             Codec(mf.Codec),
+		Timestamp:         int64(mf.Timestamp),
+		ColorSpace:        ColorSpace(mf.ColorSpace),
+		Flags:             VideoFlags(mf.Flags),
+		Stride:            int(mf.Stride),
+		DataLength:        int(mf.DataLength),
+		FrameRateN:        int(mf.FrameRateN),
+		FrameRateD:        int(mf.FrameRateD),
+		AspectRatio:       float32(mf.AspectRatio),
+		FrameMetadata:     nil,
+		SampleRate:        0,
+		Channels:          0,
+		SamplesPerChannel: 0,
+	}
+	gb := C.GoBytes(mf.Data, C.int(res.DataLength))
+	copy(data, gb)
+	return res
+}
+
 type OmtSend struct {
 	send *C.omt_send_t
 	mf   *C.OMTMediaFrame
@@ -143,10 +203,10 @@ func (s *OmtSend) GetVideoStatistics() OmtStatistics {
 type FrameType int
 
 const (
-	None     FrameType = iota
-	Metadata           = iota
-	Video              = iota
-	Audio              = iota
+	None     FrameType = C.OMTFrameType_None
+	Metadata           = C.OMTFrameType_Metadata
+	Video              = C.OMTFrameType_Video
+	Audio              = C.OMTFrameType_Audio
 )
 
 type Quality int32
@@ -201,6 +261,7 @@ type OmtMediaFrame struct {
 	Flags         VideoFlags
 	Stride        int
 	DataLength    int
+	Data          []byte
 	FrameRateN    int
 	FrameRateD    int
 	AspectRatio   float32

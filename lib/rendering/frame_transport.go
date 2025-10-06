@@ -13,7 +13,7 @@ func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 	if frame.Type == encdec.RGBFrames {
 		channelType = gl.RGB
 	}
-	if frame.Type == encdec.RGBAFrames || frame.Type == encdec.YUV422pFrames {
+	if frame.Type == encdec.RGBAFrames || frame.Type == encdec.BGRAFrames || frame.Type == encdec.YUV422pFrames {
 		channelType = gl.RGBA
 	}
 
