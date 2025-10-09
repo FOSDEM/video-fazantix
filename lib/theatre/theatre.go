@@ -165,9 +165,9 @@ func buildDynamicScenes(cfg *config.Config) {
 func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene {
 	scenes := make(map[string]*Scene)
 
-	sourceIndexByName := make(map[string]int)
+	sourceIndexByName := make(map[string]uint32)
 	for i := range sources {
-		sourceIndexByName[sources[i].Frames().Name] = i
+		sourceIndexByName[sources[i].Frames().Name] = uint32(i)
 	}
 
 	for sceneName, sceneCfg := range cfg.Scenes {
@@ -191,6 +191,7 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 					scene.LayerStatesBySourceIdx[srcIdx],
 					layerCfg.CopyState(),
 				)
+				scene.SourceOrder = append(scene.SourceOrder, srcIdx)
 			} else if layerCfg.StageName != "" {
 				panic("stage sources not yet supported")
 			}
@@ -244,6 +245,7 @@ type Scene struct {
 	Tag                    string
 	Label                  string
 	LayerStatesBySourceIdx [][]*layer.LayerState
+	SourceOrder            []uint32
 }
 
 func (t *Theatre) NumSources() int {
