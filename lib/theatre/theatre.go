@@ -26,6 +26,8 @@ type Theatre struct {
 	WindowStageList    []*layer.Stage
 	NonWindowStageList []*layer.Stage
 
+	LayersPerStage uint32
+
 	WindowSinkList []*windowsink.WindowSink
 
 	ShutdownRequested bool
@@ -41,7 +43,7 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 	}
 	sourceMap := buildSourceMap(sourceList)
 	sceneMap := buildSceneMap(cfg, sourceList)
-	stageMap := buildStageMap(cfg, sourceList, sceneMap, alloc)
+	stageMap, layersPerStage := buildStageMap(cfg, sourceList, sceneMap, alloc)
 	var windowStageList []*layer.Stage
 	var windowSinkList []*windowsink.WindowSink
 	var nonWindowStageList []*layer.Stage
@@ -66,14 +68,15 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		NonWindowStageList: nonWindowStageList,
 		listener:           make(map[string][]EventListener),
 		WindowSinkList:     windowSinkList,
+		LayersPerStage:     layersPerStage,
 	}
 
 	return t, nil
 }
 
-func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[string]*Scene, alloc encdec.FrameAllocator) map[string]*layer.Stage {
+func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[string]*Scene, alloc encdec.FrameAllocator) (map[string]*layer.Stage, uint32) {
 	layersPerSource := make([]uint32, len(sources))
-	layersPerStage := uint32(0)
+	var layersPerStage uint32
 	for _, scene := range sceneMap {
 		for i := range sources {
 			cnt := uint32(len(scene.LayerStatesBySourceIdx[i]))
@@ -113,6 +116,13 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[stri
 				)
 				layerIndices[srcIdx] += 1
 			}
+
+			if len(stage.LayersByScene[sceneName]) != int(layersPerStage) {
+				panic(fmt.Sprintf(
+					"bad layer count: %d against %d",
+					len(stage.LayersByScene[sceneName]), int(layersPerStage),
+				))
+			}
 		}
 
 		switch sc := stageCfg.SinkCfg.(type) {
@@ -126,7 +136,7 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[stri
 
 		stages[stageName] = stage
 	}
-	return stages
+	return stages, layersPerStage
 }
 
 func buildDynamicScenes(cfg *config.Config) {
@@ -246,11 +256,6 @@ type Scene struct {
 	Tag                    string
 	Label                  string
 	LayerStatesBySourceIdx [][]*layer.LayerState
-}
-
-func (t *Theatre) NumLayers() int {
-	panic("this is incorrect")
-	return len(t.Sources) * len(t.Scenes)
 }
 
 func (t *Theatre) NumSources() int {
