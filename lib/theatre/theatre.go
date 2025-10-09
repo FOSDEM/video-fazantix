@@ -129,24 +129,36 @@ func buildDynamicScenes(cfg *config.Config) {
 func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene {
 	buildDynamicScenes(cfg)
 	scenes := make(map[string]*Scene)
-	for sceneName, scene := range cfg.Scenes {
-		layerStates := make([]*layer.LayerState, len(sources))
-		for i, src := range sources {
-			layerStates[i] = scene.Sources[src.Frames().Name].CopyState()
+
+	sourceIndexByName := make(map[string]int)
+	for i := range sources {
+		sourceIndexByName[sources[i].Frames().Name] = i
+	}
+
+	for sceneName, cfg := range cfg.Scenes {
+		if cfg.Label == "" {
+			cfg.Label = sceneName
 		}
-		if scene.Label == "" {
-			scene.Label = sceneName
+		if cfg.Tag == "" {
+			cfg.Tag = sceneName[0:3] + sceneName[len(sceneName)-1:]
 		}
-		if scene.Tag == "" {
-			scene.Tag = sceneName[0:3] + sceneName[len(sceneName)-1:]
+		scene := &Scene{
+			Name:  sceneName,
+			Label: cfg.Label,
+			Tag:   cfg.Tag,
 		}
-		panic("need to make sure that layerStates has the correct number of elements")
-		scenes[sceneName] = &Scene{
-			Name:        sceneName,
-			Label:       scene.Label,
-			Tag:         scene.Tag,
-			LayerStates: layerStates,
+		for _, layerCfg := range cfg.Layers {
+			if layerCfg.SourceName != "" {
+				srcIdx := sourceIndexByName[layerCfg.SourceName]
+				scene.LayerStatesBySourceIdx[srcIdx] = append(
+					scene.LayerStatesBySourceIdx[srcIdx],
+					layerCfg.CopyState(),
+				)
+			} else if layerCfg.StageName != "" {
+				panic("stage sources not yet supported")
+			}
 		}
+		scenes[sceneName] = scene
 	}
 	return scenes
 }
@@ -202,10 +214,10 @@ func buildSourceMap(sources []layer.Source) map[string]layer.Source {
 }
 
 type Scene struct {
-	Name        string
-	Tag         string
-	Label       string
-	LayerStates map[int]*layer.LayerState // key is source index
+	Name                   string
+	Tag                    string
+	Label                  string
+	LayerStatesBySourceIdx [][]*layer.LayerState
 }
 
 func (t *Theatre) NumLayers() int {
