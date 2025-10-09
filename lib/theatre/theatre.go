@@ -41,7 +41,7 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 	}
 	sourceMap := buildSourceMap(sourceList)
 	sceneMap := buildSceneMap(cfg, sourceList)
-	stageMap := buildStageMap(cfg, sourceList, alloc)
+	stageMap := buildStageMap(cfg, sourceList, sceneMap, alloc)
 	var windowStageList []*layer.Stage
 	var windowSinkList []*windowsink.WindowSink
 	var nonWindowStageList []*layer.Stage
@@ -71,7 +71,21 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 	return t, nil
 }
 
-func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.FrameAllocator) map[string]*layer.Stage {
+func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[string]*Scene, alloc encdec.FrameAllocator) map[string]*layer.Stage {
+	layersPerSource := make([]uint32, len(sources))
+	layersPerStage := uint32(0)
+	for _, scene := range sceneMap {
+		for i := range sources {
+			cnt := uint32(len(scene.LayerStatesBySourceIdx[i]))
+			if layersPerSource[i] < cnt {
+				layersPerSource[i] = cnt
+			}
+		}
+	}
+	for _, n := range layersPerSource {
+		layersPerStage += n
+	}
+
 	stages := make(map[string]*layer.Stage)
 	for stageName, stageCfg := range cfg.Stages {
 		stage := &layer.Stage{}
@@ -80,14 +94,25 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 		stage.DefaultScene = stageCfg.DefaultScene
 		stage.PreviewFor = stageCfg.StageCfgStub.PreviewFor
 
+		// create a distinct layer collection for each stage
+		layersBySource := make([][]*layer.Layer, len(sources))
 		for i, src := range sources {
-			stage.Layers[i] = layer.New(uint32(i), src, stageCfg.Width, stageCfg.Height)
+			layersBySource[i] = make([]*layer.Layer, layersPerSource[i])
+			for j := range layersPerSource[i] {
+				layersBySource[i][j] = layer.New(uint32(i), src, stageCfg.Width, stageCfg.Height)
+			}
+		}
 
-			panic("for each source they may be multiple layers, if the source appears multiple times in some scene")
-			// here, build stage.LayersByScene and stage.SourceIndicesByScene
-			// use a new z-order determined by the order in each scene instead of global
-			// then, set stage.Layers and stage.SourceIndices in ApplyScene()
-			panic("need to compute stage.SourceIndices")
+		for sceneName, scene := range sceneMap {
+			layerIndices := make([]uint32, len(sources))
+			// SourceOrder may have repeating elements
+			for srcIdx := range scene.SourceOrder {
+				stage.LayersByScene[sceneName] = append(
+					stage.LayersByScene[sceneName],
+					layersBySource[srcIdx][layerIndices[srcIdx]],
+				)
+				layerIndices[srcIdx] += 1
+			}
 		}
 
 		switch sc := stageCfg.SinkCfg.(type) {
