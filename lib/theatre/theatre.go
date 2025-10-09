@@ -269,7 +269,7 @@ func (t *Theatre) SetTransitionSpeed(stageName string, transitionDuration time.D
 }
 
 func (t *Theatre) SetScene(stageName string, sceneName string, transition bool) error {
-	idxBySrc := make([]uint, len(t.Sources))
+	idxBySrc := make([]int, len(t.Sources))
 
 	if stage, ok := t.Stages[stageName]; ok {
 		if scene, ok := t.Scenes[sceneName]; ok {
@@ -277,7 +277,13 @@ func (t *Theatre) SetScene(stageName string, sceneName string, transition bool) 
 			for i, layer := range stage.Layers {
 				j := idxBySrc[layer.SourceIdx]
 				idxBySrc[layer.SourceIdx] += 1
-				layer.ApplyState(scene.LayerStatesBySourceIdx[layer.SourceIdx][j], transition)
+				layerStatesForThisSource := scene.LayerStatesBySourceIdx[layer.SourceIdx]
+				if j < len(layerStatesForThisSource) {
+					layer.ApplyState(layerStatesForThisSource[j], transition)
+				} else {
+					// make the rest of the layers for this source invisible
+					layer.ApplyState(nil, false)
+				}
 				stage.SourceIndices[i] = layer.SourceIdx
 			}
 		} else {
