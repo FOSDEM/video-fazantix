@@ -266,16 +266,7 @@ func (t *Theatre) SetTransitionSpeed(stageName string, transitionDuration time.D
 
 func (t *Theatre) SetScene(stageName string, sceneName string, transition bool) error {
 	if stage, ok := t.Stages[stageName]; ok {
-		if scene, ok := t.Scenes[sceneName]; ok {
-			t.invoke("set-scene", EventDataSetScene{
-				Stage: stageName,
-				Scene: sceneName,
-			})
-			stage.ActivateScene(scene)
-			return nil
-		} else {
-			return fmt.Errorf("no such scene: %s", sceneName)
-		}
+		return stage.ActivateScene(sceneName)
 	} else {
 		return fmt.Errorf("no such stage: %s", stageName)
 	}

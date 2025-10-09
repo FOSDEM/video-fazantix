@@ -3,15 +3,18 @@ package layer
 import "time"
 
 type Stage struct {
-	Layers            []*Layer
-	SourceIndices     []uint32
-	LayersBySourceIdx [][]*Layer
-	HFlip             bool
-	VFlip             bool
-	Sink              Sink
-	DefaultScene      string
-	PreviewFor        string
-	Speed             float32
+	Layers        []*Layer
+	SourceIndices []uint32
+
+	LayersByScene        map[string][]*Layer
+	SourceIndicesByScene map[string][]*Layer
+
+	HFlip        bool
+	VFlip        bool
+	Sink         Sink
+	DefaultScene string
+	PreviewFor   string
+	Speed        float32
 }
 
 type Sink interface {
