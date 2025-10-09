@@ -47,7 +47,6 @@ func (g *GLVars) Start() {
 	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
 	gl.UseProgram(g.Program)
 	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
-
 }
 
 func (g *GLVars) StartFrame() {
@@ -87,9 +86,11 @@ func (g *GLVars) allocate() {
 	g.LayerDataUniform = gl.GetUniformLocation(g.Program, gl.Str("layerData\x00"))
 	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
 
+	g.SourceIndices = make([]uint32, g.NumLayers)
 	g.SourceIndicesUniform = gl.GetUniformLocation(g.Program, gl.Str("sourceIndices\x00"))
 	gl.Uniform1uiv(g.SourceIndicesUniform, g.NumLayers, &g.SourceIndices[0])
 
+	g.SourceTypes = make([]uint32, g.NumSources)
 	g.SourceTypesUniform = gl.GetUniformLocation(g.Program, gl.Str("sourceTypes\x00"))
 	gl.Uniform1uiv(g.SourceTypesUniform, g.NumSources, &g.SourceTypes[0])
 
