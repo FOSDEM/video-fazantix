@@ -127,6 +127,8 @@ func (g *GLVars) pushStageVars() {
 	gl.Uniform1ui(g.StageDataUniform, g.StageData)
 	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
 	gl.Uniform4fv(g.LayerPosUniform, g.NumLayers, &g.LayerPos[0])
+	gl.Uniform1uiv(g.SourceIndicesUniform, g.NumLayers, &g.SourceIndices[0])
+	gl.Uniform1uiv(g.SourceTypesUniform, g.NumSources, &g.SourceTypes[0])
 
 	// draw vertices on the window stage
 	gl.DrawArrays(gl.TRIANGLES, 0, 1*3)
