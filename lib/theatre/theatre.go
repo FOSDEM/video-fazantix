@@ -93,6 +93,8 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[stri
 		stage := &layer.Stage{}
 		stage.SetSpeed(time.Duration(*stageCfg.TransitionTimeMs) * time.Millisecond)
 		stage.Layers = make([]*layer.Layer, len(sources))
+		stage.LayersByScene = make(map[string][]*layer.Layer)
+		stage.SourceIndices = make([]uint32, layersPerStage)
 		stage.DefaultScene = stageCfg.DefaultScene
 		stage.PreviewFor = stageCfg.StageCfgStub.PreviewFor
 
@@ -115,10 +117,21 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[stri
 				)
 				layerIndices[srcIdx] += 1
 			}
+			// add placeholders for unused values
+			for srcIdx := range sources {
+				for layerIndices[srcIdx] < layersPerSource[srcIdx] {
+					stage.LayersByScene[sceneName] = append(
+						stage.LayersByScene[sceneName],
+						layersBySource[srcIdx][layerIndices[srcIdx]],
+					)
+					layerIndices[srcIdx] += 1
+				}
+			}
 
 			if len(stage.LayersByScene[sceneName]) != int(layersPerStage) {
 				panic(fmt.Sprintf(
-					"bad layer count: %d against %d",
+					"bad layer count for stage %s and scene %s: %d against %d",
+					stageName, sceneName,
 					len(stage.LayersByScene[sceneName]), int(layersPerStage),
 				))
 			}
