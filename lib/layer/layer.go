@@ -27,7 +27,8 @@ type Layer struct {
 
 	Opacity float32
 
-	Source Source
+	Source    Source
+	SourceIdx uint32
 
 	targetTransform *LayerTransform
 }
@@ -44,10 +45,11 @@ type LayerTransform struct {
 	Opacity float32
 }
 
-func New(src Source, width int, height int) *Layer {
+func New(idx uint32, src Source, width int, height int) *Layer {
 	s := &Layer{}
 	s.Size = Coordinate{X: 1.0, Y: 1.0}
 	s.Source = src
+	s.SourceIdx = idx
 	s.Squeeze = 1.0
 	s.OutputWidth = width
 	s.OutputHeight = height

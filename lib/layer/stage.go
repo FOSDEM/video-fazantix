@@ -1,7 +1,6 @@
 package layer
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -9,8 +8,7 @@ type Stage struct {
 	Layers        []*Layer
 	SourceIndices []uint32
 
-	LayersByScene        map[string][]*Layer
-	SourceIndicesByScene map[string][]uint32
+	LayersByScene map[string][]*Layer
 
 	HFlip        bool
 	VFlip        bool
@@ -38,18 +36,4 @@ func (s *Stage) StageData() uint32 {
 		data += 2
 	}
 	return data
-}
-
-func (s *Stage) ActivateScene(sceneName string) error {
-	if layers, ok := s.LayersByScene[sceneName]; ok {
-		if sourceIndices, ok := s.SourceIndicesByScene[sceneName]; ok {
-			s.Layers = layers
-			s.SourceIndices = sourceIndices
-		} else {
-			panic("wtf")
-		}
-	} else {
-		return fmt.Errorf("no such scene: %s", sceneName)
-	}
-	return nil
 }

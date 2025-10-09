@@ -81,7 +81,8 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, alloc encdec.Fram
 		stage.PreviewFor = stageCfg.StageCfgStub.PreviewFor
 
 		for i, src := range sources {
-			stage.Layers[i] = layer.New(src, stageCfg.Width, stageCfg.Height)
+			stage.Layers[i] = layer.New(uint32(i), src, stageCfg.Width, stageCfg.Height)
+
 			panic("for each source they may be multiple layers, if the source appears multiple times in some scene")
 			// here, build stage.LayersByScene and stage.SourceIndicesByScene
 			// use a new z-order determined by the order in each scene instead of global
@@ -268,11 +269,25 @@ func (t *Theatre) SetTransitionSpeed(stageName string, transitionDuration time.D
 }
 
 func (t *Theatre) SetScene(stageName string, sceneName string, transition bool) error {
+	idxBySrc := make([]uint, len(t.Sources))
+
 	if stage, ok := t.Stages[stageName]; ok {
-		return stage.ActivateScene(sceneName)
+		if scene, ok := t.Scenes[sceneName]; ok {
+			stage.Layers = stage.LayersByScene[sceneName]
+			for i, layer := range stage.Layers {
+				j := idxBySrc[layer.SourceIdx]
+				idxBySrc[layer.SourceIdx] += 1
+				layer.ApplyState(scene.LayerStatesBySourceIdx[layer.SourceIdx][j], transition)
+				stage.SourceIndices[i] = layer.SourceIdx
+			}
+		} else {
+			return fmt.Errorf("no such stage: %s", stageName)
+		}
 	} else {
 		return fmt.Errorf("no such stage: %s", stageName)
 	}
+
+	return nil
 }
 
 func (t *Theatre) ResetToDefaultScenes() error {
