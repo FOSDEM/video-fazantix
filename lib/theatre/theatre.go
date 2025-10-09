@@ -166,11 +166,11 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.Source, error) {
 	enabledSources := make(map[string]struct{})
 	for _, scene := range cfg.Scenes {
-		for name := range scene.Sources {
-			if _, ok := cfg.Sources[name]; ok {
-				enabledSources[name] = struct{}{}
+		for _, layerCfg := range scene.Layers {
+			if _, ok := cfg.Sources[layerCfg.SourceName]; ok {
+				enabledSources[layerCfg.SourceName] = struct{}{}
 			} else {
-				return nil, fmt.Errorf("no such source: %s", name)
+				return nil, fmt.Errorf("no such source: %s", layerCfg.SourceName)
 			}
 		}
 	}
