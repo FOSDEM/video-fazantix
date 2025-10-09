@@ -2,7 +2,6 @@ package theatre
 
 import (
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
@@ -213,19 +212,8 @@ func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.S
 		}
 	}
 
-	var sortedSourceNames []string
-	for name := range enabledSources {
-		sortedSourceNames = append(sortedSourceNames, name)
-	}
-
-	sort.Slice(sortedSourceNames, func(i, j int) bool {
-		ni := sortedSourceNames[i]
-		nj := sortedSourceNames[j]
-		return cfg.Sources[ni].Z < cfg.Sources[nj].Z
-	})
-
 	var sources []layer.Source
-	for _, srcName := range sortedSourceNames {
+	for srcName := range enabledSources {
 		srcCfg := cfg.Sources[srcName]
 
 		switch sc := srcCfg.Cfg.(type) {
