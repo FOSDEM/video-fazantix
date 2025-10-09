@@ -34,6 +34,7 @@ type Theatre struct {
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
+	buildDynamicScenes(cfg)
 	sourceList, err := buildSourceList(cfg, alloc)
 	if err != nil {
 		return nil, err
@@ -127,7 +128,6 @@ func buildDynamicScenes(cfg *config.Config) {
 }
 
 func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene {
-	buildDynamicScenes(cfg)
 	scenes := make(map[string]*Scene)
 
 	sourceIndexByName := make(map[string]int)
@@ -135,19 +135,21 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 		sourceIndexByName[sources[i].Frames().Name] = i
 	}
 
-	for sceneName, cfg := range cfg.Scenes {
-		if cfg.Label == "" {
-			cfg.Label = sceneName
+	for sceneName, sceneCfg := range cfg.Scenes {
+		if sceneCfg.Label == "" {
+			sceneCfg.Label = sceneName
 		}
-		if cfg.Tag == "" {
-			cfg.Tag = sceneName[0:3] + sceneName[len(sceneName)-1:]
+		if sceneCfg.Tag == "" {
+			sceneCfg.Tag = sceneName[0:3] + sceneName[len(sceneName)-1:]
 		}
 		scene := &Scene{
-			Name:  sceneName,
-			Label: cfg.Label,
-			Tag:   cfg.Tag,
+			Name:                   sceneName,
+			Label:                  sceneCfg.Label,
+			Tag:                    sceneCfg.Tag,
+			LayerStatesBySourceIdx: make([][]*layer.LayerState, len(sources)),
 		}
-		for _, layerCfg := range cfg.Layers {
+
+		for _, layerCfg := range sceneCfg.Layers {
 			if layerCfg.SourceName != "" {
 				srcIdx := sourceIndexByName[layerCfg.SourceName]
 				scene.LayerStatesBySourceIdx[srcIdx] = append(
@@ -165,8 +167,8 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 
 func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.Source, error) {
 	enabledSources := make(map[string]struct{})
-	for _, scene := range cfg.Scenes {
-		for _, layerCfg := range scene.Layers {
+	for _, sceneCfg := range cfg.Scenes {
+		for _, layerCfg := range sceneCfg.Layers {
 			if _, ok := cfg.Sources[layerCfg.SourceName]; ok {
 				enabledSources[layerCfg.SourceName] = struct{}{}
 			} else {
@@ -221,6 +223,7 @@ type Scene struct {
 }
 
 func (t *Theatre) NumLayers() int {
+	panic("this is incorrect")
 	return len(t.Sources) * len(t.Scenes)
 }
 
