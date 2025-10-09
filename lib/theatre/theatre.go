@@ -346,7 +346,8 @@ func (t *Theatre) ResetToDefaultScenes() error {
 
 func (t *Theatre) ShaderData() *shaders.ShaderData {
 	return &shaders.ShaderData{
-		NumSources: t.NumSources(),
+		NumSources: uint32(t.NumSources()),
 		Sources:    t.SourceList,
+		NumLayers:  t.LayersPerStage,
 	}
 }

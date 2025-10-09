@@ -32,7 +32,8 @@ func NewShaderer() (*Shaderer, error) {
 // ShaderData contains stuff that gets passed to the shader
 type ShaderData struct {
 	Sources    []layer.Source
-	NumSources int
+	NumSources uint32
+	NumLayers  uint32
 }
 
 func (s *Shaderer) GetShaderSource(name string, data *ShaderData) (string, error) {

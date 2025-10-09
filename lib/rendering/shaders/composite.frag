@@ -10,7 +10,7 @@ uniform vec4 layerData[{{ .NumLayers }}];
 uniform uint source[{{ .NumLayers }}];
 uniform uint sourceTypes[{{ .NumSources }}];
 
-vec4 sampleLayerYUV422(vec2 uv, int src_idx, uint src_idx, vec4 dve, vec4 data) {
+vec4 sampleLayerYUV422(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
 	float Y = texture(tex[src_idx*3], tpos).r;
 	float Cb = texture(tex[src_idx*3+2], tpos).r - 0.5;
@@ -32,7 +32,7 @@ vec4 sampleLayerYUV422(vec2 uv, int src_idx, uint src_idx, vec4 dve, vec4 data) 
 	return vec4(col.r, col.g, col.b, a);
 }
 
-vec4 sampleLayerYUYV(vec2 uv, int src_idx, vec4 dve, vec4 data) {
+vec4 sampleLayerYUYV(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
 	vec2 uvpos = (uv / dve.z) - (dve.xy / dve.zw);
 	vec4 src = texture(tex[src_idx*3], uvpos);
@@ -58,19 +58,19 @@ vec4 sampleLayerYUYV(vec2 uv, int src_idx, vec4 dve, vec4 data) {
 	return vec4(col.r, col.g, col.b, a);
 }
 
-vec4 sampleLayerRGBA(vec2 uv, int src_idx, vec4 dve, vec4 data) {
+vec4 sampleLayerRGBA(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	vec4 col = texture(tex[src_idx*3], (uv / dve.z) - (dve.xy / dve.zw));
 	col.a *= data.x;
 	return col;
 }
 
-vec4 sampleLayerRGB(vec2 uv, int src_idx, vec4 dve, vec4 data) {
+vec4 sampleLayerRGB(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	vec4 col = texture(tex[src_idx*3], (uv / dve.z) - (dve.xy / dve.zw));
 	col.a = 1.0;
 	return col;
 }
 
-vec4 sampleLayer(vec2 uv, int src_idx, vec4 dve, vec4 data, uint srcType) {
+vec4 sampleLayer(vec2 uv, uint src_idx, vec4 dve, vec4 data, uint srcType) {
 	if (srcType == 0) { // YUV422Frames
 		return sampleLayerYUV422(uv, src_idx, dve, data);
 	}
@@ -89,7 +89,7 @@ vec4 sampleLayer(vec2 uv, int src_idx, vec4 dve, vec4 data, uint srcType) {
 
 void main() {
     vec4 composite;
-    {{ range $i, $layers := .Layers }}
+    {{ range $i := .NumLayers }}
         vec4 layer_{{ $i }} = sampleLayer(
 			UV, 
 			source[{{ $i }}], 
