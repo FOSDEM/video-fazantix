@@ -12,6 +12,7 @@ type GLVars struct {
 	LayerData     []float32
 	StageData     uint32
 	SourceIndices []uint32
+	SourceTypes   []uint32
 
 	NumTextures int32
 	NumLayers   int32
@@ -27,6 +28,7 @@ type GLVars struct {
 	LayerPosUniform      int32
 	StageDataUniform     int32
 	SourceIndicesUniform int32
+	SourceTypesUniform   int32
 	TexUniform           int32
 }
 
@@ -88,6 +90,9 @@ func (g *GLVars) allocate() {
 	g.SourceIndicesUniform = gl.GetUniformLocation(g.Program, gl.Str("sourceIndices\x00"))
 	gl.Uniform1uiv(g.SourceIndicesUniform, g.NumLayers, &g.SourceIndices[0])
 
+	g.SourceTypesUniform = gl.GetUniformLocation(g.Program, gl.Str("sourceTypes\x00"))
+	gl.Uniform1uiv(g.SourceTypesUniform, g.NumSources, &g.SourceTypes[0])
+
 	g.StageDataUniform = gl.GetUniformLocation(g.Program, gl.Str("stageData\x00"))
 	gl.Uniform1ui(g.StageDataUniform, 0)
 
@@ -110,6 +115,9 @@ func (g *GLVars) loadStage(stage *layer.Stage) {
 		g.LayerPos[(i*4)+3] = layers[i].Size.Y
 		g.LayerData[(i*4)+0] = layers[i].Opacity
 		g.SourceIndices[i] = stage.SourceIndices[i]
+	}
+	for i := range g.NumSources {
+		g.SourceTypes[i] = uint32(stage.SourceTypes[i])
 	}
 	g.StageData = stage.StageData()
 }

@@ -95,6 +95,7 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[stri
 		stage.Layers = make([]*layer.Layer, len(sources))
 		stage.LayersByScene = make(map[string][]*layer.Layer)
 		stage.SourceIndices = make([]uint32, layersPerStage)
+		stage.SourceTypes = make([]encdec.FrameType, len(sources))
 		stage.DefaultScene = stageCfg.DefaultScene
 		stage.PreviewFor = stageCfg.StageCfgStub.PreviewFor
 
@@ -105,6 +106,7 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[stri
 			for j := range layersPerSource[i] {
 				layersBySource[i][j] = layer.New(uint32(i), src, stageCfg.Width, stageCfg.Height)
 			}
+			stage.SourceTypes[i] = src.Frames().FrameType
 		}
 
 		for sceneName, scene := range sceneMap {

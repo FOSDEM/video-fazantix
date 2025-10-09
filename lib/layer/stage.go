@@ -2,11 +2,14 @@ package layer
 
 import (
 	"time"
+
+	"github.com/fosdem/fazantix/lib/encdec"
 )
 
 type Stage struct {
 	Layers        []*Layer
 	SourceIndices []uint32
+	SourceTypes   []encdec.FrameType
 
 	LayersByScene map[string][]*Layer
 
