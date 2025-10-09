@@ -13,10 +13,12 @@ type LayerTransformCfg struct {
 }
 
 type LayerCfg struct {
-	SourceName string             `yaml:"source"`
-	StageName  string             `yaml:"stage"` // for recursive scenes
-	Transform  *LayerTransformCfg `yaml:"transform"`
-	Warp       *LayerTransformCfg `yaml:"warp"`
+	// either SourceName or StageName is supplied, never both
+	SourceName string `yaml:"source"`
+	StageName  string `yaml:"stage"` // for recursive scenes
+
+	Transform *LayerTransformCfg `yaml:"transform"`
+	Warp      *LayerTransformCfg `yaml:"warp"`
 }
 
 func (l *LayerCfg) Validate() error {
