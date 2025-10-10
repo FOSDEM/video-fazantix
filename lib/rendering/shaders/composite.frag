@@ -7,7 +7,7 @@ out vec4 color;
 uniform sampler2D tex[{{ .NumSources }} * 3];
 uniform vec4 layerPosition[{{ .NumLayers }}];
 uniform vec4 layerData[{{ .NumLayers }}];
-uniform uint source[{{ .NumLayers }}];
+uniform uint sourceIndices[{{ .NumLayers }}];
 uniform uint sourceTypes[{{ .NumSources }}];
 
 vec4 sampleLayerYUV422(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
@@ -91,11 +91,11 @@ void main() {
     vec4 composite;
     {{ range $i := .NumLayers }}
         vec4 layer_{{ $i }} = sampleLayer(
-			UV, 
-			source[{{ $i }}], 
-			layerPosition[{{ $i }}], 
+			UV,
+			sourceIndices[{{ $i }}],
+			layerPosition[{{ $i }}],
 			layerData[{{ $i }}],
-			sourceTypes[source[{{ $i }}]]
+			sourceTypes[sourceIndices[{{ $i }}]]
 		);
 
         {{ if eq $i 0 }}
