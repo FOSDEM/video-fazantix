@@ -32,6 +32,18 @@ vec4 sampleLayerYUV422(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	return vec4(col.r, col.g, col.b, a);
 }
 
+vec4 sampleLayerDebugBBox(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
+	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
+	float a = 1.0;
+	if(tpos.x < 0 || tpos.x > 1.0) {
+		a = 0.0;
+	}
+	if(tpos.y < 0 || tpos.y > 1.0) {
+		a = 0.0;
+	}
+	return vec4(0, 0.1 * src_idx * a, tpos.x * a, a);
+}
+
 vec4 sampleLayerYUYV(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
 	vec2 uvpos = (uv / dve.z) - (dve.xy / dve.zw);
@@ -71,6 +83,7 @@ vec4 sampleLayerRGB(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 }
 
 vec4 sampleLayer(vec2 uv, uint src_idx, vec4 dve, vec4 data, uint srcType) {
+	return sampleLayerDebugBBox(uv, src_idx, dve, data);
 	if (srcType == 0) { // YUV422Frames
 		return sampleLayerYUV422(uv, src_idx, dve, data);
 	}
