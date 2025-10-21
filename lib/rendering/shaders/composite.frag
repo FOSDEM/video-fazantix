@@ -83,7 +83,7 @@ vec4 sampleLayerRGB(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 }
 
 vec4 sampleLayer(vec2 uv, uint src_idx, vec4 dve, vec4 data, uint srcType) {
-	return sampleLayerDebugBBox(uv, src_idx, dve, data);
+	// return sampleLayerDebugBBox(uv, src_idx, dve, data);
 	if (srcType == 0) { // YUV422Frames
 		return sampleLayerYUV422(uv, src_idx, dve, data);
 	}

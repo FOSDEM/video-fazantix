@@ -112,7 +112,7 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[stri
 		for sceneName, scene := range sceneMap {
 			layerIndices := make([]uint32, len(sources))
 			// SourceOrder may have repeating elements
-			for srcIdx := range scene.SourceOrder {
+			for _, srcIdx := range scene.SourceOrder {
 				stage.LayersByScene[sceneName] = append(
 					stage.LayersByScene[sceneName],
 					layersBySource[srcIdx][layerIndices[srcIdx]],
