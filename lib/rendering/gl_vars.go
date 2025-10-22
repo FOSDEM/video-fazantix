@@ -16,7 +16,7 @@ type GLVars struct {
 
 	NumTextures int32
 	NumLayers   int32
-	NumSources  int32
+	Sources     []layer.Source
 
 	Program uint32
 
@@ -32,11 +32,11 @@ type GLVars struct {
 	TexUniform           int32
 }
 
-func NewGLVars(program uint32, numSources int32, numLayers int32) *GLVars {
+func NewGLVars(program uint32, numLayers int32, sources []layer.Source) *GLVars {
 	g := &GLVars{}
 
 	g.NumLayers = numLayers
-	g.NumSources = numSources
+	g.Sources = sources
 	g.Program = program
 
 	return g
@@ -90,15 +90,15 @@ func (g *GLVars) allocate() {
 	g.SourceIndicesUniform = gl.GetUniformLocation(g.Program, gl.Str("sourceIndices\x00"))
 	gl.Uniform1uiv(g.SourceIndicesUniform, g.NumLayers, &g.SourceIndices[0])
 
-	g.SourceTypes = make([]uint32, g.NumSources)
+	g.SourceTypes = make([]uint32, len(g.Sources))
 	g.SourceTypesUniform = gl.GetUniformLocation(g.Program, gl.Str("sourceTypes\x00"))
-	gl.Uniform1uiv(g.SourceTypesUniform, g.NumSources, &g.SourceTypes[0])
+	gl.Uniform1uiv(g.SourceTypesUniform, int32(len(g.Sources)), &g.SourceTypes[0])
 
 	g.StageDataUniform = gl.GetUniformLocation(g.Program, gl.Str("stageData\x00"))
 	gl.Uniform1ui(g.StageDataUniform, 0)
 
 	// Allocate 3 textures for every source in case of planar YUV
-	g.NumTextures = g.NumSources * 3
+	g.NumTextures = int32(len(g.Sources) * 3)
 	g.Textures = make([]int32, g.NumTextures)
 	for i := range g.NumTextures {
 		g.Textures[i] = int32(i)
@@ -117,7 +117,7 @@ func (g *GLVars) loadStage(stage *layer.Stage) {
 		g.LayerData[(i*4)+0] = layers[i].Opacity
 		g.SourceIndices[i] = stage.SourceIndices[i]
 	}
-	for i := range g.NumSources {
+	for i := range len(g.Sources) {
 		g.SourceTypes[i] = uint32(stage.SourceTypes[i])
 	}
 	g.StageData = stage.StageData()
@@ -128,7 +128,7 @@ func (g *GLVars) pushStageVars() {
 	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
 	gl.Uniform4fv(g.LayerPosUniform, g.NumLayers, &g.LayerPos[0])
 	gl.Uniform1uiv(g.SourceIndicesUniform, g.NumLayers, &g.SourceIndices[0])
-	gl.Uniform1uiv(g.SourceTypesUniform, g.NumSources, &g.SourceTypes[0])
+	gl.Uniform1uiv(g.SourceTypesUniform, int32(len(g.Sources)), &g.SourceTypes[0])
 
 	// draw vertices on the window stage
 	gl.DrawArrays(gl.TRIANGLES, 0, 1*3)
