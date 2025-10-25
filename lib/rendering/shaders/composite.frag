@@ -7,8 +7,17 @@ out vec4 color;
 uniform sampler2D tex[{{ .NumSources }} * 3];
 uniform vec4 layerPosition[{{ .NumLayers }}];
 uniform vec4 layerData[{{ .NumLayers }}];
-uniform uint sourceIndices[{{ .NumLayers }}];
+uniform int sourceIndices[{{ .NumLayers }}];
 uniform uint sourceTypes[{{ .NumSources }}];
+
+vec4 fallbackColour() {
+	return vec4(
+		{{ .FallbackColour.R }},
+		{{ .FallbackColour.G }},
+		{{ .FallbackColour.B }},
+		{{ .FallbackColour.A }}
+	);
+}
 
 vec4 sampleLayerYUV422(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
@@ -82,22 +91,22 @@ vec4 sampleLayerRGB(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	return col;
 }
 
-vec4 sampleLayer(vec2 uv, uint src_idx, vec4 dve, vec4 data, uint srcType) {
+vec4 sampleLayer(vec2 uv, int src_idx, vec4 dve, vec4 data, uint srcType) {
 	// return sampleLayerDebugBBox(uv, src_idx, dve, data);
-	if (srcType == 0) { // YUV422Frames
+	if (src_idx >= 0 && srcType == 0) { // YUV422Frames
 		return sampleLayerYUV422(uv, src_idx, dve, data);
 	}
-	if (srcType == 1) { // YUV422pFrames
+	if (src_idx >= 0 && srcType == 1) { // YUV422pFrames
 		return sampleLayerYUV422(uv, src_idx, dve, data);
 	}
-	if (srcType == 2) { // RGBAFrames
+	if (src_idx >= 0 && srcType == 2) { // RGBAFrames
 		return sampleLayerRGBA(uv, src_idx, dve, data);
 	}
-	if (srcType == 3) { // RGBFrames
+	if (src_idx >= 0 && srcType == 3) { // RGBFrames
 		return sampleLayerRGB(uv, src_idx, dve, data);
 	}
 
-	return vec4(0, 0, 0, 0);
+	return fallbackColour();
 }
 
 void main() {

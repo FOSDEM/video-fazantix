@@ -2,6 +2,7 @@ package theatre
 
 import (
 	"fmt"
+	"image/color"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
@@ -14,13 +15,17 @@ import (
 	"github.com/fosdem/fazantix/lib/source/ffmpegsource"
 	"github.com/fosdem/fazantix/lib/source/imgsource"
 	"github.com/fosdem/fazantix/lib/source/v4lsource"
+	"github.com/fosdem/fazantix/lib/utils"
 )
 
 type Theatre struct {
-	Sources    map[string]layer.Source
-	SourceList []layer.Source
-	Scenes     map[string]*Scene
-	Stages     map[string]*layer.Stage
+	SourceList      []layer.Source
+	SourceIdxByName map[string]uint32
+	Scenes          map[string]*Scene
+	Stages          map[string]*layer.Stage
+
+	FallbackSourceIndices []int32
+	FallbackColour        color.RGBA
 
 	WindowStageList    []*layer.Stage
 	NonWindowStageList []*layer.Stage
@@ -41,7 +46,8 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		return nil, err
 	}
 	sourceMap := buildSourceMap(sourceList)
-	sceneMap := buildSceneMap(cfg, sourceList)
+	fallbackSourceIndices := buildFallbackSources(cfg, sourceMap)
+	sceneMap := buildSceneMap(cfg, sourceList, sourceMap)
 	stageMap, layersPerStage := buildStageMap(cfg, sourceList, sceneMap, alloc)
 	var windowStageList []*layer.Stage
 	var windowSinkList []*windowsink.WindowSink
@@ -59,15 +65,17 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 	}
 
 	t := &Theatre{
-		Sources:            sourceMap,
-		SourceList:         sourceList,
-		Scenes:             sceneMap,
-		Stages:             stageMap,
-		WindowStageList:    windowStageList,
-		NonWindowStageList: nonWindowStageList,
-		listener:           make(map[string][]EventListener),
-		WindowSinkList:     windowSinkList,
-		LayersPerStage:     layersPerStage,
+		SourceList:            sourceList,
+		SourceIdxByName:       sourceMap,
+		Scenes:                sceneMap,
+		Stages:                stageMap,
+		FallbackSourceIndices: fallbackSourceIndices,
+		FallbackColour:        utils.ColourParse(cfg.FallbackColour),
+		WindowStageList:       windowStageList,
+		NonWindowStageList:    nonWindowStageList,
+		listener:              make(map[string][]EventListener),
+		WindowSinkList:        windowSinkList,
+		LayersPerStage:        layersPerStage,
 	}
 
 	return t, nil
@@ -94,7 +102,7 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[stri
 		stage.SetSpeed(time.Duration(*stageCfg.TransitionTimeMs) * time.Millisecond)
 		stage.Layers = make([]*layer.Layer, len(sources))
 		stage.LayersByScene = make(map[string][]*layer.Layer)
-		stage.SourceIndices = make([]uint32, layersPerStage)
+		stage.SourceIndices = make([]int32, layersPerStage)
 		stage.SourceTypes = make([]encdec.FrameType, len(sources))
 		stage.DefaultScene = stageCfg.DefaultScene
 		stage.PreviewFor = stageCfg.StageCfgStub.PreviewFor
@@ -177,13 +185,8 @@ func buildDynamicScenes(cfg *config.Config) {
 	}
 }
 
-func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene {
+func buildSceneMap(cfg *config.Config, sources []layer.Source, sourceIdxByName map[string]uint32) map[string]*Scene {
 	scenes := make(map[string]*Scene)
-
-	sourceIndexByName := make(map[string]uint32)
-	for i := range sources {
-		sourceIndexByName[sources[i].Frames().Name] = uint32(i)
-	}
 
 	for sceneName, sceneCfg := range cfg.Scenes {
 		if sceneCfg.Label == "" {
@@ -201,7 +204,7 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source) map[string]*Scene
 
 		for _, layerCfg := range sceneCfg.Layers {
 			if layerCfg.SourceName != "" {
-				srcIdx := sourceIndexByName[layerCfg.SourceName]
+				srcIdx := sourceIdxByName[layerCfg.SourceName]
 				scene.LayerStatesBySourceIdx[srcIdx] = append(
 					scene.LayerStatesBySourceIdx[srcIdx],
 					layerCfg.CopyState(),
@@ -247,10 +250,24 @@ func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.S
 	return sources, nil
 }
 
-func buildSourceMap(sources []layer.Source) map[string]layer.Source {
-	sm := make(map[string]layer.Source)
-	for _, src := range sources {
-		sm[src.Frames().Name] = src
+func buildFallbackSources(cfg *config.Config, sourceIdxByName map[string]uint32) []int32 {
+	fallbackSources := make([]int32, len(sourceIdxByName))
+	for name, idx := range sourceIdxByName {
+		srcCfg := cfg.Sources[name]
+		if srcCfg.Fallback != "" {
+			fallbackSources[idx] = int32(sourceIdxByName[srcCfg.Fallback])
+		} else {
+			fallbackSources[idx] = -1
+		}
+	}
+
+	return fallbackSources
+}
+
+func buildSourceMap(sources []layer.Source) map[string]uint32 {
+	sm := make(map[string]uint32)
+	for i, src := range sources {
+		sm[src.Frames().Name] = uint32(i)
 	}
 	return sm
 }
@@ -264,7 +281,7 @@ type Scene struct {
 }
 
 func (t *Theatre) NumSources() int {
-	return len(t.Sources)
+	return len(t.SourceList)
 }
 
 func (t *Theatre) Start() {
@@ -276,7 +293,7 @@ func (t *Theatre) Start() {
 	for _, stage := range t.WindowStageList {
 		stage.Sink.Start()
 	}
-	for _, src := range t.Sources {
+	for _, src := range t.SourceList {
 		if src.Start() {
 			rendering.SetupTextures(src.Frames())
 		}
@@ -304,7 +321,7 @@ func (t *Theatre) SetTransitionSpeed(stageName string, transitionDuration time.D
 }
 
 func (t *Theatre) SetScene(stageName string, sceneName string, transition bool) error {
-	idxBySrc := make([]int, len(t.Sources))
+	idxBySrc := make([]int, len(t.SourceList))
 
 	if stage, ok := t.Stages[stageName]; ok {
 		if scene, ok := t.Scenes[sceneName]; ok {
@@ -319,7 +336,7 @@ func (t *Theatre) SetScene(stageName string, sceneName string, transition bool) 
 					// make the rest of the layers for this source invisible
 					layer.ApplyState(nil, false)
 				}
-				stage.SourceIndices[i] = layer.SourceIdx
+				stage.SourceIndices[i] = int32(layer.SourceIdx)
 			}
 		} else {
 			return fmt.Errorf("no such stage: %s", stageName)
@@ -346,8 +363,17 @@ func (t *Theatre) ResetToDefaultScenes() error {
 
 func (t *Theatre) ShaderData() *shaders.ShaderData {
 	return &shaders.ShaderData{
-		NumSources: uint32(t.NumSources()),
-		Sources:    t.SourceList,
-		NumLayers:  t.LayersPerStage,
+		NumSources:     uint32(t.NumSources()),
+		Sources:        t.SourceList,
+		NumLayers:      t.LayersPerStage,
+		FallbackColour: t.FallbackColour,
 	}
+}
+
+func (t *Theatre) SourceByName(name string) layer.Source {
+	idx, ok := t.SourceIdxByName[name]
+	if !ok {
+		return nil
+	}
+	return t.SourceList[idx]
 }

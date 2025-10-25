@@ -50,7 +50,7 @@ func (a *Api) handleMediaSource(w http.ResponseWriter, req *http.Request) {
 	}
 	var source FrameForwarderObject
 	if sourceName != "" {
-		source = a.theatre.Sources[sourceName]
+		source = a.theatre.SourceByName(sourceName)
 		if source == nil {
 			http.Error(w, "Source does not exist", http.StatusNotFound)
 			return

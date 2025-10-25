@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"image/color"
 	"text/template"
 
 	"github.com/fosdem/fazantix/lib/layer"
@@ -31,9 +32,10 @@ func NewShaderer() (*Shaderer, error) {
 
 // ShaderData contains stuff that gets passed to the shader
 type ShaderData struct {
-	Sources    []layer.Source
-	NumSources uint32
-	NumLayers  uint32
+	Sources        []layer.Source
+	NumSources     uint32
+	NumLayers      uint32
+	FallbackColour color.RGBA
 }
 
 func (s *Shaderer) GetShaderSource(name string, data *ShaderData) (string, error) {

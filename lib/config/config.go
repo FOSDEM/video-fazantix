@@ -7,14 +7,16 @@ import (
 	"strings"
 
 	"github.com/fosdem/fazantix/lib/encdec"
+	"github.com/fosdem/fazantix/lib/utils"
 	yaml "github.com/goccy/go-yaml"
 )
 
 type Config struct {
-	Sources map[string]*SourceCfg
-	Scenes  map[string]*SceneCfg
-	Stages  map[string]*StageCfg `yaml:"sinks"`
-	Api     *ApiCfg
+	Sources        map[string]*SourceCfg
+	Scenes         map[string]*SceneCfg
+	Stages         map[string]*StageCfg `yaml:"sinks"`
+	FallbackColour string               `yaml:"fallback_colour"`
+	Api            *ApiCfg
 }
 
 func Parse(filename string) (*Config, error) {
@@ -61,6 +63,9 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("source %s is invalid: %w", k, err)
 		}
+		if _, ok := c.Sources[v.Fallback]; !ok && v.Fallback != "" {
+			return fmt.Errorf("%s cannot be used as fallback source (no such source)", v.Fallback)
+		}
 	}
 	for k, v := range c.Stages {
 		err = v.Validate()
@@ -88,6 +93,13 @@ func (c *Config) Validate() error {
 				}
 			}
 		}
+	}
+
+	if c.FallbackColour == "" {
+		return fmt.Errorf("please set fallback_colour in the config")
+	}
+	if !utils.ColourValidate(c.FallbackColour) {
+		return fmt.Errorf("%s is not a valid RGBA hex colour", c.FallbackColour)
 	}
 	return nil
 }
@@ -119,6 +131,7 @@ type SourceCfgStub struct {
 	MakeScene bool
 	Tag       string
 	Label     string
+	Fallback  string
 }
 
 type SceneCfg struct {

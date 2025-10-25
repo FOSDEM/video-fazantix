@@ -8,7 +8,7 @@ import (
 
 type Stage struct {
 	Layers        []*Layer
-	SourceIndices []uint32
+	SourceIndices []int32
 	SourceTypes   []encdec.FrameType
 
 	LayersByScene map[string][]*Layer

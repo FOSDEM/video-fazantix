@@ -140,6 +140,36 @@ scenes:
           scale: 0.001
           right: -0.04
           bottom: -0.1
+  default2:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: test2
+        transform:
+          left: -0.04
+          top: -0.04
+          scale: 0.79
+          opacity: 1
+        warp:
+          opacity: 0
+          cx: 0.5
+          cy: 0.5
+          scale: 0.1
+      - source: test1
+        transform:
+          right: -0.04
+          bottom: -0.1
+          scale: 0.25
+          opacity: 1
+        warp:
+          opacity: 1
+          scale: 0.001
+          right: -0.04
+          bottom: -0.1
 
 sinks:
   projector:
@@ -154,3 +184,4 @@ api:
   bind: ':8000'
   enable_profiler: true
 
+fallback_colour: '#ebac54ff'

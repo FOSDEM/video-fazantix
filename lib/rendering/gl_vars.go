@@ -11,12 +11,16 @@ type GLVars struct {
 	LayerPos      []float32
 	LayerData     []float32
 	StageData     uint32
-	SourceIndices []uint32
+	SourceIndices []int32
 	SourceTypes   []uint32
 
 	NumTextures int32
 	NumLayers   int32
 	Sources     []layer.Source
+
+	// FallbackIndices stores an index for each source which acts as
+	// a fallback source, or -1 if such does not exist
+	FallbackIndices []int32
 
 	Program uint32
 
@@ -32,11 +36,12 @@ type GLVars struct {
 	TexUniform           int32
 }
 
-func NewGLVars(program uint32, numLayers int32, sources []layer.Source) *GLVars {
+func NewGLVars(program uint32, numLayers int32, sources []layer.Source, fallbackSourceIndices []int32) *GLVars {
 	g := &GLVars{}
 
 	g.NumLayers = numLayers
 	g.Sources = sources
+	g.FallbackIndices = fallbackSourceIndices
 	g.Program = program
 
 	return g
@@ -86,9 +91,9 @@ func (g *GLVars) allocate() {
 	g.LayerDataUniform = gl.GetUniformLocation(g.Program, gl.Str("layerData\x00"))
 	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
 
-	g.SourceIndices = make([]uint32, g.NumLayers)
+	g.SourceIndices = make([]int32, g.NumLayers)
 	g.SourceIndicesUniform = gl.GetUniformLocation(g.Program, gl.Str("sourceIndices\x00"))
-	gl.Uniform1uiv(g.SourceIndicesUniform, g.NumLayers, &g.SourceIndices[0])
+	gl.Uniform1iv(g.SourceIndicesUniform, g.NumLayers, &g.SourceIndices[0])
 
 	g.SourceTypes = make([]uint32, len(g.Sources))
 	g.SourceTypesUniform = gl.GetUniformLocation(g.Program, gl.Str("sourceTypes\x00"))
@@ -115,7 +120,12 @@ func (g *GLVars) loadStage(stage *layer.Stage) {
 		g.LayerPos[(i*4)+2] = layers[i].Size.X
 		g.LayerPos[(i*4)+3] = layers[i].Size.Y
 		g.LayerData[(i*4)+0] = layers[i].Opacity
-		g.SourceIndices[i] = stage.SourceIndices[i]
+
+		sourceIndex := stage.SourceIndices[i]
+		for sourceIndex != -1 && !g.Sources[sourceIndex].Frames().IsReady {
+			sourceIndex = g.FallbackIndices[sourceIndex]
+		}
+		g.SourceIndices[i] = sourceIndex
 	}
 	for i := range len(g.Sources) {
 		g.SourceTypes[i] = uint32(stage.SourceTypes[i])
@@ -127,7 +137,7 @@ func (g *GLVars) pushStageVars() {
 	gl.Uniform1ui(g.StageDataUniform, g.StageData)
 	gl.Uniform4fv(g.LayerDataUniform, g.NumLayers, &g.LayerData[0])
 	gl.Uniform4fv(g.LayerPosUniform, g.NumLayers, &g.LayerPos[0])
-	gl.Uniform1uiv(g.SourceIndicesUniform, g.NumLayers, &g.SourceIndices[0])
+	gl.Uniform1iv(g.SourceIndicesUniform, g.NumLayers, &g.SourceIndices[0])
 	gl.Uniform1uiv(g.SourceTypesUniform, int32(len(g.Sources)), &g.SourceTypes[0])
 
 	// draw vertices on the window stage

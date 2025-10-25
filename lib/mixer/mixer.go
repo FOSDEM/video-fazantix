@@ -34,7 +34,7 @@ func MakeWindowAndMix(cfg *config.Config) {
 		log.Fatalf("could not init GL program: %s", err)
 	}
 
-	glvars := rendering.NewGLVars(program, int32(theatre.LayersPerStage), theatre.SourceList)
+	glvars := rendering.NewGLVars(program, int32(theatre.LayersPerStage), theatre.SourceList, theatre.FallbackSourceIndices)
 
 	if len(theatre.WindowSinkList) > 1 {
 		log.Fatalf("multiple window sinks are not supported yet")
