@@ -214,14 +214,33 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source, sourceIdxByName m
 	return scenes
 }
 
+func addEnabledSource(srcName string, cfg *config.Config, enabledSources map[string]struct{}) error {
+	if _, ok := cfg.Sources[srcName]; !ok {
+		return fmt.Errorf("no such source: %s", srcName)
+	}
+
+	enabledSources[srcName] = struct{}{}
+
+	if cfg.Sources[srcName].Fallback != "" {
+		err := addEnabledSource(
+			cfg.Sources[srcName].Fallback,
+			cfg, enabledSources,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.Source, error) {
 	enabledSources := make(map[string]struct{})
 	for _, sceneCfg := range cfg.Scenes {
 		for _, layerCfg := range sceneCfg.Layers {
-			if _, ok := cfg.Sources[layerCfg.SourceName]; ok {
-				enabledSources[layerCfg.SourceName] = struct{}{}
-			} else {
-				return nil, fmt.Errorf("no such source: %s", layerCfg.SourceName)
+			err := addEnabledSource(layerCfg.SourceName, cfg, enabledSources)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
