@@ -2,7 +2,6 @@ package theatre
 
 import (
 	"fmt"
-	"image/color"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
@@ -25,7 +24,7 @@ type Theatre struct {
 	Stages          map[string]*layer.Stage
 
 	FallbackSourceIndices []int32
-	FallbackColour        color.RGBA
+	FallbackColour        utils.Colour
 
 	WindowStageList    []*layer.Stage
 	NonWindowStageList []*layer.Stage

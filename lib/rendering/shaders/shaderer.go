@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"image/color"
 	"text/template"
 
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/utils"
 )
 
 //go:embed *.frag *.vert
@@ -35,7 +35,7 @@ type ShaderData struct {
 	Sources        []layer.Source
 	NumSources     uint32
 	NumLayers      uint32
-	FallbackColour color.RGBA
+	FallbackColour utils.Colour
 }
 
 func (s *Shaderer) GetShaderSource(name string, data *ShaderData) (string, error) {
