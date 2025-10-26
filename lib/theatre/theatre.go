@@ -320,6 +320,11 @@ func (t *Theatre) SetScene(stageName string, sceneName string, transition bool) 
 
 	if stage, ok := t.Stages[stageName]; ok {
 		if scene, ok := t.Scenes[sceneName]; ok {
+			t.invoke("set-scene", EventDataSetScene{
+				Stage: stageName,
+				Scene: sceneName,
+			})
+
 			stage.Layers = stage.LayersByScene[sceneName]
 			for i, layer := range stage.Layers {
 				j := idxBySrc[layer.SourceIdx]
