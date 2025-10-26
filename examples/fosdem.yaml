@@ -49,7 +49,7 @@ sources:
     z: 8
   pheasant:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     frames:
       width: 1920
       height: 1080

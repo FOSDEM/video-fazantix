@@ -20,21 +20,21 @@ sources:
       num_allocated_frames: 5
   pheasant:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     frames:
       width: 1920
       height: 1080
       num_allocated_frames: 5
   cows:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     frames:
       width: 1920
       height: 1080
       num_allocated_frames: 5
   fazantfazantfazant:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     frames:
       width: 1920
       height: 1080
@@ -123,3 +123,4 @@ api:
   enable_profiler: true
 
 fallback_colour: '#ebac54ff'
+bg_colour: '#54acebff'
