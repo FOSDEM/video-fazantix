@@ -2,6 +2,7 @@ package rendering
 
 import (
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/utils"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
@@ -24,6 +25,8 @@ type GLVars struct {
 
 	Program uint32
 
+	BGColour utils.Colour
+
 	// GL IDs
 	VAO                  uint32
 	VBO                  uint32
@@ -36,20 +39,21 @@ type GLVars struct {
 	TexUniform           int32
 }
 
-func NewGLVars(program uint32, numLayers int32, sources []layer.Source, fallbackSourceIndices []int32) *GLVars {
+func NewGLVars(program uint32, numLayers int32, sources []layer.Source, fallbackSourceIndices []int32, bgColour utils.Colour) *GLVars {
 	g := &GLVars{}
 
 	g.NumLayers = numLayers
 	g.Sources = sources
 	g.FallbackIndices = fallbackSourceIndices
 	g.Program = program
+	g.BGColour = bgColour
 
 	return g
 }
 
 func (g *GLVars) Start() {
 	g.allocate()
-	gl.ClearColor(1.0, 0.0, 0.0, 1.0)
+	gl.ClearColor(g.BGColour.R, g.BGColour.G, g.BGColour.B, g.BGColour.A)
 	gl.UseProgram(g.Program)
 	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
 }

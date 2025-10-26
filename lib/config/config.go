@@ -16,6 +16,7 @@ type Config struct {
 	Scenes         map[string]*SceneCfg
 	Stages         map[string]*StageCfg `yaml:"sinks"`
 	FallbackColour string               `yaml:"fallback_colour"`
+	BGColour       string               `yaml:"bg_colour"`
 	Api            *ApiCfg
 }
 
@@ -100,6 +101,13 @@ func (c *Config) Validate() error {
 	}
 	if !utils.ColourValidate(c.FallbackColour) {
 		return fmt.Errorf("%s is not a valid RGBA hex colour", c.FallbackColour)
+	}
+
+	if c.BGColour == "" {
+		return fmt.Errorf("please set bg_colour in the config")
+	}
+	if !utils.ColourValidate(c.BGColour) {
+		return fmt.Errorf("%s is not a valid RGBA hex colour", c.BGColour)
 	}
 	return nil
 }
