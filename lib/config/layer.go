@@ -13,12 +13,9 @@ type LayerTransformCfg struct {
 }
 
 type LayerCfg struct {
-	// either SourceName or StageName is supplied, never both
-	SourceName string `yaml:"source"`
-	StageName  string `yaml:"stage"` // for recursive scenes
-
-	Transform *LayerTransformCfg `yaml:"transform"`
-	Warp      *LayerTransformCfg `yaml:"warp"`
+	SourceName string             `yaml:"source"`
+	Transform  *LayerTransformCfg `yaml:"transform"`
+	Warp       *LayerTransformCfg `yaml:"warp"`
 }
 
 func (l *LayerCfg) Validate() error {
@@ -26,8 +23,8 @@ func (l *LayerCfg) Validate() error {
 		return fmt.Errorf("please add a 'transform' key to the layer definition")
 	}
 
-	if l.SourceName != "" && l.StageName != "" {
-		return fmt.Errorf("layer cannot take its input from two places (please specify only one of 'source' and 'stage'")
+	if l.SourceName == "" {
+		return fmt.Errorf("source must be specified")
 	}
 
 	err := l.Transform.Validate()

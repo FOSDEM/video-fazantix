@@ -202,16 +202,12 @@ func buildSceneMap(cfg *config.Config, sources []layer.Source, sourceIdxByName m
 		}
 
 		for _, layerCfg := range sceneCfg.Layers {
-			if layerCfg.SourceName != "" {
-				srcIdx := sourceIdxByName[layerCfg.SourceName]
-				scene.LayerStatesBySourceIdx[srcIdx] = append(
-					scene.LayerStatesBySourceIdx[srcIdx],
-					layerCfg.CopyState(),
-				)
-				scene.SourceOrder = append(scene.SourceOrder, srcIdx)
-			} else if layerCfg.StageName != "" {
-				panic("stage sources not yet supported")
-			}
+			srcIdx := sourceIdxByName[layerCfg.SourceName]
+			scene.LayerStatesBySourceIdx[srcIdx] = append(
+				scene.LayerStatesBySourceIdx[srcIdx],
+				layerCfg.CopyState(),
+			)
+			scene.SourceOrder = append(scene.SourceOrder, srcIdx)
 		}
 		scenes[sceneName] = scene
 	}

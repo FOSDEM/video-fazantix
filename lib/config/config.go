@@ -83,15 +83,8 @@ func (c *Config) Validate() error {
 			if err != nil {
 				return fmt.Errorf("scene %s layer %d is invalid: %w", k, i, err)
 			}
-			if layerCfg.SourceName != "" {
-				if _, ok := c.Sources[layerCfg.SourceName]; !ok {
-					return fmt.Errorf("scene %s layer %d refers to non-existant source %s", k, i, layerCfg.SourceName)
-				}
-			}
-			if layerCfg.StageName != "" {
-				if _, ok := c.Stages[layerCfg.StageName]; !ok {
-					return fmt.Errorf("scene %s layer %d refers to non-existant source %s", k, i, layerCfg.SourceName)
-				}
+			if _, ok := c.Sources[layerCfg.SourceName]; !ok {
+				return fmt.Errorf("scene %s layer %d refers to non-existant source %s", k, i, layerCfg.SourceName)
 			}
 		}
 	}
