@@ -91,6 +91,21 @@ vec4 sampleLayerRGB(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	return col;
 }
 
+vec4 sampleLayerFallback(vec2 uv, vec4 dve) {
+	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
+
+	vec4 col = fallbackColour();
+
+	if(tpos.x < 0 || tpos.x > 1.0) {
+		col.a = 0.0;
+	}
+	if(tpos.y < 0 || tpos.y > 1.0) {
+		col.a = 0.0;
+	}
+
+	return col;
+}
+
 vec4 sampleLayer(vec2 uv, int src_idx, vec4 dve, vec4 data, uint srcType) {
 	// return sampleLayerDebugBBox(uv, src_idx, dve, data);
 	if (src_idx >= 0 && srcType == 0) { // YUV422Frames
@@ -106,7 +121,7 @@ vec4 sampleLayer(vec2 uv, int src_idx, vec4 dve, vec4 data, uint srcType) {
 		return sampleLayerRGB(uv, src_idx, dve, data);
 	}
 
-	return fallbackColour();
+	return sampleLayerFallback(uv, dve);
 }
 
 void main() {
