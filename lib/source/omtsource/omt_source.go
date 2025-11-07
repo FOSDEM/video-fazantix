@@ -10,22 +10,22 @@ import (
 )
 
 type OmtSource struct {
-	name   string
-	frames layer.FrameForwarder
-	recv   *libomt.OmtReceive
+	name       string
+	frames     layer.FrameForwarder
+	recv       *libomt.OmtReceive
+	dummyFrame *encdec.Frame
 }
 
 func New(name string, cfg *config.OmtSourceCfg, alloc encdec.FrameAllocator) *OmtSource {
 	f := &OmtSource{name: cfg.Name}
-	f.frames.Init(
-		name,
-		&encdec.FrameInfo{
-			FrameType: encdec.RGBAFrames,
-			PixFmt:    []uint8{},
-			FrameCfg:  cfg.FrameCfg,
-		},
-		alloc,
-	)
+	frameInfo := &encdec.FrameInfo{
+		FrameType: encdec.RGBAFrames,
+		PixFmt:    []uint8{},
+		FrameCfg:  cfg.FrameCfg,
+	}
+
+	f.frames.Init(name, frameInfo, alloc)
+	f.dummyFrame = alloc.NewFrame(frameInfo)
 	return f
 }
 
@@ -43,9 +43,8 @@ func (f *OmtSource) receiveLoop() {
 	for {
 		frame := f.frames.GetFrameForWriting()
 		if frame == nil {
-			panic("framedropping for ffmpeg sources not yet implemented")
-			// TODO: here we should discard the exact amount of data from
-			// ffmpeg's stdout and continue the loop
+			// drop frame
+			f.recv.Receive(libomt.Video, 33, f.dummyFrame.Data)
 		}
 
 		err := encdec.PrepareRGBA(frame)
