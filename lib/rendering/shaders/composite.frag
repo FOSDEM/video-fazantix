@@ -10,15 +10,6 @@ uniform vec4 layerData[{{ .NumLayers }}];
 uniform int sourceIndices[{{ .NumLayers }}];
 uniform uint sourceTypes[{{ .NumSources }}];
 
-vec4 fallbackColour() {
-	return vec4(
-		{{ .FallbackColour.R }},
-		{{ .FallbackColour.G }},
-		{{ .FallbackColour.B }},
-		{{ .FallbackColour.A }}
-	);
-}
-
 vec4 sampleLayerYUV422(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
 	float Y = texture(tex[src_idx*3], tpos).r;
@@ -96,7 +87,12 @@ vec4 sampleLayerRGB(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 vec4 sampleLayerFallback(vec2 uv, vec4 dve) {
 	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
 
-	vec4 col = fallbackColour();
+	vec4 col = vec4(
+		{{ .FallbackColour.R }},
+		{{ .FallbackColour.G }},
+		{{ .FallbackColour.B }},
+		{{ .FallbackColour.A }}
+	);
 
 	if(tpos.x < 0 || tpos.x > 1.0) {
 		col.a = 0.0;
