@@ -45,6 +45,7 @@ func (f *OmtSource) receiveLoop() {
 		if frame == nil {
 			// drop frame
 			f.recv.Receive(libomt.Video, 33, f.dummyFrame.Data)
+			continue
 		}
 
 		err := encdec.PrepareRGBA(frame)
