@@ -25,10 +25,11 @@ vec4 sampleLayerYUV422(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	float Cb = texture(tex[src_idx*3+2], tpos).r - 0.5;
 	float Cr = texture(tex[src_idx*3+1], tpos).r - 0.5;
 	vec3 yuv = vec3(Y, Cr, Cb);
-        mat3 colorMatrix = mat3(
-                1,   0,       1.402,
-                1,  -0.344,  -0.714,
-                1,   1.772,   0);
+	mat3 colorMatrix = mat3(
+		1,   0,       1.402,
+		1,  -0.344,  -0.714,
+		1,   1.772,   0
+	);
 	vec3 col = yuv * colorMatrix;
 	float a = 1.0;
 	if(tpos.x < 0 || tpos.x > 1.0) {
@@ -63,10 +64,11 @@ vec4 sampleLayerYUYV(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 	float Cr = src.g - 0.5;
 	float Cb = src.a - 0.5;
 	vec3 yuv = vec3(Y, Cr, Cb);
-        mat3 colorMatrix = mat3(
-                1,   0,       1.402,
-                1,  -0.344,  -0.714,
-                1,   1.772,   0);
+	mat3 colorMatrix = mat3(
+		1,   0,       1.402,
+		1,  -0.344,  -0.714,
+		1,   1.772,   0
+	);
 	vec3 col = yuv * colorMatrix;
 	float a = 1.0;
 	if(tpos.x < 0 || tpos.x > 1.0) {
