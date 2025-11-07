@@ -53,7 +53,7 @@ func NewGLVars(program uint32, numLayers int32, sources []layer.Source, fallback
 
 func (g *GLVars) Start() {
 	g.allocate()
-	gl.ClearColor(g.BGColour.R, g.BGColour.G, g.BGColour.B, g.BGColour.A)
+	gl.ClearColor(g.BGColour.R, g.BGColour.G, g.BGColour.B, 1)
 	gl.UseProgram(g.Program)
 	gl.Uniform1iv(g.TexUniform, g.NumTextures, &g.Textures[0])
 }
