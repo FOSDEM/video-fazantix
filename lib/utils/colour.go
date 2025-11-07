@@ -13,7 +13,7 @@ type Colour struct {
 }
 
 func ColourValidate(c string) bool {
-	match, err := regexp.Match(`#[0-9A-Fa-f]{8}`, []byte(c))
+	match, err := regexp.Match(`#([0-9A-Fa-f]{2})*`, []byte(c))
 	if err != nil {
 		panic(err)
 	}
@@ -21,12 +21,19 @@ func ColourValidate(c string) bool {
 }
 
 func ColourParse(s string) Colour {
-	var rb, gb, bb, ab uint8
-	fmt.Sscanf(s, "#%02x%02x%02x%02x", &rb, &gb, &bb, &ab)
+	var values [4]uint8
+	n, _ := fmt.Sscanf(
+		s, "#%02x%02x%02x%02x",
+		&values[0], &values[1], &values[2], &values[3],
+	)
+	for i := n; i < 4; i++ {
+		values[i] = 255
+	}
+
 	return Colour{
-		R: float32(rb) / 255.0,
-		G: float32(gb) / 255.0,
-		B: float32(bb) / 255.0,
-		A: float32(ab) / 255.0,
+		R: float32(values[0]) / 255.0,
+		G: float32(values[1]) / 255.0,
+		B: float32(values[2]) / 255.0,
+		A: float32(values[3]) / 255.0,
 	}
 }

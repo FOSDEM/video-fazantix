@@ -184,5 +184,5 @@ api:
   bind: ':8000'
   enable_profiler: true
 
-fallback_colour: '#ebac54ff'
-bg_colour: '#54acebff'
+fallback_colour: '#ebac54'
+bg_colour: '#54aceb'
