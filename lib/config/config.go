@@ -38,7 +38,8 @@ func Parse(filename string) (*Config, error) {
 	}
 	UnmarshalBase = filepath.Dir(absFilename)
 
-	m := yaml.NewDecoder(f)
+	m := yaml.NewDecoder(f, yaml.Strict())
+
 	cfg := &Config{}
 	err = m.Decode(cfg)
 	if err != nil {
