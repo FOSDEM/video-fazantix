@@ -2,135 +2,150 @@ sources:
   background:
     type: image
     path: images/background.png
-    z: 0
-  presentation:
-    type: v4l
-    path: /dev/video0
-    fmt: yuyv
-    frames:
-      width: 1920
-      height: 1080
-      num_allocated_frames: 6
-    num_frames_in_writing: 3
-    z: 1
+  # camera:
+  #   type: v4l
+  #   path: /dev/video0
+  #   fmt: yuyv
+  #   frames:
+  #     # width: 1920
+  #     # height: 1080
+  #     width: 640
+  #     height: 480
+  #     num_allocated_frames: 6
+  #   num_frames_in_writing: 3
   camera:
-    type: v4l
-    path: /dev/video2
-    fmt: yuyv
-    frames:
-      width: 1920
-      height: 1080
-      num_allocated_frames: 6
-    num_frames_in_writing: 3
-    z: 2
-  presentation_ffmpeg:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -vf scale=1920:1080 -f rawvideo -r 60 -'
+    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     frames:
       width: 1920
       height: 1080
       num_allocated_frames: 5
-    z: 3
-  camera_ffmpeg:
+  # slides:
+  #   type: v4l
+  #   path: /dev/video1
+  #   fmt: yuyv
+  #   frames:
+  #     width: 1920
+  #     height: 1080
+  #     num_allocated_frames: 6
+  #   num_frames_in_writing: 3
+  slides:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video2 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     frames:
       width: 1920
       height: 1080
       num_allocated_frames: 5
-    z: 4
-  video_listen:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    frames:
-      width: 1920
-      height: 1080
-      num_allocated_frames: 5
-    z: 8
-  pheasant:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    frames:
-      width: 1920
-      height: 1080
-      num_allocated_frames: 5
-    z: 4
 
 scenes:
+  cam-over-slides:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: camera
+        transform:
+          left: -0.04
+          top: -0.04
+          scale: 0.79
+          opacity: 1
+        warp:
+          opacity: 0
+          cx: 0.5
+          cy: 0.5
+          scale: 0.1
+      - source: slides
+        transform:
+          right: -0.04
+          bottom: -0.1
+          scale: 0.25
+          opacity: 1
+        warp:
+          opacity: 1
+          scale: 0.001
+          right: -0.04
+          bottom: -0.1
+  slides-over-cam:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: slides
+        transform:
+          left: -0.04
+          top: -0.04
+          scale: 0.79
+          opacity: 1
+        warp:
+          opacity: 0
+          cx: 0.5
+          cy: 0.5
+          scale: 0.1
+      - source: camera
+        transform:
+          right: -0.04
+          bottom: -0.1
+          scale: 0.25
+          opacity: 1
+        warp:
+          opacity: 1
+          scale: 0.001
+          right: -0.04
+          bottom: -0.1
   side-by-side:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    presentation:
-      x: 0.03
-      y: 0.25
-      scale: 0.45
-      opacity: 1
-    camera:
-      x: 0.52
-      y: 0.25
-      scale: 0.45
-      opacity: 1
-  presentation:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    presentation:
-      x: 0.03
-      y: 0.03
-      scale: 0.93
-      opacity: 1
-    camera:
-      opacity: 0
-  full_cam:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    camera:
-      x: 0.03
-      y: 0.03
-      scale: 0.93
-      opacity: 1
-    presentation:
-      opacity: 0
-  fazant:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    pheasant:
-      x: 0.025
-      y: 0.049
-      scale: 0.75
-      opacity: 1
-    camera:
-      x: 0.8
-      y: 0.6
-      scale: 0.2
-      opacity: 1
-  default:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    camera:
-      x: 0.025
-      y: 0.049
-      scale: 0.75
-      opacity: 1
-    presentation:
-      x: 0.8
-      y: 0.6
-      scale: 0.2
-      opacity: 1
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: slides
+        transform:
+          x: 0.03
+          y: 0.25
+          scale: 0.45
+          opacity: 1
+      - source: camera
+        transform:
+          x: 0.52
+          y: 0.25
+          scale: 0.45
+          opacity: 1
+  full-slides:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: slides
+        transform:
+          x: 0.03
+          y: 0.03
+          scale: 0.93
+          opacity: 1
+  full-cam:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: camera
+        transform:
+          x: 0.03
+          y: 0.03
+          scale: 0.93
+          opacity: 1
 
 sinks:
   projector:
@@ -138,7 +153,7 @@ sinks:
     frames:
       width: 1920
       height: 1080
-    default_scene: presentation
+    default_scene: full-slides
     transition_time_ms: 1500
   stream:
     type: ffmpeg_stdin
@@ -147,7 +162,7 @@ sinks:
       width: 1280
       height: 720
       num_allocated_frames: 5
-    default_scene: full_cam
+    default_scene: slides-over-cam
     transition_time_ms: 1500
 
 api:
