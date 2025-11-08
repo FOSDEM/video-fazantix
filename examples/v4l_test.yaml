@@ -9,26 +9,15 @@ sources:
     path: images/testsrc1.png
     makescene: true
     z: 1
-  test2:
-    tag: tst2
-    type: image
-    path: images/testsrc2.png
-    makescene: true
-    z: 2
-  test3:
-    tag: tst3
-    type: image
-    path: images/testsrc3.png
-    makescene: true
-    z: 3
-  video_listen:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+  video0:
+    type: v4l
+    path: /dev/video0
+    fmt: yuyv
     frames:
-      width: 1920
-      height: 1080
-      num_allocated_frames: 5
-    z: 8
+      width: 640
+      height: 480
+      num_allocated_frames: 6
+    num_frames_in_writing: 3
 
 
 scenes:
@@ -40,13 +29,13 @@ scenes:
           y: 0
           scale: 1
           opacity: 1
-      - source: test1
+      - source: video0
         transform:
           cx: 0.25
           cy: 0.5
           left: 0.01
           opacity: 1
-      - source: test2
+      - source: test1
         transform:
           cx: 0.75
           cy: 0.5
@@ -79,26 +68,7 @@ scenes:
           y: 0
           scale: 1
           opacity: 1
-      - source: test2
-        transform:
-          cy: 0.5
-          left: -0.03
-          right: -0.03
-          opacity: 1
-        warp:
-          x: 0.03
-          y: 0.03
-          scale: 0.9
-          opacity: 0
-  full-3:
-    layers:
-      - source: background
-        transform:
-          x: 0
-          y: 0
-          scale: 1
-          opacity: 1
-      - source: test3
+      - source: video0
         transform:
           cy: 0.5
           left: -0.03
@@ -118,37 +88,7 @@ scenes:
           y: 0
           scale: 1
           opacity: 1
-      - source: test1
-        transform:
-          left: -0.04
-          top: -0.04
-          scale: 0.79
-          opacity: 1
-        warp:
-          opacity: 0
-          cx: 0.5
-          cy: 0.5
-          scale: 0.1
-      - source: test2
-        transform:
-          right: -0.04
-          bottom: -0.1
-          scale: 0.25
-          opacity: 1
-        warp:
-          opacity: 1
-          scale: 0.001
-          right: -0.04
-          bottom: -0.1
-  default2:
-    layers:
-      - source: background
-        transform:
-          x: 0
-          y: 0
-          scale: 1
-          opacity: 1
-      - source: test2
+      - source: video0
         transform:
           left: -0.04
           top: -0.04
@@ -184,5 +124,5 @@ api:
   bind: ':8000'
   enable_profiler: true
 
-fallback_colour: '#ebac54'
-bg_colour: '#54aceb'
+fallback_colour: '#ebac54ff'
+bg_colour: '#54acebff'

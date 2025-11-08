@@ -48,21 +48,29 @@ func main() {
 	sources[0] = stdinSource
 	stdinSource.Start()
 	shaderData := &shaders.ShaderData{
-		Sources:    sources,
-		NumSources: 1,
+		Sources:        sources,
+		NumSources:     1,
+		NumLayers:      1,
+		FallbackColour: utils.ColourParse("#ff0000"),
 	}
 	program, err := shaders.BuildGLProgram(shaderData)
 	if err != nil {
 		log.Fatalf("could not init GL program: %s", err)
 	}
-	glvars := rendering.NewGLVars(program, 1)
+	glvars := rendering.NewGLVars(
+		program, 1,
+		sources, []int32{-1},
+		utils.ColourParse("#ff0000"),
+	)
 
 	stage := &layer.Stage{
-		Layers:       make([]*layer.Layer, 1),
-		DefaultScene: "stdin",
-		Sink:         windowSink,
+		Layers:        make([]*layer.Layer, 1),
+		DefaultScene:  "stdin",
+		Sink:          windowSink,
+		SourceIndices: []int32{0},
+		SourceTypes:   []encdec.FrameType{encdec.RGBAFrames},
 	}
-	stage.Layers[0] = layer.New(stdinSource, width, height)
+	stage.Layers[0] = layer.New(0, stdinSource, width, height)
 	stage.Layers[0].Position.X = 0.0
 	stage.Layers[0].Position.Y = 0.0
 	stage.Layers[0].Opacity = 1

@@ -13,7 +13,7 @@ func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 	if frame.Type == encdec.RGBFrames {
 		channelType = gl.RGB
 	}
-	if frame.Type == encdec.RGBAFrames || frame.Type == encdec.YUV422pFrames {
+	if frame.Type == encdec.RGBAFrames || frame.Type == encdec.BGRAFrames || frame.Type == encdec.YUV422pFrames {
 		channelType = gl.RGBA
 	}
 
@@ -28,7 +28,16 @@ func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 }
 
 func GetFrameFromGPU(frame *encdec.Frame) {
-	gl.ReadPixels(0, 0, int32(frame.Width), int32(frame.Height), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
+	packing := uint32(0)
+	switch frame.Type {
+	case encdec.RGBAFrames:
+		packing = gl.RGBA
+	case encdec.BGRAFrames:
+		packing = gl.BGRA
+	default:
+		panic("Unsupported packing for ReadPixels")
+	}
+	gl.ReadPixels(0, 0, int32(frame.Width), int32(frame.Height), packing, gl.UNSIGNED_BYTE, gl.Ptr(frame.Data))
 }
 
 type ThingWithFrames interface {
@@ -46,7 +55,6 @@ func GetFrameFromGPUInto(into ThingWithFrames) {
 }
 
 func SendFramesToGPU[F ThingWithFrames](from []F, dt time.Duration) {
-
 	for i, thing := range from {
 		frames := thing.Frames()
 

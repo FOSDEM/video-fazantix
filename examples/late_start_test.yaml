@@ -2,33 +2,41 @@ sources:
   background:
     type: image
     path: images/background.png
-    z: 0
+
+  # test1 and test2 wait a while before they load
   test1:
-    tag: tst1
-    type: image
-    path: images/testsrc1.png
-    makescene: true
-    z: 1
+    type: ffmpeg_stdout
+    cmd: 'sleep 2 && ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
+    fallback: test1img
   test2:
-    tag: tst2
-    type: image
-    path: images/testsrc2.png
-    makescene: true
-    z: 2
+    type: ffmpeg_stdout
+    cmd: 'sleep 5 && ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 5
+    fallback: test2img
   test3:
     tag: tst3
     type: image
     path: images/testsrc3.png
     makescene: true
-    z: 3
-  video_listen:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
-    frames:
-      width: 1920
-      height: 1080
-      num_allocated_frames: 5
-    z: 8
+
+  # fallback images for test1 and test2
+  test1img:
+    tag: tst1
+    type: image
+    path: images/testsrc1.png
+    makescene: true
+  test2img:
+    tag: tst1
+    type: image
+    path: images/testsrc2.png
+    makescene: true
 
 
 scenes:

@@ -14,6 +14,7 @@ const (
 	YUV422Frames FrameType = iota
 	YUV422pFrames
 	RGBAFrames
+	BGRAFrames
 	RGBFrames
 )
 
@@ -110,6 +111,13 @@ func PrepareYUYV(into *Frame) error {
 	return nil
 }
 
+func PrepareRGBA(into *Frame) error {
+	into.Clear()
+	numPixels := into.Width * into.Height * 4
+	into.MakeTexture(numPixels, into.Width, into.Height)
+	return nil
+}
+
 func DecodeRGBfromImage(buf []byte, into *Frame) error {
 	into.Clear()
 
@@ -148,6 +156,8 @@ func (f FrameType) String() string {
 		return "YUV422"
 	case YUV422pFrames:
 		return "YUYV"
+	case BGRAFrames:
+		fallthrough
 	case RGBAFrames:
 		return "RGBA"
 	case RGBFrames:
