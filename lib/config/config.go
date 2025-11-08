@@ -7,16 +7,19 @@ import (
 	"strings"
 
 	"github.com/fosdem/fazantix/lib/encdec"
+	"github.com/fosdem/fazantix/lib/utils"
 	yaml "github.com/goccy/go-yaml"
 )
 
 var EnableOmt = true
 
 type Config struct {
-	Sources map[string]*SourceCfg
-	Scenes  map[string]*SceneCfg
-	Stages  map[string]*StageCfg `yaml:"sinks"`
-	Api     *ApiCfg
+	Sources        map[string]*SourceCfg
+	Scenes         map[string]*SceneCfg
+	Stages         map[string]*StageCfg `yaml:"sinks"`
+	FallbackColour string               `yaml:"fallback_colour"`
+	BGColour       string               `yaml:"bg_colour"`
+	Api            *ApiCfg
 }
 
 func Parse(filename string) (*Config, error) {
@@ -37,7 +40,8 @@ func Parse(filename string) (*Config, error) {
 	}
 	UnmarshalBase = filepath.Dir(absFilename)
 
-	m := yaml.NewDecoder(f)
+	m := yaml.NewDecoder(f, yaml.Strict())
+
 	cfg := &Config{}
 	err = m.Decode(cfg)
 	if err != nil {
@@ -63,13 +67,8 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("source %s is invalid: %w", k, err)
 		}
-	}
-	for k, v := range c.Scenes {
-		for ks, vs := range v.Sources {
-			err = vs.Validate()
-			if err != nil {
-				return fmt.Errorf("scene %s layer %s is invalid: %w", k, ks, err)
-			}
+		if _, ok := c.Sources[v.Fallback]; !ok && v.Fallback != "" {
+			return fmt.Errorf("%s cannot be used as fallback source (no such source)", v.Fallback)
 		}
 	}
 	for k, v := range c.Stages {
@@ -80,6 +79,31 @@ func (c *Config) Validate() error {
 		if _, ok := c.Scenes[v.DefaultScene]; !ok {
 			return fmt.Errorf("scene %s, which is %s's default scene, does not exist", v.DefaultScene, k)
 		}
+	}
+	for k, v := range c.Scenes {
+		for i, layerCfg := range v.Layers {
+			err = layerCfg.Validate()
+			if err != nil {
+				return fmt.Errorf("scene %s layer %d is invalid: %w", k, i, err)
+			}
+			if _, ok := c.Sources[layerCfg.SourceName]; !ok {
+				return fmt.Errorf("scene %s layer %d refers to non-existant source %s", k, i, layerCfg.SourceName)
+			}
+		}
+	}
+
+	if c.FallbackColour == "" {
+		return fmt.Errorf("please set fallback_colour in the config")
+	}
+	if !utils.ColourValidate(c.FallbackColour) {
+		return fmt.Errorf("%s is not a valid RGBA hex colour", c.FallbackColour)
+	}
+
+	if c.BGColour == "" {
+		return fmt.Errorf("please set bg_colour in the config")
+	}
+	if !utils.ColourValidate(c.BGColour) {
+		return fmt.Errorf("%s is not a valid RGBA hex colour", c.BGColour)
 	}
 	return nil
 }
@@ -111,12 +135,13 @@ type SourceCfgStub struct {
 	MakeScene bool
 	Tag       string
 	Label     string
+	Fallback  string
 }
 
 type SceneCfg struct {
-	Tag     string
-	Label   string
-	Sources map[string]*LayerCfg
+	Tag    string
+	Label  string
+	Layers []*LayerCfg
 }
 
 type StageCfgStub struct {

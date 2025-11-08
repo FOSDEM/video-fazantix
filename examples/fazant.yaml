@@ -2,17 +2,15 @@ sources:
   background:
     type: image
     path: images/background.png
-    z: 0
   video0:
     type: v4l
     path: /dev/video0
     fmt: yuyv
     frames:
-      width: 1920
-      height: 1080
+      width: 640
+      height: 480
       num_allocated_frames: 6
     num_frames_in_writing: 3
-    z: 1
   video0_ffmpeg:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -vf scale=1920:1080 -f rawvideo -r 60 -'
@@ -20,31 +18,27 @@ sources:
       width: 1920
       height: 1080
       num_allocated_frames: 5
-    z: 3
   pheasant:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/pheasants.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/pheasants.webm -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     frames:
       width: 1920
       height: 1080
       num_allocated_frames: 5
-    z: -1
   cows:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     frames:
       width: 1920
       height: 1080
       num_allocated_frames: 5
-    z: 6
   fazantfazantfazant:
     type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i ~/s/random_shit/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
     frames:
       width: 1920
       height: 1080
       num_allocated_frames: 5
-    z: 7
   video_listen:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
@@ -52,57 +46,68 @@ sources:
       width: 1920
       height: 1080
       num_allocated_frames: 5
-    z: 8
 
 scenes:
   foo:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    cows:
-      x: 0.025
-      y: 0.049
-      scale: 0.79
-      opacity: 1
-    pheasant:
-      x: 0.75
-      y: 0.6
-      scale: 0.2
-      opacity: 0.8
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: pheasant
+        transform:
+          x: 0.75
+          y: 0.6
+          scale: 0.2
+          opacity: 0.8
+      - source: cows
+        transform:
+          x: 0.025
+          y: 0.049
+          scale: 0.79
+          opacity: 1
   bar:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    video0_ffmpeg:
-      x: 0.025
-      y: 0.049
-      scale: 0.79
-      opacity: 1
-    cows:
-      x: 0.75
-      y: 0.6
-      scale: 0.2
-      opacity: 1
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: video0
+        transform:
+          x: 0.025
+          y: 0.049
+          scale: 0.79
+          opacity: 1
+      - source: cows
+        transform:
+          x: 0.75
+          y: 0.6
+          scale: 0.2
+          opacity: 1
   baz:
-    background:
-      x: 0
-      y: 0
-      scale: 1
-      opacity: 1
-    cows:
-      x: 0.025
-      y: 0.049
-      scale: 0.79
-      opacity: 1
-    video0_ffmpeg:
-      x: 0.75
-      y: 0.6
-      scale: 0.2
-      opacity: 1
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: cows
+        transform:
+          x: 0.025
+          y: 0.049
+          scale: 0.79
+          opacity: 1
+      - source: video0
+        transform:
+          x: 0.75
+          y: 0.6
+          scale: 0.2
+          opacity: 1
 
 sinks:
   fazant:
@@ -116,3 +121,6 @@ sinks:
 api:
   bind: ':8000'
   enable_profiler: true
+
+fallback_colour: '#ebac54ff'
+bg_colour: '#54acebff'

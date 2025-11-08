@@ -55,7 +55,6 @@ func GetFrameFromGPUInto(into ThingWithFrames) {
 }
 
 func SendFramesToGPU[F ThingWithFrames](from []F, dt time.Duration) {
-
 	for i, thing := range from {
 		frames := thing.Frames()
 

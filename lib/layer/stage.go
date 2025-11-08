@@ -1,9 +1,18 @@
 package layer
 
-import "time"
+import (
+	"time"
+
+	"github.com/fosdem/fazantix/lib/encdec"
+)
 
 type Stage struct {
-	Layers       []*Layer
+	Layers        []*Layer
+	SourceIndices []int32
+	SourceTypes   []encdec.FrameType
+
+	LayersByScene map[string][]*Layer
+
 	HFlip        bool
 	VFlip        bool
 	Sink         Sink

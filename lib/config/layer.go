@@ -7,24 +7,29 @@ import (
 	yaml "github.com/goccy/go-yaml"
 )
 
-type LayerStateCfg struct {
+type LayerTransformCfg struct {
 	layer.LayerTransform
 	LayerCfgExtendedPositioning
 }
 
 type LayerCfg struct {
-	LayerStateCfg
-	LayerCfgStub
-}
-
-type LayerCfgStub struct {
-	Warp *LayerStateCfg `yaml:"warp"`
+	SourceName string             `yaml:"source"`
+	Transform  *LayerTransformCfg `yaml:"transform"`
+	Warp       *LayerTransformCfg `yaml:"warp"`
 }
 
 func (l *LayerCfg) Validate() error {
-	err := l.LayerStateCfg.Validate()
+	if l.Transform == nil {
+		return fmt.Errorf("please add a 'transform' key to the layer definition")
+	}
+
+	if l.SourceName == "" {
+		return fmt.Errorf("source must be specified")
+	}
+
+	err := l.Transform.Validate()
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid layer state definition: %w", err)
 	}
 
 	if l.Warp != nil {
@@ -36,7 +41,7 @@ func (l *LayerCfg) Validate() error {
 	return err
 }
 
-func (l *LayerStateCfg) Validate() error {
+func (l *LayerTransformCfg) Validate() error {
 	return applyExtendedPositions(&l.LayerTransform, &l.LayerCfgExtendedPositioning)
 }
 
@@ -51,12 +56,12 @@ func (l *LayerCfg) CopyState() *layer.LayerState {
 	}
 
 	return &layer.LayerState{
-		LayerTransform: l.LayerTransform,
+		LayerTransform: l.Transform.LayerTransform,
 		Warp:           warp,
 	}
 }
 
-func (l *LayerStateCfg) UnmarshalYAML(b []byte) error {
+func (l *LayerTransformCfg) UnmarshalYAML(b []byte) error {
 	err := yaml.Unmarshal(b, &l.LayerTransform)
 	if err != nil {
 		return err
@@ -66,20 +71,6 @@ func (l *LayerStateCfg) UnmarshalYAML(b []byte) error {
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func (l *LayerCfg) UnmarshalYAML(b []byte) error {
-	err := yaml.Unmarshal(b, &l.LayerCfgStub)
-	if err != nil {
-		return err
-	}
-
-	err = yaml.Unmarshal(b, &l.LayerStateCfg)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
