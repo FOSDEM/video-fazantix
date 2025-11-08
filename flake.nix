@@ -13,9 +13,23 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
+        lib = pkgs.lib;
       in
       rec {
-        packages = {
+        packages = rec {
+          fazantix-web-ui = pkgs.buildNpmPackage {
+            name = "fazantix-web-ui";
+            src = ./web_ui;
+            npmDepsHash = "sha256-cCgiR3LxArf5uYsqo7dN8W8qiK/zAz6lkK9vcL5/ev8=";
+            npmBuildScript = "build";
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out
+              cp -r dist/* $out/
+              runHook postInstall
+            '';
+          };
+
           fazantix = pkgs.buildGoModule {
             name = "fazantix";
             src = ./.;
@@ -55,8 +69,7 @@
 
               # generate web ui
               mkdir -p lib/api/static
-              echo 'oops, web ui through nix not supported yet' > lib/api/static/index.html
-              # TODO: use node2nix or similar to do whatever web_ui/build.sh does but with nix
+              cp -rvf ${fazantix-web-ui}/* lib/api/static/
             '';
           };
           default = packages.fazantix;
