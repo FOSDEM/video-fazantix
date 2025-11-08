@@ -4,8 +4,10 @@ sources:
     path: images/background.png
   test1:
     tag: tst1
-    type: image
-    path: images/testsrc1.png
+    type: html
+    url: "https://fosdem.org"
+    width: 1920
+    height: 1080
     makescene: true
   test2:
     tag: tst2
