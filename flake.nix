@@ -37,7 +37,11 @@
             # This currently needs to be manually updated when go.sum is changed
             vendorHash = "sha256-B2+sDOcw5F7bvML90i/x3wXe2WQqzEbZuGITqlaIbRU=";
             goSum = ./go.sum;
-            subPackages = [ "cmd/fazantix" ];
+            subPackages = [
+              "cmd/fazantix"
+              "cmd/fazantix-window"
+              "cmd/fazantix-validate-config"
+            ];
 
             tags = [
               "wayland"
