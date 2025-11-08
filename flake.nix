@@ -30,6 +30,18 @@
             '';
           };
 
+          fazantix-sample-images = pkgs.stdenvNoCC.mkDerivation rec {
+            name = "fazantix-sample-images";
+            meta.description = "Example image files for fazantix";
+            src = ./examples/images;
+            buildInputs = [ pkgs.coreutils pkgs.rsync ];
+            phases = [ "unpackPhase" "installPhase" ];
+            installPhase = ''
+              mkdir -p $out
+              rsync -rva ./ $out/
+            '';
+          };
+
           fazantix = pkgs.buildGoModule {
             name = "fazantix";
             src = ./.;
