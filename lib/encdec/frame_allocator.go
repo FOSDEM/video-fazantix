@@ -2,7 +2,22 @@ package encdec
 
 import (
 	"fmt"
+
+	"github.com/go-gl/gl/v4.1-core/gl"
 )
+
+type SwizzleChannel int32
+
+const (
+	RED   SwizzleChannel = gl.RED
+	GREEN SwizzleChannel = gl.GREEN
+	BLUE  SwizzleChannel = gl.BLUE
+	ALPHA SwizzleChannel = gl.ALPHA
+	ZERO  SwizzleChannel = gl.ZERO
+	ONE   SwizzleChannel = gl.ONE
+)
+
+type SwizzleConfig [4]SwizzleChannel
 
 type FrameCfg struct {
 	Width              int
@@ -14,6 +29,7 @@ type FrameInfo struct {
 	FrameCfg
 	FrameType FrameType
 	PixFmt    []uint8
+	Swizzle   SwizzleConfig
 }
 
 type FrameAllocator interface {
