@@ -22,6 +22,7 @@ func New(name string, cfg *config.OmtSourceCfg, alloc encdec.FrameAllocator) *Om
 		FrameType: encdec.RGBAFrames,
 		PixFmt:    []uint8{},
 		FrameCfg:  cfg.FrameCfg,
+		Swizzle:   encdec.SwizzleConfig{encdec.BLUE, encdec.GREEN, encdec.RED, encdec.ALPHA},
 	}
 
 	f.frames.Init(name, frameInfo, alloc)
