@@ -13,6 +13,7 @@ import (
 	"github.com/fosdem/fazantix/lib/sink/omtsink"
 	"github.com/fosdem/fazantix/lib/sink/windowsink"
 	"github.com/fosdem/fazantix/lib/source/ffmpegsource"
+	"github.com/fosdem/fazantix/lib/source/htmlsource"
 	"github.com/fosdem/fazantix/lib/source/imgsource"
 	"github.com/fosdem/fazantix/lib/source/omtsource"
 	"github.com/fosdem/fazantix/lib/source/v4lsource"
@@ -260,6 +261,8 @@ func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.S
 			sources = append(sources, imgsource.New(srcName, sc, alloc))
 		case *config.V4LSourceCfg:
 			sources = append(sources, v4lsource.New(srcName, sc))
+		case *config.HtmlSourceCfg:
+			sources = append(sources, htmlsource.New(srcName, sc, alloc))
 		case *config.OmtSourceCfg:
 			sources = append(sources, omtsource.New(srcName, sc, alloc))
 		default:

@@ -11,6 +11,7 @@ import (
 	yaml "github.com/goccy/go-yaml"
 )
 
+var EnablePlutobook = true
 var EnableOmt = true
 
 type Config struct {
@@ -197,6 +198,14 @@ type ImgSourceCfg struct {
 	Inotify bool
 }
 
+type HtmlSourceCfg struct {
+	Url    string
+	Html   string
+	Css    string
+	Width  int
+	Height int
+}
+
 type V4LSourceCfg struct {
 	encdec.FrameCfg    `yaml:"frames"`
 	Path               string
@@ -221,6 +230,10 @@ func (s *SourceCfg) UnmarshalYAML(b []byte) error {
 		return yaml.Unmarshal(b, &cfg)
 	case "v4l":
 		cfg := V4LSourceCfg{}
+		s.Cfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	case "html":
+		cfg := HtmlSourceCfg{}
 		s.Cfg = &cfg
 		return yaml.Unmarshal(b, &cfg)
 	case "omt":
@@ -299,6 +312,22 @@ func (s *ImgSourceCfg) Validate() error {
 		if s.Width != 0 || s.Height != 0 {
 			return fmt.Errorf("image path or size can't both be specified")
 		}
+	}
+	return nil
+}
+
+func (s *HtmlSourceCfg) Validate() error {
+	if !EnablePlutobook {
+		return fmt.Errorf("plutobook source is not compiled in")
+	}
+	if s.Width == 0 || s.Height == 0 {
+		return fmt.Errorf("render width and height must be defined for the html source")
+	}
+	if s.Url == "" && s.Html == "" {
+		return fmt.Errorf("the html source needs an URL to render or an HTML document")
+	}
+	if s.Url != "" && s.Html != "" {
+		return fmt.Errorf("specify either an URL or HTML document for the html source, not both")
 	}
 	return nil
 }
