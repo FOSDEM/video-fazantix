@@ -30,6 +30,9 @@ func SetupTextures(f *layer.FrameForwarder) {
 	default:
 		panic("Unknown pixel format")
 	}
+	if f.Swizzle[0] != 0 && f.Swizzle[1] != 0 && f.Swizzle[2] != 0 && f.Swizzle[3] != 0 {
+		SetupSwizzle(f.TextureIDs[0], f.Swizzle)
+	}
 }
 
 func UseAsFramebuffer(f *layer.FrameForwarder) {
@@ -37,6 +40,15 @@ func UseAsFramebuffer(f *layer.FrameForwarder) {
 		panic("trying to use a non-rgba frame forwarder as a framebuffer")
 	}
 	f.FramebufferID = UseTextureAsFramebuffer(f.TextureIDs[0])
+}
+
+func SetupSwizzle(id uint32, swizzle encdec.SwizzleConfig) {
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, id)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_SWIZZLE_R, int32(swizzle[0]))
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_SWIZZLE_G, int32(swizzle[1]))
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_SWIZZLE_B, int32(swizzle[2]))
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_SWIZZLE_A, int32(swizzle[3]))
 }
 
 func SetupYUVTexture(width int, height int) uint32 {
