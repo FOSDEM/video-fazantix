@@ -60,7 +60,7 @@ func SendFramesToGPU[F ThingWithFrames](from []F, dt time.Duration) {
 
 		frames.Age(dt)
 
-		frame := frames.GetFrameForReading()
+		frame := frames.GetFreshFrameForReading()
 		if frame == nil {
 			continue // we are instructed to drop the frame
 		}

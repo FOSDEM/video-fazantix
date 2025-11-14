@@ -10,14 +10,6 @@ import (
 	"github.com/fosdem/fazantix/lib/metrics"
 )
 
-type FrameHold int
-
-const (
-	NoHold FrameHold = iota
-	HoldUpdate
-	Hold
-)
-
 // FrameForwarder takes care of synchronising frames between a single
 // writer and multiple readers.
 // It is suitable for streaming, not recording, because it is designed
@@ -32,8 +24,7 @@ type FrameForwarder struct {
 	Name      string
 	Allocator encdec.FrameAllocator
 
-	IsReady   bool
-	HoldFrame FrameHold
+	IsReady bool
 
 	curReadingFrame *encdec.Frame
 	FrameAge        time.Duration
@@ -43,8 +34,10 @@ type FrameForwarder struct {
 	bin []*encdec.Frame
 	sync.Mutex
 
-	FramebufferID uint32
-	LastFrameID   uint64
+	HoldFrame          bool
+	FramebufferID      uint32
+	LastWrittenFrameID uint64
+	LastReadFrameID    uint64
 
 	DroppedFramesIn  uint64
 	DroppedFramesOut uint64
@@ -73,26 +66,18 @@ func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.
 // during the next writing cycle.
 // For each call of GetFrameForReading() there should be a corresponding
 // call of exactly one of FinishedReading() or FailedReading().
-func (f *FrameForwarder) GetFrameForReading() *encdec.Frame {
+func (f *FrameForwarder) GetFreshFrameForReading() *encdec.Frame {
 	f.Lock()
 	defer f.Unlock()
 
-	if f.HoldFrame == Hold {
-		// Don't upload the frame again when holding
-		return nil
-	}
-
 	frame := f.curReadingFrame
-	if !f.IsReady || frame == nil {
+	if !f.IsReady || frame == nil || frame.ID <= f.LastReadFrameID {
 		return nil
 	}
+	f.LastReadFrameID = frame.ID
 
 	frame.NumReaders.Add(1)
 
-	if f.HoldFrame == HoldUpdate {
-		// Don't send this frame again on the next request
-		f.HoldFrame = Hold
-	}
 	return frame
 }
 
@@ -144,8 +129,8 @@ func (f *FrameForwarder) GetFrameForWriting() *encdec.Frame {
 	frame := f.bin[len(f.bin)-1]
 	f.bin = f.bin[:len(f.bin)-1]
 
-	f.LastFrameID += 1
-	frame.ID = f.LastFrameID
+	f.LastWrittenFrameID += 1
+	frame.ID = f.LastWrittenFrameID
 
 	frame.MarkedForRecycling = false
 	return frame
@@ -172,9 +157,6 @@ func (f *FrameForwarder) FinishedWriting(frame *encdec.Frame) {
 
 	f.FrameAge = 0
 	f.IsReady = true
-	if f.HoldFrame == Hold {
-		f.HoldFrame = HoldUpdate
-	}
 }
 
 // FailedWriting puts a frame back into the pool without updating
@@ -229,7 +211,7 @@ func (f *FrameForwarder) Error(msg string, args ...interface{}) {
 
 func (f *FrameForwarder) Age(dt time.Duration) {
 	f.FrameAge += dt
-	if f.HoldFrame == NoHold && f.FrameAge > 1*time.Second {
+	if !f.HoldFrame && f.FrameAge > 1*time.Second {
 		f.IsReady = false
 	}
 }
