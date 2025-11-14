@@ -23,7 +23,10 @@
             # This currently needs to be manually updated when go.sum is changed
             vendorHash = "sha256-B2+sDOcw5F7bvML90i/x3wXe2WQqzEbZuGITqlaIbRU=";
             goSum = ./go.sum;
-            subPackages = [ "cmd/fazantix" ];
+            subPackages = [
+              "cmd/fazantix"
+              "cmd/fazantix-validate-config"
+            ];
 
             tags = [
               "wayland"
@@ -58,6 +61,8 @@
               echo 'oops, web ui through nix not supported yet' > lib/api/static/index.html
               # TODO: use node2nix or similar to do whatever web_ui/build.sh does but with nix
             '';
+
+            meta.mainProgram = "fazantix";
           };
           default = packages.fazantix;
         };
@@ -73,6 +78,26 @@
 
               cage
             ];
+          };
+        };
+
+        checks = {
+          validate-examples = pkgs.stdenv.mkDerivation {
+            name = "fmt-check";
+            src = ./examples;
+            doCheck = true;
+            dontBuild = true;
+            nativeBuildInputs = [ pkgs.coreutils ];
+            checkPhase = ''
+              for f in *.yaml; do
+                echo "validating $f"
+                ${packages.fazantix}/bin/fazantix-validate-config "$f"
+              done
+            '';
+            installPhase = ''
+              mkdir -p $out
+              cp -rf * $out/
+            '';
           };
         };
 
