@@ -2,7 +2,11 @@ package encdec
 
 import (
 	"fmt"
+
+	"github.com/fosdem/fazantix/lib/rendering/renderconsts"
 )
+
+type SwizzleConfig [4]renderconsts.Color
 
 type FrameCfg struct {
 	Width              int
@@ -14,6 +18,7 @@ type FrameInfo struct {
 	FrameCfg
 	FrameType FrameType
 	PixFmt    []uint8
+	Swizzle   SwizzleConfig
 }
 
 type FrameAllocator interface {

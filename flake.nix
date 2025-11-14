@@ -87,6 +87,8 @@
               mkdir -p lib/api/static
               cp -rvf ${fazantix-web-ui}/* lib/api/static/
             '';
+
+            meta.mainProgram = "fazantix";
           };
           default = packages.fazantix;
         };
@@ -102,6 +104,26 @@
 
               cage
             ];
+          };
+        };
+
+        checks = {
+          validate-examples = pkgs.stdenv.mkDerivation {
+            name = "fmt-check";
+            src = ./examples;
+            doCheck = true;
+            dontBuild = true;
+            nativeBuildInputs = [ pkgs.coreutils ];
+            checkPhase = ''
+              for f in *.yaml; do
+                echo "validating $f"
+                ${packages.fazantix}/bin/fazantix-validate-config "$f"
+              done
+            '';
+            installPhase = ''
+              mkdir -p $out
+              cp -rf * $out/
+            '';
           };
         };
 
