@@ -108,7 +108,7 @@ func (s *ImgSource) Start() bool {
 	s.Frames().Debug("Size: %dx%d", w, h)
 
 	s.frames.IsReady = true
-	s.frames.HoldFrame = layer.Hold
+	s.frames.HoldFrame = true
 	err := s.SetImage(s.img)
 
 	if s.inotify {
