@@ -3,21 +3,10 @@ package encdec
 import (
 	"fmt"
 
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/fosdem/fazantix/lib/rendering/renderconsts"
 )
 
-type SwizzleChannel int32
-
-const (
-	RED   SwizzleChannel = gl.RED
-	GREEN SwizzleChannel = gl.GREEN
-	BLUE  SwizzleChannel = gl.BLUE
-	ALPHA SwizzleChannel = gl.ALPHA
-	ZERO  SwizzleChannel = gl.ZERO
-	ONE   SwizzleChannel = gl.ONE
-)
-
-type SwizzleConfig [4]SwizzleChannel
+type SwizzleConfig [4]renderconsts.Color
 
 type FrameCfg struct {
 	Width              int

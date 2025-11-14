@@ -7,6 +7,7 @@ import (
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/rendering/renderconsts"
 )
 
 type OmtSource struct {
@@ -22,7 +23,7 @@ func New(name string, cfg *config.OmtSourceCfg, alloc encdec.FrameAllocator) *Om
 		FrameType: encdec.RGBAFrames,
 		PixFmt:    []uint8{},
 		FrameCfg:  cfg.FrameCfg,
-		Swizzle:   encdec.SwizzleConfig{encdec.BLUE, encdec.GREEN, encdec.RED, encdec.ALPHA},
+		Swizzle:   encdec.SwizzleConfig{renderconsts.BLUE, renderconsts.GREEN, renderconsts.RED, renderconsts.ALPHA},
 	}
 
 	f.frames.Init(name, frameInfo, alloc)
