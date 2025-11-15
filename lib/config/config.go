@@ -151,6 +151,7 @@ type StageCfgStub struct {
 	PreviewFor       string `yaml:"preview_for"`
 	TransitionTimeMs *int   `yaml:"transition_time_ms"`
 	encdec.FrameCfg  `yaml:"frames"`
+	Rate             RateCfg `yaml:"rate"`
 }
 
 type Valid interface {
@@ -169,6 +170,11 @@ type SourceCfg struct {
 
 type SinkCfgStub struct {
 	Type string
+}
+
+type RateCfg struct {
+	RateDivisor uint `yaml:"divisor"`
+	RateOffset  uint `yaml:"offset"`
 }
 
 type FFmpegSourceCfg struct {

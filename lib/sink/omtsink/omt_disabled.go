@@ -27,3 +27,5 @@ func (f *OmtSink) Start() bool {
 func (f *OmtSink) Frames() *layer.FrameForwarder {
 	return &f.frames
 }
+
+func (f *OmtSink) SetRate(rate int) {}

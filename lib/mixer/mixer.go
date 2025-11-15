@@ -60,8 +60,21 @@ func MakeWindowAndMix(cfg *config.Config) {
 
 	glvars.Start()
 
+	refreshRate := theatre.WindowSinkList[0].GetRefreshRate()
+	for _, stage := range theatre.NonWindowStageList {
+		if stage.RateDivisor < 1 {
+			stage.RateDivisor = 1
+		}
+		stage.Sink.SetRate(refreshRate / int(stage.RateDivisor))
+		if stage.RateDivisor > 1 {
+			log.Printf("setting sink rate to %d", refreshRate/int(stage.RateDivisor))
+		}
+	}
+
 	var deltaTimer utils.DeltaTimer
+	frameIndex := uint64(0)
 	for !theatre.ShutdownRequested {
+		frameIndex++
 		glvars.StartFrame()
 		dt := deltaTimer.Next()
 
@@ -72,8 +85,10 @@ func MakeWindowAndMix(cfg *config.Config) {
 		}
 
 		for _, stage := range theatre.NonWindowStageList {
-			glvars.DrawStage(stage)
-			rendering.GetFrameFromGPUInto(stage.Sink)
+			if (frameIndex+uint64(stage.RateOffset))%uint64(stage.RateDivisor) == 0 {
+				glvars.DrawStage(stage)
+				rendering.GetFrameFromGPUInto(stage.Sink)
+			}
 		}
 
 		for _, sink := range theatre.WindowSinkList {

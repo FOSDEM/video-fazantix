@@ -70,3 +70,9 @@ func (w *WindowSink) makeWindow() *glfw.Window {
 func (w *WindowSink) log(msg string, args ...interface{}) {
 	w.Frames().Log(msg, args...)
 }
+
+func (w *WindowSink) GetRefreshRate() int {
+	return glfw.GetPrimaryMonitor().GetVideoMode().RefreshRate
+}
+
+func (w *WindowSink) SetRate(rate int) {}

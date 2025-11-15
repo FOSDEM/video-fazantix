@@ -108,6 +108,8 @@ func buildStageMap(cfg *config.Config, sources []layer.Source, sceneMap map[stri
 		stage.SourceTypes = make([]encdec.FrameType, len(sources))
 		stage.DefaultScene = stageCfg.DefaultScene
 		stage.PreviewFor = stageCfg.StageCfgStub.PreviewFor
+		stage.RateDivisor = stageCfg.StageCfgStub.Rate.RateDivisor
+		stage.RateOffset = stageCfg.StageCfgStub.Rate.RateOffset
 
 		// create a distinct layer collection for each stage
 		layersBySource := make([][]*layer.Layer, len(sources))
