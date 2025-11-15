@@ -107,16 +107,16 @@ vec4 sampleLayerFallback(vec2 uv, vec4 dve) {
 vec4 sampleLayer(vec2 uv, int src_idx, vec4 dve, vec4 data, uint srcType) {
 	// return sampleLayerDebugBBox(uv, src_idx, dve, data);
 	if (src_idx >= 0) {
-		if (srcType == 0) { // YUV422Frames
-			return sampleLayerYUYV(uv, src_idx, dve, data);
-		}
-		if (srcType == 1) { // YUV422pFrames
+		if (srcType == {{ .FrameType "YUV422" }}) {
 			return sampleLayerYUV422(uv, src_idx, dve, data);
 		}
-		if (srcType == 2) { // RGBAFrames
+		if (srcType == {{ .FrameType "YUV422p" }}) {
+			return sampleLayerYUYV(uv, src_idx, dve, data);
+		}
+		if (srcType == {{ .FrameType "RGBA" }}) {
 			return sampleLayerRGBA(uv, src_idx, dve, data);
 		}
-		if (srcType == 3) { // RGBFrames
+		if (srcType == {{ .FrameType "RGB" }}) {
 			return sampleLayerRGB(uv, src_idx, dve, data);
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"text/template"
 
+	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
 	"github.com/fosdem/fazantix/lib/utils"
 )
@@ -54,4 +55,8 @@ func (s *Shaderer) TemplateNames() []string {
 		names = append(names, t.Name())
 	}
 	return names
+}
+
+func (s *ShaderData) FrameType(name string) int32 {
+	return int32(encdec.ParseFrameType(name))
 }

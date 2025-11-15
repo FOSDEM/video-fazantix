@@ -166,3 +166,20 @@ func (f FrameType) String() string {
 		panic("unknown frame type")
 	}
 }
+
+func ParseFrameType(name string) FrameType {
+	switch name {
+	case "YUV422":
+		return YUV422Frames
+	case "YUV422p":
+		return YUV422pFrames
+	case "RGBA":
+		return RGBAFrames
+	case "BGRA":
+		return BGRAFrames
+	case "RGB":
+		return RGBFrames
+	default:
+		panic(fmt.Sprintf("%s is not a frame type", name))
+	}
+}

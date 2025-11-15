@@ -2,24 +2,25 @@ sources:
   background:
     type: image
     path: images/background.png
-  # camera:
-  #   type: v4l
-  #   path: /dev/video0
-  #   fmt: yuyv
-  #   frames:
-  #     # width: 1920
-  #     # height: 1080
-  #     width: 640
-  #     height: 480
-  #     num_allocated_frames: 6
-  #   num_frames_in_writing: 3
   camera:
-    type: ffmpeg_stdout
-    cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+    type: v4l
+    path: /dev/v4l/by-path/pci-0000:00:14.0-usbv3-0:6:1.0-video-index0
+    # path: /dev/video0
+    fmt: yuyv
     frames:
       width: 1920
       height: 1080
-      num_allocated_frames: 5
+      # width: 640
+      # height: 480
+      num_allocated_frames: 6
+    num_frames_in_writing: 3
+  # camera:
+  #   type: ffmpeg_stdout
+  #   cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
+  #   frames:
+  #     width: 1920
+  #     height: 1080
+  #     num_allocated_frames: 5
   # slides:
   #   type: v4l
   #   path: /dev/video1
