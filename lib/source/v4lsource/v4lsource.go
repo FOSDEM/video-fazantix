@@ -40,6 +40,15 @@ func New(name string, cfg *config.V4LSourceCfg) *V4LSource {
 	s.Frames().Name = name
 	s.frames.InitLogging()
 
+	switch cfg.Fmt {
+	case "yuyv":
+		s.frames.FrameType = encdec.YUV422pFrames
+	case "mjpeg":
+		s.frames.FrameType = encdec.RGBAFrames
+	default:
+		panic("Unsupported format: " + cfg.Fmt)
+	}
+
 	s.Format = cfg.Fmt
 
 	s.requestedFrameCfg = &cfg.FrameCfg
@@ -144,6 +153,8 @@ func (s *V4LSource) Start() bool {
 			},
 			alloc,
 		)
+	default:
+		panic("Unsupported v4l frame format: '" + s.Format + "'")
 	}
 
 	go s.streamLoopLoop()
