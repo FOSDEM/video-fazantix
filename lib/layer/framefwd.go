@@ -56,7 +56,7 @@ func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.
 	f.InitLogging()
 }
 
-// GetFrameForReading gets the latest fully-written frame and blocks
+// GetFreshFrameForReading gets the latest fully-written frame and blocks
 // the writer from using it. Multiple readers can get the same frame
 // concurrently, and the frame is released as available for writing
 // into only after all readers have released it.
