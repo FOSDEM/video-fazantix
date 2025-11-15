@@ -130,3 +130,5 @@ func (f *FFmpegSink) Frames() *layer.FrameForwarder {
 func (f *FFmpegSink) log(msg string, args ...interface{}) {
 	f.Frames().Log(msg, args...)
 }
+
+func (f *FFmpegSink) SetRate(rate int) {}

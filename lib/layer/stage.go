@@ -19,11 +19,15 @@ type Stage struct {
 	DefaultScene string
 	PreviewFor   string
 	Speed        float32
+
+	RateDivisor uint
+	RateOffset  uint
 }
 
 type Sink interface {
 	Frames() *FrameForwarder
 	Start() bool
+	SetRate(rate int)
 }
 
 func (s *Stage) SetSpeed(d time.Duration) {

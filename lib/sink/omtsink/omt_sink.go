@@ -18,10 +18,11 @@ type OmtSink struct {
 	quality libomt.Quality
 	send    *libomt.OmtSend
 	frame   *libomt.OmtMediaFrame
+	rate    int
 }
 
 func New(name string, cfg *config.OmtSinkCfg, frameCfg *encdec.FrameCfg, alloc encdec.FrameAllocator) *OmtSink {
-	f := &OmtSink{name: cfg.Name, quality: libomt.QualityDefault}
+	f := &OmtSink{name: cfg.Name, quality: libomt.QualityDefault, rate: 60}
 
 	if cfg.Quality != "" {
 		switch cfg.Quality {
@@ -64,7 +65,7 @@ func (f *OmtSink) Start() bool {
 		Flags:             0,
 		Stride:            f.frames.Width * 4,
 		DataLength:        f.frames.Width * f.frames.Height * 4,
-		FrameRateN:        60000,
+		FrameRateN:        f.rate * 1000,
 		FrameRateD:        1000,
 		AspectRatio:       float32(f.frames.Width) / float32(f.frames.Height), // Assume square pixels
 		FrameMetadata:     nil,
@@ -101,4 +102,8 @@ func (f *OmtSink) Frames() *layer.FrameForwarder {
 
 func (f *OmtSink) log(msg string, args ...interface{}) {
 	f.Frames().Log(msg, args...)
+}
+
+func (f *OmtSink) SetRate(rate int) {
+	f.rate = rate
 }
