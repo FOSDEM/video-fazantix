@@ -144,6 +144,8 @@ func (s *V4LSource) Start() bool {
 			},
 			alloc,
 		)
+	default:
+		panic("Unsupported v4l frame format: '" + s.Format + "'")
 	}
 
 	go s.streamLoopLoop()
