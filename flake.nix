@@ -13,9 +13,35 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
+        lib = pkgs.lib;
       in
       rec {
-        packages = {
+        packages = rec {
+          fazantix-web-ui = pkgs.buildNpmPackage {
+            name = "fazantix-web-ui";
+            src = ./web_ui;
+            npmDepsHash = "sha256-cCgiR3LxArf5uYsqo7dN8W8qiK/zAz6lkK9vcL5/ev8=";
+            npmBuildScript = "build";
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out
+              cp -r dist/* $out/
+              runHook postInstall
+            '';
+          };
+
+          fazantix-sample-images = pkgs.stdenvNoCC.mkDerivation rec {
+            name = "fazantix-sample-images";
+            meta.description = "Example image files for fazantix";
+            src = ./examples/images;
+            buildInputs = [ pkgs.coreutils pkgs.rsync ];
+            phases = [ "unpackPhase" "installPhase" ];
+            installPhase = ''
+              mkdir -p $out
+              rsync -rva ./ $out/
+            '';
+          };
+
           fazantix = pkgs.buildGoModule {
             name = "fazantix";
             src = ./.;
@@ -25,6 +51,7 @@
             goSum = ./go.sum;
             subPackages = [
               "cmd/fazantix"
+              "cmd/fazantix-window"
               "cmd/fazantix-validate-config"
             ];
 
@@ -58,8 +85,7 @@
 
               # generate web ui
               mkdir -p lib/api/static
-              echo 'oops, web ui through nix not supported yet' > lib/api/static/index.html
-              # TODO: use node2nix or similar to do whatever web_ui/build.sh does but with nix
+              cp -rvf ${fazantix-web-ui}/* lib/api/static/
             '';
 
             meta.mainProgram = "fazantix";
