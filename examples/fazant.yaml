@@ -11,6 +11,7 @@ sources:
       height: 480
       num_allocated_frames: 6
     num_frames_in_writing: 3
+    fps: 60
   video0_ffmpeg:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -f v4l2 -framerate 60 -video_size 1920x1080 -i /dev/video0 -pix_fmt yuv422p -vf scale=1920:1080 -f rawvideo -r 60 -'

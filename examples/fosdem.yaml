@@ -14,6 +14,7 @@ sources:
       # height: 480
       num_allocated_frames: 6
     num_frames_in_writing: 3
+    fps: 60
   # camera:
   #   type: ffmpeg_stdout
   #   cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'

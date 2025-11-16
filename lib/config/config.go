@@ -217,7 +217,7 @@ type V4LSourceCfg struct {
 	Path               string
 	Fmt                string
 	NumFramesInWriting int    `yaml:"num_frames_in_writing"`
-	FPS                uint32 `yaml:fps`
+	FPS                uint32 `yaml:"fps"`
 }
 
 func (s *SourceCfg) UnmarshalYAML(b []byte) error {

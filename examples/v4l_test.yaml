@@ -18,6 +18,7 @@ sources:
       height: 480
       num_allocated_frames: 6
     num_frames_in_writing: 3
+    fps: 60
 
 
 scenes:
