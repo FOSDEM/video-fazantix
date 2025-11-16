@@ -147,16 +147,17 @@ sinks:
       ffmpeg \
         -y -v verbose \
         -init_hw_device vaapi=intel:/dev/dri/renderD128 \
+        -fflags '+genpts+nobuffer+igndts' \
         -hwaccel vaapi -hwaccel_output_format vaapi \
         -hwaccel_device intel -filter_hw_device intel  \
-        -fflags nobuffer \
         -flags low_delay \
         -probesize 32 \
         -analyzeduration 0 \
         -f rawvideo -video_size ${SIZE} \
         -pixel_format rgba -framerate ${RATE} -re -i - \
+        -itsoffset 0.16 -f alsa -sample_rate 48000 -channels 2 -i hw:3 \
         -threads:0 0 \
-        -filter_complex "[0:v] format=nv12,hwupload [vout]" \
+        -filter_complex "[1:a] volume=volume=0dB [ain]; [0:v] format=nv12,hwupload [vout]" \
         -map '[vout]:0' \
         -c:v h264_vaapi -rc_mode CBR \
         -maxrate:v:0 5000k -bufsize:v:0 8192k \
@@ -164,6 +165,8 @@ sinks:
         -qmin:v:0 1 \
         -fps_mode cfr \
         -pix_fmt yuv420p \
+        -map '[ain]:0' \
+        -ac 2 -strict -2 -c:a aac -b:a 128k -ar 48000 \
         -f mpegts pipe:1 \
         | /usr/bin/sproxy 1000
     frames:
