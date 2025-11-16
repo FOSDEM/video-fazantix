@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"syscall"
 	"time"
@@ -21,6 +22,7 @@ type FFmpegSink struct {
 	stderr   io.ReadCloser
 	stdin    io.WriteCloser
 	frames   layer.FrameForwarder
+	rate     int
 }
 
 func New(name string, cfg *config.FFmpegSinkCfg, frameCfg *encdec.FrameCfg, alloc encdec.FrameAllocator) *FFmpegSink {
@@ -53,6 +55,11 @@ func (f *FFmpegSink) Start() bool {
 
 func (f *FFmpegSink) setupCmd() error {
 	f.cmd = exec.Command("bash", "-c", f.shellCmd)
+	f.cmd.Env = os.Environ()
+	f.cmd.Env = append(f.cmd.Env, fmt.Sprintf("WIDTH=%d", f.Frames().Width))
+	f.cmd.Env = append(f.cmd.Env, fmt.Sprintf("HEIGHT=%d", f.Frames().Height))
+	f.cmd.Env = append(f.cmd.Env, fmt.Sprintf("SIZE=%dx%d", f.Frames().Width, f.Frames().Height))
+	f.cmd.Env = append(f.cmd.Env, fmt.Sprintf("RATE=%d", f.rate))
 	f.cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGTERM}
 	var err error
 	f.stdin, err = f.cmd.StdinPipe()
@@ -131,4 +138,6 @@ func (f *FFmpegSink) log(msg string, args ...interface{}) {
 	f.Frames().Log(msg, args...)
 }
 
-func (f *FFmpegSink) SetRate(rate int) {}
+func (f *FFmpegSink) SetRate(rate int) {
+	f.rate = rate
+}
