@@ -2,6 +2,7 @@ package theatre
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
@@ -314,16 +315,26 @@ func (t *Theatre) Start() {
 	if err != nil {
 		return
 	}
-
+	refreshRate := int(0)
 	for _, stage := range t.WindowStageList {
 		stage.Sink.Start()
+		refreshRate = stage.Sink.(*windowsink.WindowSink).GetRefreshRate()
 	}
 	for _, src := range t.SourceList {
 		if src.Start() {
 			rendering.SetupTextures(src.Frames())
 		}
 	}
+
 	for _, stage := range t.NonWindowStageList {
+		if stage.RateDivisor < 1 {
+			stage.RateDivisor = 1
+		}
+		stage.Sink.SetRate(refreshRate / int(stage.RateDivisor))
+		if stage.RateDivisor > 1 {
+			log.Printf("setting sink rate to %d", refreshRate/int(stage.RateDivisor))
+		}
+
 		stage.Sink.Start()
 	}
 }
