@@ -11,6 +11,9 @@ uniform int sourceIndices[{{ .NumLayers }}];
 uniform uint sourceTypes[{{ .NumSources }}];
 
 vec4 sampleLayerYUV422(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
+    if (dve.z == 0 || dve.w == 0) {
+        return vec4(0, 0, 0, 0);
+    }
 	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
 	float Y = texture(tex[src_idx*3], tpos).r;
 	float Cb = texture(tex[src_idx*3+2], tpos).r - 0.5;
@@ -46,7 +49,11 @@ vec4 sampleLayerDebugBBox(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 }
 
 vec4 sampleLayerYUYV(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
-	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
+    if (dve.z == 0 || dve.w == 0) {
+        return vec4(0, 0, 0, 0);
+    }
+
+    vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
 	vec2 uvpos = (uv / dve.z) - (dve.xy / dve.zw);
 	vec4 src = texture(tex[src_idx*3], uvpos);
 	int width = textureSize(tex[src_idx*3], 0).x;
