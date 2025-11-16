@@ -28,6 +28,7 @@ type V4LSource struct {
 
 	requestedFrameCfg  *encdec.FrameCfg
 	numFramesInWriting int
+	fps                uint32
 	framesInWriting    []*encdec.Frame
 
 	hadValidFrame      bool
@@ -41,6 +42,7 @@ func New(name string, cfg *config.V4LSourceCfg) *V4LSource {
 	s.Frames().InitLogging()
 	s.Frames().Width = cfg.Width
 	s.Frames().Height = cfg.Height
+	s.fps = cfg.FPS
 
 	switch cfg.Fmt {
 	case "yuyv":
@@ -97,6 +99,7 @@ func (s *V4LSource) Start() bool {
 			Height:      uint32(s.requestedFrameCfg.Height),
 		}),
 		device.WithBufferSize(uint32(s.requestedFrameCfg.NumAllocatedFrames)),
+		device.WithFPS(s.fps),
 	)
 	if err != nil {
 		s.Frames().Error("Failed to open device: %s", err)
