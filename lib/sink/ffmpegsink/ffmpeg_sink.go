@@ -113,10 +113,7 @@ func (f *FFmpegSink) processStdout() {
 
 func (f *FFmpegSink) processStdin() {
 	for {
-		// Here we use GetAnyFrameForReading instead of GetFreshFrameForReading
-		// because we want to feed duplicate frames to ffmpeg if it consumes
-		// frames faster than our render loop
-		frame := f.Frames().GetAnyFrameForReading()
+		frame := f.Frames().BlockingGetFrameForReading()
 		if frame == nil {
 			continue
 		}

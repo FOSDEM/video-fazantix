@@ -33,6 +33,7 @@ type FrameForwarder struct {
 
 	bin []*encdec.Frame
 	sync.Mutex
+	frameBarrier *sync.Cond
 
 	HoldFrame          bool
 	FramebufferID      uint32
@@ -51,6 +52,7 @@ func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.
 	f.Allocator = alloc
 	f.FrameInfo = *info
 	f.FrameAge = 0
+	f.frameBarrier = sync.NewCond(&f.Mutex)
 	f.allocateFrames(info.NumAllocatedFrames)
 	f.metrics = metrics.NewStreamMetrics(name)
 	f.InitLogging()
@@ -69,6 +71,7 @@ func (f *FrameForwarder) Init(name string, info *encdec.FrameInfo, alloc encdec.
 func (f *FrameForwarder) GetFreshFrameForReading() *encdec.Frame {
 	f.Lock()
 	defer f.Unlock()
+	f.metrics.FramesRequested.Inc()
 
 	frame := f.curReadingFrame
 	if !f.IsReady || frame == nil || frame.ID <= f.LastReadFrameID {
@@ -81,9 +84,32 @@ func (f *FrameForwarder) GetFreshFrameForReading() *encdec.Frame {
 	return frame
 }
 
+func (f *FrameForwarder) BlockingGetFrameForReading() *encdec.Frame {
+	f.Lock()
+	defer f.Unlock()
+	f.metrics.FramesRequested.Inc()
+
+	var frame *encdec.Frame
+	for {
+		frame = f.curReadingFrame
+		if !f.IsReady || frame == nil || frame.ID <= f.LastReadFrameID {
+			f.frameBarrier.Wait()
+		} else {
+			break
+		}
+	}
+
+	f.LastReadFrameID = frame.ID
+
+	frame.NumReaders.Add(1)
+
+	return frame
+}
+
 func (f *FrameForwarder) GetAnyFrameForReading() *encdec.Frame {
 	f.Lock()
 	defer f.Unlock()
+	f.metrics.FramesRequested.Inc()
 
 	frame := f.curReadingFrame
 	if !f.IsReady || frame == nil {
@@ -96,6 +122,8 @@ func (f *FrameForwarder) GetAnyFrameForReading() *encdec.Frame {
 }
 
 func (f *FrameForwarder) FinishedReading(frame *encdec.Frame) {
+	f.metrics.FramesRead.Inc()
+
 	f.Lock()
 	defer f.Unlock()
 
@@ -153,10 +181,11 @@ func (f *FrameForwarder) FinishedWriting(frame *encdec.Frame) {
 	}
 
 	f.curReadingFrame = frame
-	f.metrics.FramesForwarded.Inc()
+	f.metrics.FramesWritten.Inc()
 
 	f.FrameAge = 0
 	f.IsReady = true
+	f.frameBarrier.Broadcast()
 }
 
 // FailedWriting puts a frame back into the pool without updating
