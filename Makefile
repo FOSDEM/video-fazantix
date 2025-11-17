@@ -1,19 +1,23 @@
 CONFIG=examples/imagesource.yaml
-GOFILES := $(wildcard *.go)
+SRCFILES := $(wildcard *.go) $(wildcard *.frag) $(wildcard *.vert) Makefile
 WEBFILES := $(wildcard web_ui/*)
+TAGS := dummy
 
 .PHONY: build
-build: prereqs build/fazantix
+build: prereqs build/fazantix build/fazantix-wayland
 
-.PHONY: prebuildd
+.PHONY: prebuild
 prebuild: lib/api/static/index.html
 
 .PHONY: develop
 develop: prereqs
 	./web_ui/build.sh serve
 
-build/%: $(GOFILES) go.sum lib/api/static/index.html
-	go build -o $@ -tags "wayland" ./cmd/$*
+build/%: $(SRCFILES) go.sum lib/api/static/index.html
+	go build -o $@ -tags "$(TAGS)" ./cmd/$*
+
+build/fazantix-wayland: $(SRCFILES) go.sum lib/api/static/index.html
+	go build -o $@ -tags "$(TAGS),wayland" ./cmd/fazantix
 
 .PHONY: run
 run: build/fazantix
@@ -37,7 +41,7 @@ validate-examples: $(wildcard examples/*.yaml)
 lib/api/static/index.html:$(WEBFILES)
 	./web_ui/build.sh
 
-lib/api/docs/swagger.json: lib/api/static/index.html $(GOFILES)
+lib/api/docs/swagger.json: lib/api/static/index.html $(SRCFILES)
 	# requires index.html because swag wants a non-failing go build
 	go tool swag init -g lib/api/api.go -o lib/api/docs
 
