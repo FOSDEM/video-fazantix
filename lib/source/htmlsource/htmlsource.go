@@ -97,7 +97,7 @@ func (s *HtmlSource) Render() error {
 	frame.MakeTexture(len(data), s.width, s.height)
 	copy(frame.Data, data)
 	s.frames.IsReady = true
-	s.frames.HoldFrame = layer.Hold
+	s.frames.HoldFrame = true
 	s.frames.FinishedWriting(frame)
 
 	return nil
