@@ -1,2 +1,1 @@
-man/fazantix.1
-man/fazantix-wayland.1
+man/*.1

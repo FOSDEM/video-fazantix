@@ -1,0 +1,29 @@
+= fazantix-window(1)
+FOSDEM Team
+:doctype: manpage
+:man manual: Fazantix Manual
+
+== Name
+
+fazantix-window - a pheasant-based video mixer
+
+== Synopsis
+
+*fazantix-window* [_OPTION_]
+
+== Options
+
+*--title* _TITLE_::
+  Window title for this sink (default `WindowSink`)
+
+*--width* _WIDTH_::
+  Width of the window sink (default 1920)
+
+*--height* _HEIGHT_::
+  Height of the window sink (default 1080)
+
+*--rate* _RATE_::
+  Framerate limiter on the input data (default 60)
+
+== Description
+

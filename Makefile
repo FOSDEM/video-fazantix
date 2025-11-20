@@ -7,7 +7,7 @@ LDFLAGS=-compressdwarf=false
 TAGS := dummy
 
 .PHONY: build
-build: prereqs build/fazantix build/fazantix-wayland
+build: prereqs build/fazantix build/fazantix-wayland build/fazantix-window build/fazantix-validate-config
 
 .PHONY: prebuild
 prebuild: lib/api/static/index.html

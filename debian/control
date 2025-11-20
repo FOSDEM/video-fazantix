@@ -24,10 +24,25 @@ Section: video
 Maintainer: FOSDEM Team <noreply@fosdem.org>
 Standards-Version: 4.6.2
 
+Package: fazantix-validate-config
+Architecture: amd64
+Section: video
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Fazantix Configuration File Validator
+ Long Description Here
+
+Package: fazantix-window
+Architecture: amd64
+Section: video
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Fazantix Config Validator
+ Long Description Here
+
 Package: fazantix-x11
 Architecture: amd64
 Section: video
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: fazantix-validate-config
 Description: Fazantix X11-Based Backend
  Long Description Here
 
@@ -42,5 +57,6 @@ Package: fazantix-wayland
 Architecture: amd64
 Section: video
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: fazantix-validate-config
 Description: Fazantix Wayland-Based Backend
  Long Description Here

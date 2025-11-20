@@ -9,8 +9,7 @@ override_dh_shlibdeps:
 	dh_shlibdeps
 
 override_dh_installman:
-	a2x -v -L -f manpage man/fazantix.1.adoc
-	a2x -v -L -f manpage man/fazantix-wayland.1.adoc
+	find man -type f -name "*.adoc" -print0 -exec a2x -v -L -f manpage {} \;
 	dh_installman
 
 #override_dh_systemd_enable:
