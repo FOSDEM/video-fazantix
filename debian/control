@@ -1,0 +1,46 @@
+Source: fazantix
+Priority: optional
+Build-Depends:
+ debhelper (>= 11~),
+ debhelper-compat (= 12),
+ pkgconf,
+ golang-go (>= 2:1.23~),
+ nodejs,
+ npm,
+ libx11-dev,
+ libxcursor-dev,
+ libxrandr-dev,
+ libxinerama-dev,
+ libxi-dev,
+ libglx-dev,
+ libgl-dev,
+ libxxf86vm-dev,
+ libwayland-dev,
+ libegl-dev,
+ libxkbcommon-dev,
+ asciidoc-base
+Testsuite: autopkgtest-pkg-pybuild
+Section: video
+Maintainer: FOSDEM Team <noreply@fosdem.org>
+Standards-Version: 4.6.2
+
+Package: fazantix-x11
+Architecture: amd64
+Section: video
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Fazantix X11-Based Backend
+ Long Description Here
+
+Package: fazantix-frontend
+Architecture: all
+Section: video
+Depends: ${misc:Depends}
+Description: Fazantix WebUI
+ Seperately built Fazantix WebUI, to use with an external webserver
+
+Package: fazantix-wayland
+Architecture: amd64
+Section: video
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Fazantix Wayland-Based Backend
+ Long Description Here

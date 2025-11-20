@@ -1,0 +1,46 @@
+= fazantix(1)
+FOSDEM Team
+:doctype: manpage
+:man manual: Fazantix Manual
+
+== Name
+
+fazantix - a pheasant-based video mixer
+
+== Synopsis
+
+*fazantix* _FILE_
+
+== Description
+
+This starts the mixer with the config identified by _FILE_
+
+=== Running
+
+Running on bare metal without an existing Xorg/wayland session
+
+[,shell-session]
+----
+$ xinit ./fazantix configfile.yaml
+----
+
+To quit, press `Ctrl+Shift+Q`.
+
+
+=== Control
+
+Open the web UI with a browser! It is at [http://localhost:8000](http://localhost:8000)
+by default.
+
+You can also send commands to the API directly:
+[,shell-session]
+----
+# Switch to the side-by-side scene on the projector stage
+$ curl http://localhost:8000/api/scene/projector/side-by-side
+----
+
+Limited keyboard shortcuts are also available:
+
+* Use the digit keys to switch between scenes
+* Use `Ctrl-Shift-q` to exit
+
