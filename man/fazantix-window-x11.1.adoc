@@ -1,15 +1,15 @@
-= fazantix-window(1)
+= fazantix-window-x11(1)
 FOSDEM Team
 :doctype: manpage
 :man manual: Fazantix Manual
 
 == Name
 
-fazantix-window - a pheasant-based video mixer
+fazantix-window-x11 - a pheasant-based video mixer
 
 == Synopsis
 
-*fazantix-window* [_OPTION_]
+*fazantix-window-x11* [_OPTION_]
 
 == Options
 

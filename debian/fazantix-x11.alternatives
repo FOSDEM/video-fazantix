@@ -1,0 +1,8 @@
+Name: fazantix
+Link: /usr/bin/fazantix
+Alternative: /usr/bin/fazantix-x11
+Priority: 50
+Dependents:
+  /usr/bin/fazantix-window fazantix-window /usr/bin/fazantix-window-x11
+  /usr/share/man/man1/fazantix.1.gz fazantix.1.gz /usr/share/man/man1/fazantix-x11.1.gz
+  /usr/share/man/man1/fazantix-window.1.gz fazantix-window.1.gz /usr/share/man/man1/fazantix-window-x11.1.gz

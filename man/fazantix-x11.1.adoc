@@ -1,15 +1,15 @@
-= fazantix(1)
+= fazantix-x11(1)
 FOSDEM Team
 :doctype: manpage
 :man manual: Fazantix Manual
 
 == Name
 
-fazantix - a pheasant-based video mixer
+fazantix-x11 - a pheasant-based video mixer
 
 == Synopsis
 
-*fazantix* _FILE_
+*fazantix-x11* _FILE_
 
 == Description
 

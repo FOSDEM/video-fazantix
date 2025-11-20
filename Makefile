@@ -7,7 +7,7 @@ LDFLAGS=-compressdwarf=false
 TAGS := dummy
 
 .PHONY: build
-build: prereqs build/fazantix build/fazantix-wayland build/fazantix-window build/fazantix-validate-config
+build: prereqs build-x11 build-wayland build/fazantix-validate-config
 
 .PHONY: prebuild
 prebuild: lib/api/static/index.html
@@ -16,11 +16,21 @@ prebuild: lib/api/static/index.html
 develop: prereqs
 	./web_ui/build.sh serve
 
+.PHONY: build-x11
+build-x11: build/fazantix-x11 build/fazantix-window-x11
+
+.PHONY: build-wayland
+build-wayland: build/fazantix-wayland build/fazantix-window-wayland
+
+build/%-x11: $(SRCFILES) go.sum lib/api/static/index.html
+	go build -ldflags=$(LDFLAGS) -o $@ -tags "$(TAGS)" ./cmd/$*
+
+build/%-wayland: $(SRCFILES) go.sum lib/api/static/index.html
+	go build -ldflags=$(LDFLAGS) -o $@ -tags "$(TAGS),wayland" ./cmd/$*
+
 build/%: $(SRCFILES) go.sum lib/api/static/index.html
 	go build -ldflags=$(LDFLAGS) -o $@ -tags "$(TAGS)" ./cmd/$*
 
-build/fazantix-wayland: $(SRCFILES) go.sum lib/api/static/index.html
-	go build -ldflags=$(LDFLAGS) -o $@ -tags "$(TAGS),wayland" ./cmd/fazantix
 
 .PHONY: run
 run: build/fazantix
@@ -60,6 +70,8 @@ clean:
 	rm -vf lib/api/static/index.html
 	rm -vf lib/api/docs/*.{json,yaml}
 	rm -vf lib/api/docs/docs.go
+	rm -rvf web_ui/dist
+	rm -rvf web-ui/node_modules
 
 .PHONY: all
 all: build

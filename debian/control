@@ -24,27 +24,13 @@ Section: video
 Maintainer: FOSDEM Team <noreply@fosdem.org>
 Standards-Version: 4.6.2
 
-Package: fazantix-validate-config
-Architecture: amd64
+Package: fazantix-data
+Architecture: all
 Section: video
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Fazantix Configuration File Validator
- Long Description Here
-
-Package: fazantix-window
-Architecture: amd64
-Section: video
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Fazantix Config Validator
- Long Description Here
-
-Package: fazantix-x11
-Architecture: amd64
-Section: video
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: fazantix-validate-config
-Description: Fazantix X11-Based Backend
- Long Description Here
+Depends: ${misc:Depends}
+Suggests: cowsay
+Description: Fazantix Optional Data
+ Example configuration files for fazantix
 
 Package: fazantix-frontend
 Architecture: all
@@ -53,10 +39,25 @@ Depends: ${misc:Depends}
 Description: Fazantix WebUI
  Seperately built Fazantix WebUI, to use with an external webserver
 
+Package: fazantix-validate-config
+Architecture: amd64
+Section: video
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Fazantix Configuration File Validator
+ Long Description Here
+
+Package: fazantix-x11
+Architecture: amd64
+Section: video
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: fazantix-data, fazantix-validate-config
+Description: Fazantix X11-Based Backend
+ Long Description Here
+
 Package: fazantix-wayland
 Architecture: amd64
 Section: video
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: fazantix-validate-config
+Recommends: fazantix-data, fazantix-validate-config
 Description: Fazantix Wayland-Based Backend
  Long Description Here
