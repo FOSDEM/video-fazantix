@@ -13,7 +13,7 @@ jobs:
       - run: ./generate_release.sh
       - run: apt-get -y install -t bookworm-backports golang-go
       - run: apt-get -y build-dep .
-      - run: dpkg-buildpackage -B
+      - run: dpkg-buildpackage -b
       - run: mkdir -p /root/build/bookworm
       - run: mv ../*.deb /root/build/bookworm
       - persist_to_workspace:
@@ -32,7 +32,7 @@ jobs:
       - checkout
       - run: ./generate_release.sh
       - run: apt-get -y build-dep .
-      - run: dpkg-buildpackage -B
+      - run: dpkg-buildpackage -b
       - run: mkdir -p /root/build/trixie
       - run: mv ../*.deb /root/build/trixie
       - persist_to_workspace:
