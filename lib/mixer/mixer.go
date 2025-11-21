@@ -2,6 +2,7 @@ package mixer
 
 import (
 	"log"
+	"time"
 
 	"github.com/fosdem/fazantix/lib/api"
 	"github.com/fosdem/fazantix/lib/config"
@@ -67,6 +68,7 @@ func MakeWindowAndMix(cfg *config.Config, benchmark bool) {
 	}
 
 	var deltaTimer utils.DeltaTimer
+	mixerStart := time.Now()
 	frameIndex := uint64(0)
 	for !theatre.ShutdownRequested {
 		frameIndex++
@@ -98,7 +100,7 @@ func MakeWindowAndMix(cfg *config.Config, benchmark bool) {
 		api.Stats.Update()
 		kbdctl.Poll()
 		if benchmark {
-			if frameIndex == 300 {
+			if time.Since(mixerStart).Seconds() > 10 {
 				theatre.ShutdownRequested = true
 				api.Stats.Print()
 			}

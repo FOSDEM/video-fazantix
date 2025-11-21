@@ -13,10 +13,13 @@ type Stats struct {
 	Uptime             float64 `json:"uptime" example:"22.355897797"`
 	FPS                uint64  `json:"fps" example:"60"`
 	WsClients          int     `json:"ws_clients" example:"1"`
+	FPSAvg             float64 `json:"fps_avg" example:"60.0"`
 
 	frameCounter uint64
 	frameTimer   time.Time
 	start        time.Time
+	fpsHistory   [9]uint64
+	fpsIndex     int
 }
 
 func New() *Stats {
@@ -28,9 +31,18 @@ func New() *Stats {
 func (s *Stats) Update() {
 	s.frameCounter++
 	if time.Since(s.frameTimer) > 1*time.Second {
-		s.frameTimer = time.Now()
 		s.FPS = s.frameCounter
 		s.frameCounter = 0
+		s.fpsHistory[s.fpsIndex] = s.FPS
+		s.fpsIndex++
+		if s.fpsIndex > len(s.fpsHistory)-1 {
+			s.fpsIndex = 0
+		}
+		sum := uint64(0)
+		for _, h := range s.fpsHistory {
+			sum += h
+		}
+		s.FPSAvg = float64(sum) / float64(len(s.fpsHistory))
 		s.frameTimer = time.Now()
 	}
 
@@ -40,5 +52,5 @@ func (s *Stats) Update() {
 }
 
 func (s *Stats) Print() {
-	fmt.Printf("%v", s)
+	fmt.Printf("BENCHMARK: fps:%d avg:%f\n", s.FPS, s.FPSAvg)
 }
