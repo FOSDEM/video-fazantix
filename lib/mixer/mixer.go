@@ -13,10 +13,10 @@ import (
 	"github.com/fosdem/fazantix/lib/utils"
 )
 
-func MakeWindowAndMix(cfg *config.Config) {
+func MakeWindowAndMix(cfg *config.Config, benchmark bool) {
 	alloc := &encdec.DumbFrameAllocator{}
 
-	theatre, err := theatre.New(cfg, alloc)
+	theatre, err := theatre.New(cfg, alloc, benchmark)
 	if err != nil {
 		log.Fatalf("could not build theatre: %s", err)
 	}
@@ -91,5 +91,11 @@ func MakeWindowAndMix(cfg *config.Config) {
 		theatre.Animate(float32(dt.Nanoseconds()) * 1e-9)
 		api.Stats.Update()
 		kbdctl.Poll()
+		if benchmark {
+			if frameIndex == 300 {
+				theatre.ShutdownRequested = true
+				api.Stats.Print()
+			}
+		}
 	}
 }

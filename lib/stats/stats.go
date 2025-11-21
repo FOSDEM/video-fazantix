@@ -1,6 +1,7 @@
 package stats
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/rendering"
@@ -36,4 +37,8 @@ func (s *Stats) Update() {
 	s.Uptime = float64(time.Since(s.start).Nanoseconds()) / 1e9
 	s.TextureUpload = rendering.TextureUploadCounter
 	s.TextureUploadAvgGb = float64(s.TextureUpload) / (s.Uptime * 1024 * 1024 * 1024)
+}
+
+func (s *Stats) Print() {
+	fmt.Printf("%v", s)
 }
