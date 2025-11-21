@@ -13,7 +13,9 @@ fi
 
 if [[ $# -eq 0 || "${1}" == build ]]; then
     npm run build
-    rsync -rza --delete dist/ ../lib/api/static/
+    mkdir -p ../lib/api/static
+    cp -a dist/* ../lib/api/static/
+    #rsync -rza --delete dist/ ../lib/api/static/
 elif [[ "${1}" == serve ]]; then
     npm run dev
 fi

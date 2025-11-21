@@ -1,2 +1,5 @@
 /build
 /result
+
+debian/changelog
+man/*.1

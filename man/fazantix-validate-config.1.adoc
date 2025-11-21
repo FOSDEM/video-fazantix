@@ -1,0 +1,26 @@
+= fazantix-validate-config(1)
+FOSDEM Team
+:doctype: manpage
+:man manual: Fazantix Manual
+
+== Name
+
+fazantix-validate-config - a pheasant-based video mixer
+
+== Synopsis
+
+*fazantix-validate-config* _FILE_
+
+== Description
+
+Check whether the fazantix config in _FILE_ is valid.
+
+== Exit status
+
+*0*::
+  Success.
+  Configuration provided is valid.
+
+*1*::
+  Failure.
+  Cannot parse the file provided, the error is written on `stdout`.

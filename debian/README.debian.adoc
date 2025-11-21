@@ -1,0 +1,43 @@
+= Building fazantix
+
+== Release-specific stuff
+
+=== bullseye
+
+We need to bring our own NodeJS and Golang environments.
+
+Node we can get from Nodesource and add it as an extra repository;
+golang we will need to download/build ourselves.
+
+Perhaps we can make dynamic Build-Depends for this, but it won't be completely reproducible.
+
+=== bookworm
+
+We need to use golang from `bookworm-backports` (it includes 1.23).
+`apt` does *not* want to use it, as the Release file contains `NotAutomatic: yes`;
+this is overridable by using `aptitude` for resolving dependencies.
+
+[source,console]
+----
+$ sbuild -c bookworm --extra-repository="deb http://deb.debian.org/debian bookworm-backports main" --build-dep-resolver=aptitude
+----
+
+Also note that npm is not happy with the version of vite in `package.json`, although it builds successfully:
+
+[source,console]
+----
+npm WARN EBADENGINE Unsupported engine {
+npm WARN EBADENGINE   package: 'vite@7.0.6',
+npm WARN EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
+npm WARN EBADENGINE   current: { node: 'v18.20.4', npm: '9.2.0' }
+npm WARN EBADENGINE }
+----
+
+=== trixie
+
+This actually builds cleanly :)
+
+[source,console]
+----
+$ sbuild -c trixie
+----

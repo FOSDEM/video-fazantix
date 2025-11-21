@@ -1,10 +1,13 @@
 CONFIG=examples/imagesource.yaml
 SRCFILES := $(wildcard *.go) $(wildcard *.frag) $(wildcard *.vert) Makefile
 WEBFILES := $(wildcard web_ui/*)
+
+LDFLAGS=-compressdwarf=false
+
 TAGS := dummy
 
 .PHONY: build
-build: prereqs build/fazantix build/fazantix-wayland
+build: prereqs build-x11 build-wayland build/fazantix-validate-config
 
 .PHONY: prebuild
 prebuild: lib/api/static/index.html
@@ -13,11 +16,21 @@ prebuild: lib/api/static/index.html
 develop: prereqs
 	./web_ui/build.sh serve
 
-build/%: $(SRCFILES) go.sum lib/api/static/index.html
-	go build -o $@ -tags "$(TAGS)" ./cmd/$*
+.PHONY: build-x11
+build-x11: build/fazantix-x11 build/fazantix-window-x11
 
-build/fazantix-wayland: $(SRCFILES) go.sum lib/api/static/index.html
-	go build -o $@ -tags "$(TAGS),wayland" ./cmd/fazantix
+.PHONY: build-wayland
+build-wayland: build/fazantix-wayland build/fazantix-window-wayland
+
+build/%-x11: $(SRCFILES) go.sum lib/api/static/index.html
+	go build -ldflags=$(LDFLAGS) -o $@ -tags "$(TAGS)" ./cmd/$*
+
+build/%-wayland: $(SRCFILES) go.sum lib/api/static/index.html
+	go build -ldflags=$(LDFLAGS) -o $@ -tags "$(TAGS),wayland" ./cmd/$*
+
+build/%: $(SRCFILES) go.sum lib/api/static/index.html
+	go build -ldflags=$(LDFLAGS) -o $@ -tags "$(TAGS)" ./cmd/$*
+
 
 .PHONY: run
 run: build/fazantix
@@ -54,9 +67,11 @@ prereqs: builddir lib/api/docs/swagger.json lib/api/static/index.html
 .PHONY: clean
 clean:
 	rm -rvf build
-	rm -v lib/api/static/index.html
-	rm -v lib/api/docs/*.{json,yaml}
-	rm -v lib/api/docs/docs.go
+	rm -vf lib/api/static/index.html
+	rm -vf lib/api/docs/*.{json,yaml}
+	rm -vf lib/api/docs/docs.go
+	rm -rvf web_ui/dist
+	rm -rvf web-ui/node_modules
 
 .PHONY: all
 all: build

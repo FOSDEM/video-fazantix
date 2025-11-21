@@ -1,0 +1,8 @@
+Name: fazantix
+Link: /usr/bin/fazantix
+Alternative: /usr/bin/fazantix-wayland
+Priority: 100
+Dependents:
+  /usr/bin/fazantix-window fazantix-window /usr/bin/fazantix-window-wayland
+  /usr/share/man/man1/fazantix.1.gz fazantix.1.gz /usr/share/man/man1/fazantix-wayland.1.gz
+  /usr/share/man/man1/fazantix-window.1.gz fazantix-window.1.gz /usr/share/man/man1/fazantix-window-wayland.1.gz
