@@ -2,10 +2,11 @@
 import glob
 import subprocess
 import tabulate
+import os
 
 def bench(cmd):
-    p = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
-    for line in p.splitlines():
+    p = subprocess.run(cmd, stdout=subprocess.PIPE, text=True, env={"XDG_RUNTIME_DIR": "/tmp"})
+    for line in p.stdout.splitlines():
         if not line.startswith("BENCHMARK:"):
             continue
         part = line.split()
@@ -29,7 +30,7 @@ def main():
         wayland = bench_wayland(config)
         result.append((os.path.basename(config), x11, wayland))
     print()
-    print(tabulate(result, headers=["config", "X11", "Wayland"]))
+    print(tabulate.tabulate(result, headers=["config", "X11", "Wayland"]))
 
 if __name__ == "__main__":
     main()

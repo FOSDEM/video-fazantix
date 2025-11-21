@@ -1,16 +1,16 @@
 sources:
   background:
     type: image
-    path: images/background.png
+    path: ../images/background.png
   test1:
     tag: tst1
     type: image
-    path: images/testsrc1.png
+    path: ../images/testsrc1.png
     makescene: true
   test2:
     tag: tst2
     type: image
-    path: images/testsrc2.png
+    path: ../images/testsrc2.png
     makescene: true
 
 scenes:
