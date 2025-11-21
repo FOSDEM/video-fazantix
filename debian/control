@@ -44,7 +44,7 @@ Architecture: amd64
 Section: video
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Fazantix Configuration File Validator
- Long Description Here
+ Provides tooling for validating fazantix configuration files
 
 Package: fazantix-x11
 Architecture: amd64
@@ -52,7 +52,7 @@ Section: video
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: fazantix-data, fazantix-validate-config
 Description: Fazantix X11-Based Backend
- Long Description Here
+ X11 build of the fazantix mixer
 
 Package: fazantix-wayland
 Architecture: amd64
@@ -60,4 +60,4 @@ Section: video
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: fazantix-data, fazantix-validate-config
 Description: Fazantix Wayland-Based Backend
- Long Description Here
+ Wayland build of the fazantix mixer
