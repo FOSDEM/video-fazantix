@@ -42,7 +42,7 @@ type Theatre struct {
 	listener map[string][]EventListener
 }
 
-func New(cfg *config.Config, alloc encdec.FrameAllocator, benchmark bool) (*Theatre, error) {
+func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 	buildDynamicScenes(cfg)
 	sourceList, err := buildSourceList(cfg, alloc)
 	if err != nil {

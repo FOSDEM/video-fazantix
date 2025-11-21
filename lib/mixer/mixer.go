@@ -18,7 +18,7 @@ import (
 func MakeWindowAndMix(cfg *config.Config, benchmark bool) {
 	alloc := &encdec.DumbFrameAllocator{}
 
-	theatre, err := theatre.New(cfg, alloc, benchmark)
+	theatre, err := theatre.New(cfg, alloc)
 	if err != nil {
 		log.Fatalf("could not build theatre: %s", err)
 	}
