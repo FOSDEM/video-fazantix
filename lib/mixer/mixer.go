@@ -11,6 +11,7 @@ import (
 	"github.com/fosdem/fazantix/lib/rendering/shaders"
 	"github.com/fosdem/fazantix/lib/theatre"
 	"github.com/fosdem/fazantix/lib/utils"
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 func MakeWindowAndMix(cfg *config.Config, benchmark bool) {
@@ -59,6 +60,11 @@ func MakeWindowAndMix(cfg *config.Config, benchmark bool) {
 	}
 
 	glvars.Start()
+	if benchmark {
+		glfw.SwapInterval(0)
+	} else {
+		glfw.SwapInterval(1)
+	}
 
 	var deltaTimer utils.DeltaTimer
 	frameIndex := uint64(0)
