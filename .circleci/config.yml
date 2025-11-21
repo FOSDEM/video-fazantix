@@ -11,8 +11,8 @@ jobs:
       - run: apt-get -y install build-essential git openssh-client dpkg-dev debhelper
       - checkout
       - run: ./generate_release.sh
-      - run: apt-get install golang-go/bookworm-backports
-      - run: apt-get build-dep .
+      - run: apt-get -y install -t bookworm-backports golang-go
+      - run: apt-get -y build-dep .
       - run: dpkg-buildpackage -B
       - run: mkdir -p /root/build/bookworm
       - run: mv ../*.deb /root/build/bookworm
@@ -31,7 +31,7 @@ jobs:
       - run: apt-get -y install build-essential git openssh-client dpkg-dev debhelper
       - checkout
       - run: ./generate_release.sh
-      - run: apt-get build-dep .
+      - run: apt-get -y build-dep .
       - run: dpkg-buildpackage -B
       - run: mkdir -p /root/build/trixie
       - run: mv ../*.deb /root/build/trixie
