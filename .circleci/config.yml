@@ -1,0 +1,75 @@
+---
+version: 2.1
+
+jobs:
+  build-bookworm:
+    docker:
+      - image: debian:bookworm
+    steps:
+      - run: echo "deb http://deb.debian.org/debian bookworm-backports main" > /etc/apt/sources.list.d/backports.list
+      - run: apt-get update
+      - run: apt-get -y install build-essential git openssh-client dpkg-dev debhelper
+      - checkout
+      - run: ./generate_release.sh
+      - run: apt-get install golang-go/bookworm-backports
+      - run: apt-get build-dep .
+      - run: dpkg-buildpackage -B
+      - run: mkdir -p /root/build/bookworm
+      - run: mv ../*.deb /root/build/bookworm
+      - persist_to_workspace:
+          root: /root/build
+          paths:
+            - ./bookworm
+      - store_artifacts:
+          path: /root/build
+
+  build-trixie:
+    docker:
+      - image: debian:trixie
+    steps:
+      - run: apt-get update
+      - run: apt-get -y install build-essential git openssh-client dpkg-dev debhelper
+      - checkout
+      - run: ./generate_release.sh
+      - run: apt-get build-dep .
+      - run: dpkg-buildpackage -B
+      - run: mkdir -p /root/build/trixie
+      - run: mv ../*.deb /root/build/trixie
+      - persist_to_workspace:
+          root: /root/build
+          paths:
+            - ./trixie
+      - store_artifacts:
+          path: /root/build
+
+  package:
+    docker:
+      - image: circleci/ruby:latest
+    steps:
+      - attach_workspace:
+        at: .
+      - run: gem install package_cloud
+      - run: find .
+      - run: package_cloud push fosdem/video-team/debian/bookworm ./bookworm/*deb
+      - run: package_cloud push fosdem/video-team/debian/trixie ./trixie/*deb
+
+workflows:
+  fazantix:
+    jobs:
+      - build-bookworm:
+          filters:
+            tags:
+              only: /.*/
+      - build-trixie:
+          filters:
+            tags:
+              only: /.*/
+      - package:
+          requires:
+            - build-bookworm
+            - build-trixie
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
