@@ -25,7 +25,7 @@ def bench_wayland(config):
 
 def main():
     result = []
-    for config in glob.glob("examples/benchmark/*.yaml"):
+    for config in sorted(glob.glob("examples/benchmark/*.yaml")):
         x11 = bench_x11(config)
         wayland = bench_wayland(config)
         result.append((os.path.basename(config), x11, wayland))
