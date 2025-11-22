@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fazantbench"
+license = "GPL-3.0-or-later"
+dynamic = ["version"]
+requires-python = ">= 3.8"
+dependencies = [
+	"tabulate"
+]
+
+[project.scripts]
+fazantbench = "fazantbench.benchmark:main"
+
+[tool.setuptools.package-data]
+config = ["config/*"]
+
+[tool.setuptools]
+packages = ["fazantbench"]
+
+[tool.setuptools.package-dir]
+fazantbench = "."
