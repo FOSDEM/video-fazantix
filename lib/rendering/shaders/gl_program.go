@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 var shaderCache map[string]uint32
@@ -62,7 +61,6 @@ func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error)
 	gl.AttachShader(program, vertexShader)
 	gl.AttachShader(program, fragmentShader)
 	gl.LinkProgram(program)
-	glfw.SwapInterval(1)
 
 	var status int32
 	gl.GetProgramiv(program, gl.LINK_STATUS, &status)

@@ -2,6 +2,7 @@ package mixer
 
 import (
 	"log"
+	"time"
 
 	"github.com/fosdem/fazantix/lib/api"
 	"github.com/fosdem/fazantix/lib/config"
@@ -11,9 +12,10 @@ import (
 	"github.com/fosdem/fazantix/lib/rendering/shaders"
 	"github.com/fosdem/fazantix/lib/theatre"
 	"github.com/fosdem/fazantix/lib/utils"
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-func MakeWindowAndMix(cfg *config.Config) {
+func MakeWindowAndMix(cfg *config.Config, benchmark bool) {
 	alloc := &encdec.DumbFrameAllocator{}
 
 	theatre, err := theatre.New(cfg, alloc)
@@ -59,8 +61,14 @@ func MakeWindowAndMix(cfg *config.Config) {
 	}
 
 	glvars.Start()
+	if benchmark {
+		glfw.SwapInterval(0)
+	} else {
+		glfw.SwapInterval(1)
+	}
 
 	var deltaTimer utils.DeltaTimer
+	mixerStart := time.Now()
 	frameIndex := uint64(0)
 	for !theatre.ShutdownRequested {
 		frameIndex++
@@ -91,5 +99,11 @@ func MakeWindowAndMix(cfg *config.Config) {
 		theatre.Animate(float32(dt.Nanoseconds()) * 1e-9)
 		api.Stats.Update()
 		kbdctl.Poll()
+		if benchmark {
+			if time.Since(mixerStart).Seconds() > 10 {
+				theatre.ShutdownRequested = true
+				api.Stats.Print()
+			}
+		}
 	}
 }
