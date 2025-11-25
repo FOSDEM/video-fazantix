@@ -82,7 +82,7 @@ func (f *OmtSink) Start() bool {
 func (f *OmtSink) sendFrames() {
 	interval := time.Now()
 	for {
-		frame := f.Frames().GetFrameForReading()
+		frame := f.Frames().GetFreshFrameForReading()
 		if frame == nil {
 			continue
 		}
