@@ -152,14 +152,17 @@ func UseTextureAsFramebuffer(textureID uint32) uint32 {
 
 var TextureUploadCounter uint64
 
-func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32, data []byte) {
+func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32, data []byte, compression uint32) {
+	if compression == 0 {
+		compression = gl.UNSIGNED_BYTE
+	}
 	gl.ActiveTexture(uint32(gl.TEXTURE0 + offset))
 	gl.BindTexture(gl.TEXTURE_2D, texID)
 	gl.TexSubImage2D(
 		gl.TEXTURE_2D,
 		0, 0, 0,
 		int32(w), int32(h),
-		channelType, gl.UNSIGNED_BYTE, gl.Ptr(data),
+		channelType, compression, gl.Ptr(data),
 	)
 	TextureUploadCounter += uint64(len(data))
 }

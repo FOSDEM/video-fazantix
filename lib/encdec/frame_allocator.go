@@ -16,9 +16,10 @@ type FrameCfg struct {
 
 type FrameInfo struct {
 	FrameCfg
-	FrameType FrameType
-	PixFmt    []uint8
-	Swizzle   SwizzleConfig
+	FrameType   FrameType
+	Compression Compression
+	PixFmt      []uint8
+	Swizzle     SwizzleConfig
 }
 
 type FrameAllocator interface {

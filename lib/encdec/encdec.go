@@ -6,6 +6,8 @@ import (
 	"image"
 	"image/draw"
 	"sync/atomic"
+
+	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
 type FrameType int
@@ -18,6 +20,13 @@ const (
 	RGBFrames
 )
 
+type Compression int
+
+const (
+	CompressNone Compression = 0
+	CompressBC7  Compression = gl.COMPRESSED_RGBA_BPTC_UNORM_ARB
+)
+
 type Frame struct {
 	Data           []byte
 	TextureOffsets [3][2]int
@@ -28,6 +37,7 @@ type Frame struct {
 	Height         int
 	LastOffset     int
 	Type           FrameType
+	Compression    Compression
 
 	NumReaders         atomic.Int32
 	MarkedForRecycling bool
