@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
+	"math/bits"
 	"sync/atomic"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -25,7 +26,10 @@ type Compression int
 const (
 	CompressNone Compression = 0
 	CompressBC7  Compression = gl.COMPRESSED_RGBA_BPTC_UNORM_ARB
+	CompressDXT5             = gl.COMPRESSED_RGBA_S3TC_DXT5_EXT
 )
+
+var a = bits.Len32(1)
 
 type Frame struct {
 	Data           []byte

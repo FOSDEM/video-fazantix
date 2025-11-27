@@ -20,11 +20,11 @@ func SetupTextures(f *layer.FrameForwarder) {
 		f.TextureIDs[1] = SetupYUVTexture(width/2, height)
 		f.TextureIDs[2] = SetupYUVTexture(width/2, height)
 	case encdec.RGBAFrames:
-		f.TextureIDs[0] = SetupRGBATexture(width, height, gl.RGBA)
+		f.TextureIDs[0] = SetupRGBATexture(width, height, gl.RGBA, f.Compression)
 	case encdec.BGRAFrames:
-		f.TextureIDs[0] = SetupRGBATexture(width, height, gl.BGRA)
+		f.TextureIDs[0] = SetupRGBATexture(width, height, gl.BGRA, f.Compression)
 	case encdec.YUV422pFrames:
-		f.TextureIDs[0] = SetupRGBATexture(width/2, height, gl.RGBA)
+		f.TextureIDs[0] = SetupRGBATexture(width/2, height, gl.RGBA, 0)
 	case encdec.RGBFrames:
 		f.TextureIDs[0] = SetupRGBTexture(width, height)
 	default:
@@ -78,7 +78,7 @@ func SetupYUVTexture(width int, height int) uint32 {
 	return id
 }
 
-func SetupRGBATexture(width int, height int, packing uint32) uint32 {
+func SetupRGBATexture(width int, height int, packing uint32, internalFormat encdec.Compression) uint32 {
 	var id uint32
 	gl.GenTextures(1, &id)
 	gl.ActiveTexture(gl.TEXTURE0)
@@ -91,10 +91,13 @@ func SetupRGBATexture(width int, height int, packing uint32) uint32 {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
 	buf := make([]uint8, width*height*4)
+	if internalFormat == 0 {
+		internalFormat = gl.RGBA
+	}
 	gl.TexImage2D(
 		gl.TEXTURE_2D,
 		0,
-		gl.RGBA,
+		int32(internalFormat),
 		int32(width),
 		int32(height),
 		0,
@@ -152,17 +155,14 @@ func UseTextureAsFramebuffer(textureID uint32) uint32 {
 
 var TextureUploadCounter uint64
 
-func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32, data []byte, compression uint32) {
-	if compression == 0 {
-		compression = gl.UNSIGNED_BYTE
-	}
+func SendTextureToGPU(texID uint32, offset int, w int, h int, channelType uint32, data []byte) {
 	gl.ActiveTexture(uint32(gl.TEXTURE0 + offset))
 	gl.BindTexture(gl.TEXTURE_2D, texID)
 	gl.TexSubImage2D(
 		gl.TEXTURE_2D,
 		0, 0, 0,
 		int32(w), int32(h),
-		channelType, compression, gl.Ptr(data),
+		channelType, gl.UNSIGNED_BYTE, gl.Ptr(data),
 	)
 	TextureUploadCounter += uint64(len(data))
 }

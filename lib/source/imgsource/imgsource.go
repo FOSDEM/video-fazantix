@@ -43,7 +43,7 @@ func New(name string, cfg *config.ImgSourceCfg, alloc encdec.FrameAllocator) *Im
 		&encdec.FrameInfo{
 			FrameType:   encdec.RGBAFrames,
 			PixFmt:      s.rgba.Pix,
-			Compression: encdec.CompressBC7,
+			Compression: encdec.CompressDXT5,
 			FrameCfg: encdec.FrameCfg{
 				Width:              s.rgba.Rect.Size().X,
 				Height:             s.rgba.Rect.Size().Y,

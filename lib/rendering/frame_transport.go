@@ -22,7 +22,7 @@ func SendFrameToGPU(frame *encdec.Frame, textureIDs [3]uint32, offset int) {
 		SendTextureToGPU(
 			textureIDs[j], offset*3+j,
 			w, h, channelType,
-			dataPtr, uint32(frame.Compression),
+			dataPtr,
 		)
 	}
 }
