@@ -3,8 +3,11 @@
 package pdfsource
 
 import (
+	"fmt"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
+	"os"
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
@@ -18,6 +21,8 @@ type PdfSource struct {
 	width  int
 	height int
 	page   int
+
+	doc *fitz.Document
 
 	frames layer.FrameForwarder
 }
@@ -56,7 +61,7 @@ func (s *PdfSource) Start() bool {
 	}
 	s.frames.HoldFrame = true
 
-	go s.Render()
+	go s.SetDocumenFromPath(s.path)
 	return true
 }
 
@@ -64,28 +69,52 @@ func (s *PdfSource) Frames() *layer.FrameForwarder {
 	return &s.frames
 }
 
+func (s *PdfSource) SetDocument(data io.ReadCloser) error {
+	doc, err := fitz.NewFromReader(data)
+	if err != nil {
+		return err
+	}
+	if s.doc != nil {
+		s.doc.Close()
+	}
+	s.page = 0
+	s.doc = doc
+
+	go s.Render()
+
+	return nil
+}
+
+func (s *PdfSource) SetDocumenFromPath(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	err = s.SetDocument(file)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *PdfSource) Render() error {
 	s.Frames().Log("Rendering PDF")
 
-	pdf, err := fitz.New(s.path)
-	if err != nil {
-		return err
-	}
-
-	s.Frames().Log("PDF has %d pages", pdf.NumPage())
+	s.Frames().Log("PDF has %d pages", s.doc.NumPage())
 
 	// Get render size at 72 DPI
-	bound, err := pdf.Bound(s.page)
+	bound, err := s.doc.Bound(s.page)
 	if err != nil {
 		return err
 	}
 
+	// Calculate the render DPI required to match the source resolution
 	wdpi := 72.0 / float64(bound.Max.X) * float64(s.width)
 	hdpi := 72.0 / float64(bound.Max.Y) * float64(s.height)
 	dpi := min(wdpi, hdpi)
-	s.Frames().Log("Bounds: %v", bound)
 
-	img, err := pdf.ImageDPI(s.page, dpi)
+	img, err := s.doc.ImageDPI(s.page, dpi)
 
 	frame := s.frames.GetFrameForWriting()
 	err = encdec.FrameFromImage(img, frame)
@@ -103,4 +132,22 @@ func (s *PdfSource) log(msg string, args ...interface{}) {
 	if s.Frames() != nil {
 		s.Frames().Log(msg, args...)
 	}
+}
+
+func (s *PdfSource) NextSlide() error {
+	s.page++
+	if s.page > s.doc.NumPage()-1 {
+		return fmt.Errorf("last slide")
+	}
+	go s.Render()
+	return nil
+}
+
+func (s *PdfSource) PreviousSlide() error {
+	s.page--
+	if s.page < 0 {
+		return fmt.Errorf("first slide")
+	}
+	go s.Render()
+	return nil
 }
