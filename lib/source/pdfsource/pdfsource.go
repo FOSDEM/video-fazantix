@@ -134,20 +134,15 @@ func (s *PdfSource) log(msg string, args ...interface{}) {
 	}
 }
 
-func (s *PdfSource) NextSlide() error {
-	s.page++
-	if s.page > s.doc.NumPage()-1 {
-		return fmt.Errorf("last slide")
+func (s *PdfSource) SetPage(page int, relative bool) error {
+	newPage := page
+	if relative {
+		newPage = s.page + page
 	}
-	go s.Render()
-	return nil
-}
-
-func (s *PdfSource) PreviousSlide() error {
-	s.page--
-	if s.page < 0 {
-		return fmt.Errorf("first slide")
+	if newPage < 0 || newPage > s.doc.NumPage()-1 {
+		return fmt.Errorf("slide number out of range")
 	}
+	s.page = newPage
 	go s.Render()
 	return nil
 }
