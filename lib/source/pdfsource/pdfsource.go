@@ -4,10 +4,13 @@ package pdfsource
 
 import (
 	"fmt"
+	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
 	"os"
+
+	"golang.org/x/image/draw"
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
@@ -112,12 +115,40 @@ func (s *PdfSource) Render() error {
 	// Calculate the render DPI required to match the source resolution
 	wdpi := 72.0 / float64(bound.Max.X) * float64(s.width)
 	hdpi := 72.0 / float64(bound.Max.Y) * float64(s.height)
+	aspect := float64(bound.Max.X) / float64(bound.Max.Y)
 	dpi := min(wdpi, hdpi)
 
 	img, err := s.doc.ImageDPI(s.page, dpi)
+	if err != nil {
+		return err
+	}
 
+	dstRect := image.Rectangle{
+		Min: image.Point{},
+		Max: image.Point{},
+	}
+	if aspect < (float64(s.width) / float64(s.height)) {
+		// pillarbox
+		nw := int(float64(s.height) * aspect)
+		offset := (s.width - nw) / 2
+		dstRect.Min.Y = 0
+		dstRect.Max.Y = s.height
+		dstRect.Min.X = offset
+		dstRect.Max.X = nw + offset
+	} else {
+		// letterbox
+		nh := int(float64(s.width) / aspect)
+		offset := (s.height - nh) / 2
+		dstRect.Min.X = 0
+		dstRect.Max.X = s.height
+		dstRect.Min.Y = offset
+		dstRect.Max.Y = nh + offset
+	}
+
+	scaled := image.NewNRGBA(image.Rect(0, 0, s.width, s.height))
+	draw.BiLinear.Scale(scaled, dstRect, img, img.Bounds(), draw.Over, nil)
 	frame := s.frames.GetFrameForWriting()
-	err = encdec.FrameFromImage(img, frame)
+	err = encdec.FrameFromImage(scaled, frame)
 	if err != nil {
 		s.Frames().Error("Decode error: %s", err)
 		s.frames.FailedWriting(frame)
