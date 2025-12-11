@@ -5,6 +5,7 @@ package pdfsource
 import (
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
@@ -31,3 +32,7 @@ func (s *PdfSource) Start() bool {
 func (s *PdfSource) Frames() *layer.FrameForwarder {
 	return &s.frames
 }
+
+func (s *PdfSource) SetDocument(data io.ReadCloser) error { return nil }
+
+func (s *PdfSource) SetPage(page int, relative bool) error { return nil }
