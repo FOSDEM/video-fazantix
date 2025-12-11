@@ -19,7 +19,7 @@ type PdfSource struct {
 	frames layer.FrameForwarder
 }
 
-func New(name string, cfg *config.HtmlSourceCfg, alloc encdec.FrameAllocator) *PdfSource {
+func New(name string, cfg *config.PdfSourceCfg, alloc encdec.FrameAllocator) *PdfSource {
 	s := &PdfSource{}
 	return s
 }
