@@ -1,6 +1,10 @@
 CONFIG=examples/imagesource.yaml
 SRCFILES := $(wildcard *.go) $(wildcard *.frag) $(wildcard *.vert) Makefile
 WEBFILES := $(wildcard web_ui/*)
+DOCFILES := $(wildcard man/*.adoc)
+MANFILES := $(DOCFILES:.adoc=)
+MANDIR := /share/man
+DATADIR := /share/fazantix
 
 LDFLAGS=-compressdwarf=false
 
@@ -64,6 +68,12 @@ builddir:
 
 prereqs: builddir lib/api/docs/swagger.json lib/api/static/index.html
 
+.PHONY: docs
+docs: $(MANFILES)
+
+%.1: %.1.adoc
+	asciidoctor -b manpage $^ -o $@
+
 .PHONY: clean
 clean:
 	rm -rvf build
@@ -75,6 +85,20 @@ clean:
 
 .PHONY: all
 all: build
+
+.PHONY: install
+install:
+	install -Dm755 build/fazantix-validate-config $(DESTDIR)$(PREFIX)/bin/fazantix-validate-config
+	install -Dm755 build/fazantix-x11 $(DESTDIR)$(PREFIX)/bin/fazantix-x11
+	install -Dm755 build/fazantix-window-x11 $(DESTDIR)$(PREFIX)/bin/fazantix-window-x11
+	install -Dm755 build/fazantix-wayland $(DESTDIR)$(PREFIX)/bin/fazantix-wayland
+	install -Dm755 build/fazantix-window-wayland $(DESTDIR)$(PREFIX)/bin/fazantix-window-wayland
+
+	for i in $(wildcard examples/*.yaml); do install -Dm644 $$i $(DESTDIR)$(PREFIX)$(DATADIR)/$$i; done
+	for i in $(wildcard examples/images/*.png); do install -Dm644 $$i $(DESTDIR)$(PREFIX)$(DATADIR)/$$i; done
+	install -Dm644 examples/images/pheasant.cow $(DESTDIR)$(PREFIX)/share/cowsay/cows/pheasant.cow
+
+	for i in $(shell find man/ -regex ".*\.1"); do install -Dm644 $$i $(DESTDIR)$(PREFIX)$(MANDIR)/man1/$$i; done
 
 .PHONY: FORCE
 FORCE:;
