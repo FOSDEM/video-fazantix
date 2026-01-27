@@ -1,5 +1,8 @@
 CONFIG=examples/imagesource.yaml
-SRCFILES := $(wildcard *.go) $(wildcard *.frag) $(wildcard *.vert) Makefile
+GOFILES := $(shell find . -iname *.go -type f -print)
+FRAGFILES := $(shell find . -iname *.frag -type f -print)
+VERTFILES := $(shell find . -iname *.frag -type f -print)
+SRCFILES := $(GOFILES) $(FRAGFILES) $(VERTFILES) go.mod
 WEBFILES := $(wildcard web_ui/*)
 DOCFILES := $(wildcard man/*.adoc)
 MANFILES := $(DOCFILES:.adoc=)
