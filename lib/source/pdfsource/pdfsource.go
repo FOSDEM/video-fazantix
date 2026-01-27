@@ -140,7 +140,7 @@ func (s *PdfSource) Render() error {
 		nh := int(float64(s.width) / aspect)
 		offset := (s.height - nh) / 2
 		dstRect.Min.X = 0
-		dstRect.Max.X = s.height
+		dstRect.Max.X = s.width
 		dstRect.Min.Y = offset
 		dstRect.Max.Y = nh + offset
 	}
