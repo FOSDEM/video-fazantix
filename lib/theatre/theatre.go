@@ -41,6 +41,9 @@ type Theatre struct {
 	ShutdownRequested bool
 
 	listener map[string][]EventListener
+
+	Sequence    []*config.Step
+	SequencePos int
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
@@ -80,6 +83,8 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		listener:              make(map[string][]EventListener),
 		WindowSinkList:        windowSinkList,
 		LayersPerStage:        layersPerStage,
+		Sequence:              cfg.Sequence,
+		SequencePos:           0,
 	}
 
 	return t, nil

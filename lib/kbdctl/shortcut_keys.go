@@ -47,6 +47,13 @@ func keyCallback(theatre *theatre.Theatre, stageName string) func(w *glfw.Window
 					return
 				}
 			}
+			if key == glfw.KeyLeft || key == glfw.KeyRight {
+				direction := 1
+				if key == glfw.KeyLeft {
+					direction = -1
+				}
+				theatre.MoveSequence(direction)
+			}
 		}
 	}
 }

@@ -15,6 +15,13 @@ var EnablePlutobook = true
 var EnableOmt = true
 var EnableMupdf = true
 
+type Step struct {
+	Scene      string
+	Sink       string
+	Transition *bool
+	Page       map[string]int
+}
+
 type Config struct {
 	Sources        map[string]*SourceCfg
 	Scenes         map[string]*SceneCfg
@@ -22,6 +29,8 @@ type Config struct {
 	FallbackColour string               `yaml:"fallback_colour"`
 	BGColour       string               `yaml:"bg_colour"`
 	Api            *ApiCfg
+
+	Sequence []*Step
 }
 
 func Parse(filename string) (*Config, error) {
