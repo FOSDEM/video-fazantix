@@ -18,7 +18,7 @@ type OmtSink struct {
 	quality libomt.Quality
 	send    *libomt.OmtSend
 	frame   *libomt.OmtMediaFrame
-	rate    int
+	rate    float64
 }
 
 func New(name string, cfg *config.OmtSinkCfg, frameCfg *encdec.FrameCfg, alloc encdec.FrameAllocator) *OmtSink {
@@ -65,7 +65,7 @@ func (f *OmtSink) Start() bool {
 		Flags:             0,
 		Stride:            f.frames.Width * 4,
 		DataLength:        f.frames.Width * f.frames.Height * 4,
-		FrameRateN:        f.rate * 1000,
+		FrameRateN:        int(f.rate * 1000),
 		FrameRateD:        1000,
 		AspectRatio:       float32(f.frames.Width) / float32(f.frames.Height), // Assume square pixels
 		FrameMetadata:     nil,
@@ -104,6 +104,6 @@ func (f *OmtSink) log(msg string, args ...interface{}) {
 	f.Frames().Log(msg, args...)
 }
 
-func (f *OmtSink) SetRate(rate int) {
+func (f *OmtSink) SetRate(rate float64) {
 	f.rate = rate
 }

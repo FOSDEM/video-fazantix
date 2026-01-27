@@ -27,7 +27,7 @@ type Stage struct {
 type Sink interface {
 	Frames() *FrameForwarder
 	Start() bool
-	SetRate(rate int)
+	SetRate(rate float64)
 }
 
 func (s *Stage) SetSpeed(d time.Duration) {

@@ -2,7 +2,6 @@ package theatre
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
@@ -40,6 +39,10 @@ type Theatre struct {
 	ShutdownRequested bool
 
 	listener map[string][]EventListener
+
+	FrameRate    float64
+	VSyncEnabled bool
+	framePacer   *utils.Pacer
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
@@ -79,6 +82,8 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		listener:              make(map[string][]EventListener),
 		WindowSinkList:        windowSinkList,
 		LayersPerStage:        layersPerStage,
+		FrameRate:             cfg.BaseFramerate,
+		VSyncEnabled:          cfg.BaseFramerate <= 0,
 	}
 
 	return t, nil
@@ -315,11 +320,14 @@ func (t *Theatre) Start() {
 	if err != nil {
 		return
 	}
-	refreshRate := int(0)
 	for _, stage := range t.WindowStageList {
 		stage.Sink.Start()
-		refreshRate = stage.Sink.(*windowsink.WindowSink).GetRefreshRate()
+		if t.FrameRate <= 0 {
+			t.FrameRate = float64(stage.Sink.(*windowsink.WindowSink).GetRefreshRate())
+		}
 	}
+	t.framePacer = utils.NewPacer(time.Duration(1e9/t.FrameRate) * time.Nanosecond)
+
 	for _, src := range t.SourceList {
 		if src.Start() {
 			rendering.SetupTextures(src.Frames())
@@ -330,13 +338,17 @@ func (t *Theatre) Start() {
 		if stage.RateDivisor < 1 {
 			stage.RateDivisor = 1
 		}
-		stage.Sink.SetRate(refreshRate / int(stage.RateDivisor))
-		if stage.RateDivisor > 1 {
-			log.Printf("setting sink rate to %d", refreshRate/int(stage.RateDivisor))
-		}
+		stage.Sink.SetRate(t.FrameRate / float64(stage.RateDivisor))
 
 		stage.Sink.Start()
 	}
+}
+
+func (t *Theatre) SleepUntilNextFrame() {
+	if t.VSyncEnabled {
+		return
+	}
+	t.framePacer.Sleep()
 }
 
 func (t *Theatre) Animate(delta float32) {

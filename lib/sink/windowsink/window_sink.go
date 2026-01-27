@@ -75,4 +75,4 @@ func (w *WindowSink) GetRefreshRate() int {
 	return glfw.GetPrimaryMonitor().GetVideoMode().RefreshRate
 }
 
-func (w *WindowSink) SetRate(rate int) {}
+func (w *WindowSink) SetRate(rate float64) {}
