@@ -34,6 +34,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 		log.Fatalf("could not init GL program: %s", err)
 	}
 
+	rendering.SetVsync(theatre.VSyncEnabled)
+
 	glvars := rendering.NewGLVars(
 		program, int32(theatre.LayersPerStage),
 		theatre.SourceList, theatre.FallbackSourceIndices,
@@ -79,6 +81,8 @@ func MakeWindowAndMix(cfg *config.Config) {
 				rendering.GetFrameFromGPUInto(stage.Sink)
 			}
 		}
+
+		theatre.SleepUntilNextFrame()
 
 		for _, sink := range theatre.WindowSinkList {
 			sink.Window.SwapBuffers()

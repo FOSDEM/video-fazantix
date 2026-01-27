@@ -20,6 +20,7 @@ type Config struct {
 	Stages         map[string]*StageCfg `yaml:"sinks"`
 	FallbackColour string               `yaml:"fallback_colour"`
 	BGColour       string               `yaml:"bg_colour"`
+	BaseFramerate  float64              `yaml:"base_framerate"`
 	Api            *ApiCfg
 }
 
@@ -102,6 +103,9 @@ func (c *Config) Validate() error {
 
 	if c.BGColour == "" {
 		return fmt.Errorf("please set bg_colour in the config")
+	}
+	if c.BaseFramerate == 0 {
+		return fmt.Errorf("please set base_framerate in the config (use -1 to sync to display)")
 	}
 	if !utils.ColourValidate(c.BGColour) {
 		return fmt.Errorf("%s is not a valid RGBA hex colour", c.BGColour)

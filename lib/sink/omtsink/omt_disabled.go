@@ -28,4 +28,4 @@ func (f *OmtSink) Frames() *layer.FrameForwarder {
 	return &f.frames
 }
 
-func (f *OmtSink) SetRate(rate int) {}
+func (f *OmtSink) SetRate(rate float64) {}

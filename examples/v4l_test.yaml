@@ -127,3 +127,4 @@ api:
 
 fallback_colour: '#ebac54ff'
 bg_colour: '#54acebff'
+base_framerate: -1
