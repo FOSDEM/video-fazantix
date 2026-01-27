@@ -13,6 +13,14 @@ import (
 
 var EnablePlutobook = true
 var EnableOmt = true
+var EnableMupdf = true
+
+type Step struct {
+	Scene      string
+	Sink       string
+	Transition *bool
+	Page       map[string]int
+}
 
 type Config struct {
 	Sources        map[string]*SourceCfg
@@ -21,6 +29,8 @@ type Config struct {
 	FallbackColour string               `yaml:"fallback_colour"`
 	BGColour       string               `yaml:"bg_colour"`
 	Api            *ApiCfg
+
+	Sequence []*Step
 }
 
 func Parse(filename string) (*Config, error) {
@@ -212,6 +222,12 @@ type HtmlSourceCfg struct {
 	Height int
 }
 
+type PdfSourceCfg struct {
+	Path   CfgPath
+	Width  int
+	Height int
+}
+
 type V4LSourceCfg struct {
 	encdec.FrameCfg    `yaml:"frames"`
 	Path               string
@@ -245,6 +261,10 @@ func (s *SourceCfg) UnmarshalYAML(b []byte) error {
 		return yaml.Unmarshal(b, &cfg)
 	case "omt":
 		cfg := OmtSourceCfg{}
+		s.Cfg = &cfg
+		return yaml.Unmarshal(b, &cfg)
+	case "pdf":
+		cfg := PdfSourceCfg{}
 		s.Cfg = &cfg
 		return yaml.Unmarshal(b, &cfg)
 	default:
@@ -396,6 +416,16 @@ func (s *V4LSourceCfg) Validate() error {
 
 	if s.FPS == 0 {
 		return fmt.Errorf("v4l sources must have an fps field")
+	}
+	return nil
+}
+
+func (s *PdfSourceCfg) Validate() error {
+	if !EnableMupdf {
+		return fmt.Errorf("MuPDF support is not compiled in")
+	}
+	if s.Width == 0 && s.Height == 0 {
+		return fmt.Errorf("PDF rendering size must be specified")
 	}
 	return nil
 }

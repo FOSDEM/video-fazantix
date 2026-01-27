@@ -17,6 +17,7 @@ import (
 	"github.com/fosdem/fazantix/lib/source/htmlsource"
 	"github.com/fosdem/fazantix/lib/source/imgsource"
 	"github.com/fosdem/fazantix/lib/source/omtsource"
+	"github.com/fosdem/fazantix/lib/source/pdfsource"
 	"github.com/fosdem/fazantix/lib/source/v4lsource"
 	"github.com/fosdem/fazantix/lib/utils"
 )
@@ -40,6 +41,9 @@ type Theatre struct {
 	ShutdownRequested bool
 
 	listener map[string][]EventListener
+
+	Sequence    []*config.Step
+	SequencePos int
 }
 
 func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
@@ -79,6 +83,8 @@ func New(cfg *config.Config, alloc encdec.FrameAllocator) (*Theatre, error) {
 		listener:              make(map[string][]EventListener),
 		WindowSinkList:        windowSinkList,
 		LayersPerStage:        layersPerStage,
+		Sequence:              cfg.Sequence,
+		SequencePos:           0,
 	}
 
 	return t, nil
@@ -268,6 +274,8 @@ func buildSourceList(cfg *config.Config, alloc encdec.FrameAllocator) ([]layer.S
 			sources = append(sources, htmlsource.New(srcName, sc, alloc))
 		case *config.OmtSourceCfg:
 			sources = append(sources, omtsource.New(srcName, sc, alloc))
+		case *config.PdfSourceCfg:
+			sources = append(sources, pdfsource.New(srcName, sc, alloc))
 		default:
 			panic(fmt.Sprintf("unhandled source type: %+v", srcCfg.Cfg))
 		}
