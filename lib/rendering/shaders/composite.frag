@@ -4,6 +4,9 @@ in vec2 UV;
 
 out vec4 color;
 
+precision highp float;
+precision highp int;
+
 uniform sampler2D tex[{{ .NumSources }} * 3];
 uniform vec4 layerPosition[{{ .NumLayers }}];
 uniform vec4 layerData[{{ .NumLayers }}];
@@ -55,9 +58,9 @@ vec4 sampleLayerYUYV(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 
     vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
 	vec2 uvpos = (uv / dve.z) - (dve.xy / dve.zw);
-	vec4 src = texture(tex[src_idx*3], uvpos);
-	int width = textureSize(tex[src_idx*3], 0).x;
-	float fpix = fract(uvpos.x * width);
+	ivec2 size = textureSize(tex[src_idx*3], 0);
+	vec4 src = texelFetch(tex[src_idx*3], ivec2(uvpos*size), 0);
+	float fpix = fract(uvpos.x * size.x);
 	float Y = fpix * src.b + (1.0-fpix) * src.r;
 	float Cr = src.g - 0.5;
 	float Cb = src.a - 0.5;
