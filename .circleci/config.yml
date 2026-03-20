@@ -47,7 +47,7 @@ jobs:
       - image: circleci/ruby:latest
     steps:
       - attach_workspace:
-        at: .
+          at: .
       - run: gem install package_cloud
       - run: find .
       - run: package_cloud push fosdem/video-team/debian/bookworm ./bookworm/*deb
