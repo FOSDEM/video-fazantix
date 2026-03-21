@@ -1,16 +1,17 @@
 package ffmpegsource
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/utils"
 )
 
 type FFmpegSource struct {
@@ -19,6 +20,7 @@ type FFmpegSource struct {
 	stdout   io.ReadCloser
 	stderr   io.ReadCloser
 	frames   layer.FrameForwarder
+	cfg      *config.FFmpegSourceCfg
 }
 
 func New(name string, cfg *config.FFmpegSourceCfg, alloc encdec.FrameAllocator) *FFmpegSource {
@@ -32,6 +34,7 @@ func New(name string, cfg *config.FFmpegSourceCfg, alloc encdec.FrameAllocator) 
 		},
 		alloc,
 	)
+	f.cfg = cfg
 	return f
 }
 
@@ -85,9 +88,13 @@ func (f *FFmpegSource) runFFmpeg() {
 }
 
 func (f *FFmpegSource) processStderr() {
-	scanner := bufio.NewScanner(f.stderr)
+	scanner := utils.NewLineScanner(f.stderr)
 	for scanner.Scan() {
-		f.log("[ffmpeg] %s", scanner.Text())
+		txt := scanner.Text()
+		if strings.HasPrefix(txt, "frame=") && !f.cfg.LogFrameInfo {
+			continue
+		}
+		f.log("[ffmpeg-src] %s", txt)
 	}
 }
 

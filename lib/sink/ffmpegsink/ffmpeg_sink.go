@@ -1,18 +1,18 @@
 package ffmpegsink
 
 import (
-	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
+	"github.com/fosdem/fazantix/lib/utils"
 )
 
 type FFmpegSink struct {
@@ -23,10 +23,11 @@ type FFmpegSink struct {
 	stdin    io.WriteCloser
 	frames   layer.FrameForwarder
 	rate     float64
+	cfg      *config.FFmpegSinkCfg
 }
 
 func New(name string, cfg *config.FFmpegSinkCfg, frameCfg *encdec.FrameCfg, alloc encdec.FrameAllocator) *FFmpegSink {
-	f := &FFmpegSink{shellCmd: cfg.Cmd}
+	f := &FFmpegSink{shellCmd: cfg.Cmd, cfg: cfg}
 	f.frames.Init(
 		name,
 		&encdec.FrameInfo{
@@ -98,16 +99,21 @@ func (f *FFmpegSink) runFFmpeg() {
 }
 
 func (f *FFmpegSink) processStderr() {
-	scanner := bufio.NewScanner(f.stderr)
-	for scanner.Scan() {
-		f.log("[ffmpeg] %s", scanner.Text())
-	}
+	f.processOut(f.stderr)
 }
 
 func (f *FFmpegSink) processStdout() {
-	scanner := bufio.NewScanner(f.stdout)
+	f.processOut(f.stdout)
+}
+
+func (f *FFmpegSink) processOut(r io.Reader) {
+	scanner := utils.NewLineScanner(r)
 	for scanner.Scan() {
-		log.Printf("[ffmpeg] %s", scanner.Text())
+		txt := scanner.Text()
+		if strings.HasPrefix(txt, "frame=") && !f.cfg.LogFrameInfo {
+			continue
+		}
+		f.log("[ffmpeg-sink] %s", txt)
 	}
 }
 

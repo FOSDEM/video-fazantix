@@ -184,9 +184,12 @@ type RateCfg struct {
 type FFmpegSourceCfg struct {
 	encdec.FrameCfg `yaml:"frames"`
 	Cmd             string
+	LogFrameInfo    bool `yaml:"log_frame_info"`
 }
+
 type FFmpegSinkCfg struct {
-	Cmd string
+	Cmd          string
+	LogFrameInfo bool `yaml:"log_frame_info"`
 }
 
 type OmtSourceCfg struct {

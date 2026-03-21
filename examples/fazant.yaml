@@ -26,6 +26,7 @@ sources:
       width: 1920
       height: 1080
       num_allocated_frames: 5
+    log_frame_info: true
   cows:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/cows.mp4 -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
@@ -33,6 +34,7 @@ sources:
       width: 1920
       height: 1080
       num_allocated_frames: 5
+    log_frame_info: true
   fazantfazantfazant:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i https://rnd.qtrp.org/test_videos/fazantfazantfazant.mkv -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
@@ -40,6 +42,7 @@ sources:
       width: 1920
       height: 1080
       num_allocated_frames: 5
+    log_frame_info: true
   video_listen:
     type: ffmpeg_stdout
     cmd: 'ffmpeg -stream_loop -1 -re -i "tcp://0.0.0.0:7788?listen=1&recv_buffer_size=1048576" -vf scale=1920:1080 -pix_fmt yuv422p -f rawvideo -r 60 -'
