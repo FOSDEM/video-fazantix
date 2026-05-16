@@ -66,6 +66,7 @@ func (g *GLVars) DrawStage(stage *layer.Stage) {
 	frames := stage.Sink.Frames()
 
 	gl.BindFramebuffer(gl.FRAMEBUFFER, frames.FramebufferID)
+	gl.Viewport(0,0, int32(frames.Width), int32(frames.Height))
 
 	// push vars related to the window stage
 	g.loadStage(stage)

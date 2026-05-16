@@ -14,7 +14,7 @@ vec4 sampleLayerYUV422(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
     if (dve.z == 0 || dve.w == 0) {
         return vec4(0, 0, 0, 0);
     }
-	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
+	vec2 tpos = (uv / dve.zw) - (dve.xy / dve.zw);
 	float Y = texture(tex[src_idx*3], tpos).r;
 	float Cb = texture(tex[src_idx*3+2], tpos).r - 0.5;
 	float Cr = texture(tex[src_idx*3+1], tpos).r - 0.5;
@@ -37,7 +37,7 @@ vec4 sampleLayerYUV422(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 }
 
 vec4 sampleLayerDebugBBox(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
-	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
+	vec2 tpos = (uv / dve.zw) - (dve.xy / dve.zw);
 	float a = 1.0;
 	if(tpos.x < 0 || tpos.x > 1.0) {
 		a = 0.0;
@@ -53,8 +53,8 @@ vec4 sampleLayerYUYV(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
         return vec4(0, 0, 0, 0);
     }
 
-    vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
-	vec2 uvpos = (uv / dve.z) - (dve.xy / dve.zw);
+    vec2 tpos = (uv / dve.zw) - (dve.xy / dve.zw);
+	vec2 uvpos = (uv / dve.zw) - (dve.xy / dve.zw);
 	vec4 src = texture(tex[src_idx*3], uvpos);
 	int width = textureSize(tex[src_idx*3], 0).x;
 	float fpix = fract(uvpos.x * width);
@@ -80,19 +80,19 @@ vec4 sampleLayerYUYV(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
 }
 
 vec4 sampleLayerRGBA(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
-	vec4 col = texture(tex[src_idx*3], (uv / dve.z) - (dve.xy / dve.zw));
+	vec4 col = texture(tex[src_idx*3], (uv / dve.zw) - (dve.xy / dve.zw));
 	col.a *= data.x;
 	return col;
 }
 
 vec4 sampleLayerRGB(vec2 uv, uint src_idx, vec4 dve, vec4 data) {
-	vec4 col = texture(tex[src_idx*3], (uv / dve.z) - (dve.xy / dve.zw));
+	vec4 col = texture(tex[src_idx*3], (uv / dve.zw) - (dve.xy / dve.zw));
 	col.a = 1.0;
 	return col;
 }
 
 vec4 sampleLayerFallback(vec2 uv, vec4 dve) {
-	vec2 tpos = (uv / dve.z) - (dve.xy / dve.zw);
+	vec2 tpos = (uv / dve.zw) - (dve.xy / dve.zw);
 
 	vec4 col = vec4(
 		{{ .FallbackColour.R }},
