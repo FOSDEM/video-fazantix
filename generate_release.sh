@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 if [[ $CIRCLE_TAG =~ ^v[0-9].* ]]; then

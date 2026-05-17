@@ -77,6 +77,11 @@
               # FIXME: the tags specified above should probably stop this from
               # needing X11 stuff, but they still get used
               xorg.libX11.dev
+              xorg.libXcursor
+              xorg.libXrandr
+              xorg.libXinerama
+              xorg.libXi
+              xorg.libXxf86vm
             ];
 
             patchPhase = ''
