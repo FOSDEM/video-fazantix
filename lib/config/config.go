@@ -118,17 +118,17 @@ func (c *Config) String() string {
 	b.WriteString("Sources:\n")
 
 	for k, v := range c.Sources {
-		b.WriteString(fmt.Sprintf("  %s (%s)\n", k, v.Type))
+		fmt.Fprintf(&b, "  %s (%s)\n", k, v.Type)
 	}
 
 	b.WriteString("\nSinks:\n")
 	for k, v := range c.Stages {
-		b.WriteString(fmt.Sprintf("  %s (%s)\n", k, v.Type))
+		fmt.Fprintf(&b, "  %s (%s)\n", k, v.Type)
 	}
 
 	b.WriteString("\nScenes:\n")
 	for k := range c.Scenes {
-		b.WriteString(fmt.Sprintf("  %s\n", k))
+		fmt.Fprintf(&b, "  %s\n", k)
 	}
 
 	return b.String()
