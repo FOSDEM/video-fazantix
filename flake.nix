@@ -60,7 +60,7 @@
               "vulkan"
             ];
 
-            doCheck = true;
+            doCheck = false;  # don't check on every build, just check during check phase
 
             checkPhase = ''
               runHook preCheck
@@ -138,6 +138,10 @@
               cp -rf * $out/
             '';
           };
+
+          fazantix-check = packages.fazantix.overrideAttrs (old: {
+            doCheck = true;
+          });
         };
 
         formatter = pkgs.nixfmt-tree;
