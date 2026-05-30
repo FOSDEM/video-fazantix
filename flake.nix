@@ -90,6 +90,7 @@
               libxrandr
               libxinerama
               libxi
+              libxxf86vm
             ];
 
             patchPhase = ''
