@@ -23,7 +23,7 @@ type Layer struct {
 
 	OutputWidth  int
 	OutputHeight int
-	Squeeze      float32
+	Squeeze      Coordinate
 
 	Opacity float32
 
@@ -50,14 +50,20 @@ func New(idx uint32, src Source, width int, height int) *Layer {
 	s.Size = Coordinate{X: 1.0, Y: 1.0}
 	s.Source = src
 	s.SourceIdx = idx
-	s.Squeeze = 1.0
+	s.Squeeze = Coordinate{X: 1.0, Y: 1.0}
 	s.OutputWidth = width
 	s.OutputHeight = height
 	s.Position = Coordinate{X: 0.5, Y: 0.5}
 	s.Mask = Mask{top: 0, bottom: 0, left: 0, right: 0}
-	s.Squeeze = (float32(width) / float32(height)) / (float32(s.Source.Frames().Width) / float32(s.Source.Frames().Height))
-	if s.Squeeze != s.Squeeze {
-		s.Squeeze = 1.0
+	sq := (float32(width) / float32(height)) / (float32(s.Source.Frames().Width) / float32(s.Source.Frames().Height))
+	if math.IsNaN(float64(sq)) {
+		s.Squeeze = Coordinate{X: 1.0, Y: 1.0}
+	} else {
+		if sq > 1 {
+			s.Squeeze = Coordinate{X: sq, Y: 1.0}
+		} else {
+			s.Squeeze = Coordinate{X: 1.0, Y: 1 / sq}
+		}
 	}
 	return s
 }
@@ -81,8 +87,8 @@ func (s *Layer) ApplyState(state *LayerState, transition bool) {
 		if state != nil {
 			s.Position.X = state.X
 			s.Position.Y = state.Y
-			s.Size.X = state.Scale
-			s.Size.Y = state.Scale / s.Squeeze
+			s.Size.X = state.Scale / s.Squeeze.X
+			s.Size.Y = state.Scale / s.Squeeze.Y
 			s.Opacity = state.Opacity
 		} else {
 			s.Opacity = 0.0
@@ -92,8 +98,8 @@ func (s *Layer) ApplyState(state *LayerState, transition bool) {
 	if s.Opacity < (1.0/256.0) && state != nil && state.Warp != nil {
 		s.Position.X = state.Warp.X
 		s.Position.Y = state.Warp.Y
-		s.Size.X = state.Warp.Scale
-		s.Size.Y = state.Warp.Scale / s.Squeeze
+		s.Size.X = state.Warp.Scale / s.Squeeze.Y
+		s.Size.Y = state.Warp.Scale / s.Squeeze.Y
 		s.Opacity = state.Warp.Opacity
 	}
 
@@ -104,8 +110,8 @@ func (s *Layer) ApplyState(state *LayerState, transition bool) {
 		}
 		s.Position.X = base.X
 		s.Position.Y = base.Y
-		s.Size.X = base.Scale
-		s.Size.Y = base.Scale / s.Squeeze
+		s.Size.X = base.Scale / s.Squeeze.X
+		s.Size.Y = base.Scale / s.Squeeze.Y
 		s.Opacity = base.Opacity
 	}
 	s.targetTransform = &transform
@@ -115,11 +121,10 @@ func (s *Layer) Animate(delta float32, speed float32) {
 	if s.targetTransform == nil {
 		return
 	}
-	s.Squeeze = (float32(s.OutputWidth) / float32(s.OutputHeight)) / (float32(s.Source.Frames().Width) / float32(s.Source.Frames().Height))
 	s.Position.X = ramp(s.Position.X, s.targetTransform.X, delta, speed)
 	s.Position.Y = ramp(s.Position.Y, s.targetTransform.Y, delta, speed)
-	s.Size.X = ramp(s.Size.X, s.targetTransform.Scale, delta, speed)
-	s.Size.Y = ramp(s.Size.Y, s.targetTransform.Scale/s.Squeeze, delta, speed)
+	s.Size.X = ramp(s.Size.X, s.targetTransform.Scale/s.Squeeze.X, delta, speed)
+	s.Size.Y = ramp(s.Size.Y, s.targetTransform.Scale/s.Squeeze.Y, delta, speed)
 	s.Opacity = ramp(s.Opacity, s.targetTransform.Opacity, delta, speed)
 }
 
