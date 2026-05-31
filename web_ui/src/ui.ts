@@ -20,7 +20,7 @@ type StageType = "preview" | "aux" | "program"
 
 function switchScene(stage: string, scene: string) {
 	console.log("Switching to", scene, "on stage", stage)
-	fetch("/api/scene/"+stage+"/"+scene).then()
+	fetch(`${api_url()}/scene/`+stage+"/"+scene).then()
 }
 
 function makeAuxControls(_aux: Stage) {
@@ -84,7 +84,7 @@ function makeButtons(scenes: Array<Scene>, stage: Stage) {
 }
 function makeStages() {
 	const stages = document.getElementById("stages")!
-	fetch('/api/config').then(response => response.json()).then((response: ConfigResponse) => {
+	fetch(`${api_url()}/config`).then(response => response.json()).then((response: ConfigResponse) => {
         let stageList: Array<Stage> = []
         // First get all the program/aux sources
         response.stages.forEach(stage => {
@@ -144,7 +144,7 @@ function makeStages() {
     	.catch(err => console.error(err))
 }
 function makeWebsocket() {
-        socket = new WebSocket("/api/ws")
+        socket = new WebSocket(`${api_url()}/ws`)
         socket.onopen = _event => {
             document.getElementById("logo")!.style.color = "white"
             console.log("Connected to websocket")
@@ -184,6 +184,11 @@ function makeWebsocket() {
 		}, 2000)
         }
 }
+
+function api_url() {
+  return location.href.replace(/\/?$/, '/api')
+}
+
 
 let socket
 
