@@ -60,11 +60,20 @@
               "vulkan"
             ];
 
-            doCheck = false;
+            doCheck = false;  # don't check on every build, just check during check phase
+
+            checkPhase = ''
+              runHook preCheck
+
+              export HOME=$TMPDIR
+              make lint
+
+              runHook postCheck
+            '';
 
             nativeBuildInputs = with pkgs; [
+              golangci-lint
               pkg-config
-              wayland
             ];
 
             buildInputs = with pkgs; [
@@ -76,7 +85,12 @@
 
               # FIXME: the tags specified above should probably stop this from
               # needing X11 stuff, but they still get used
-              xorg.libX11.dev
+              libX11.dev
+              libxcursor
+              libxrandr
+              libxinerama
+              libxi
+              libxxf86vm
             ];
 
             patchPhase = ''
@@ -125,6 +139,10 @@
               cp -rf * $out/
             '';
           };
+
+          fazantix-check = packages.fazantix.overrideAttrs (old: {
+            doCheck = true;
+          });
         };
 
         formatter = pkgs.nixfmt-tree;
