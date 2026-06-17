@@ -3,3 +3,6 @@
 
 debian/changelog
 man/*.1
+
+*.egg-info
+__pycache__/

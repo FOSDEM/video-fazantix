@@ -14,6 +14,7 @@ import (
 
 var programLevel = new(slog.LevelVar) // Info by default
 var debugFlag = flag.Bool("debug", false, "Set loglevel to debug")
+var benchFlag = flag.Bool("benchmark", false, "Run a benchmark")
 
 func init() {
 	// The OpenGL stuff must be in one thread
@@ -38,6 +39,8 @@ func main() {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
-
-	mixer.MakeWindowAndMix(cfg)
+	if *benchFlag {
+		slog.Warn("Running in benchmark mode")
+	}
+	mixer.MakeWindowAndMix(cfg, *benchFlag)
 }

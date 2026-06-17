@@ -1,0 +1,151 @@
+sources:
+  background:
+    type: image
+    path: ../images/background.png
+  test1:
+    tag: tst1
+    type: image
+    path: ../images/testsrc1.png
+    makescene: true
+  test2:
+    tag: tst2
+    type: image
+    path: ../images/testsrc2.png
+    makescene: true
+
+scenes:
+  side-by-side:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: test1
+        transform:
+          cx: 0.25
+          cy: 0.5
+          left: 0.01
+          opacity: 1
+      - source: test2
+        transform:
+          cx: 0.75
+          cy: 0.5
+          right: 0.01
+          opacity: 1
+  full-1:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: test1
+        transform:
+          cy: 0.5
+          left: -0.03
+          right: -0.03
+          opacity: 1
+        warp:
+          x: 0.03
+          y: 0.03
+          scale: 0.9
+          opacity: 0
+  full-2:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: test2
+        transform:
+          cy: 0.5
+          left: -0.03
+          right: -0.03
+          opacity: 1
+        warp:
+          x: 0.03
+          y: 0.03
+          scale: 0.9
+          opacity: 0
+  default:
+    tag: "dflt"
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: test1
+        transform:
+          left: -0.04
+          top: -0.04
+          scale: 0.79
+          opacity: 1
+        warp:
+          opacity: 0
+          cx: 0.5
+          cy: 0.5
+          scale: 0.1
+      - source: test2
+        transform:
+          right: -0.04
+          bottom: -0.1
+          scale: 0.25
+          opacity: 1
+        warp:
+          opacity: 1
+          scale: 0.001
+          right: -0.04
+          bottom: -0.1
+  default2:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: test2
+        transform:
+          left: -0.04
+          top: -0.04
+          scale: 0.79
+          opacity: 1
+        warp:
+          opacity: 0
+          cx: 0.5
+          cy: 0.5
+          scale: 0.1
+      - source: test1
+        transform:
+          right: -0.04
+          bottom: -0.1
+          scale: 0.25
+          opacity: 1
+        warp:
+          opacity: 1
+          scale: 0.001
+          right: -0.04
+          bottom: -0.1
+
+sinks:
+  projector:
+    type: window
+    frames:
+      width: 1280
+      height: 720
+    default_scene: default
+    transition_time_ms: 1500
+
+api:
+  bind: ':8000'
+  enable_profiler: true
+
+fallback_colour: '#ebac54'
+bg_colour: '#54aceb'
