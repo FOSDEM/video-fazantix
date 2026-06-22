@@ -58,6 +58,7 @@
             tags = [
               "wayland"
               "vulkan"
+              "omt"
             ];
 
             doCheck = false;  # don't check on every build, just check during check phase
