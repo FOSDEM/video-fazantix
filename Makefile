@@ -8,7 +8,7 @@ DATADIR := /share/fazantix
 
 LDFLAGS=-compressdwarf=false
 
-TAGS := dummy
+TAGS := omt
 
 .PHONY: build
 build: prereqs build-x11 build-wayland build/fazantix-validate-config
