@@ -14,9 +14,12 @@
       let
         pkgs = import nixpkgs { inherit system; };
         lib = pkgs.lib;
+        omt = pkgs.callPackage ./nix/omt.nix { };
       in
       rec {
         packages = rec {
+          inherit (omt) libvmx libomtnet libomt;
+
           fazantix-web-ui = pkgs.buildNpmPackage {
             name = "fazantix-web-ui";
             src = ./web_ui;
@@ -92,6 +95,9 @@
               libxinerama
               libxi
               libxxf86vm
+
+              # OMT support (the `omt` build tag links libomt via pkg-config)
+              omt.libomt
             ];
 
             patchPhase = ''
