@@ -15,11 +15,12 @@
         pkgs = import nixpkgs { inherit system; };
         lib = pkgs.lib;
         omt = pkgs.callPackage ./nix/omt.nix { };
+        # OMT (Open Media Transport) is currently x86_64-linux only; on other
+        # systems fazantix is built without it (the `!omt` stubs in lib/).
+        omtSupported = system == "x86_64-linux";
       in
       rec {
         packages = rec {
-          inherit (omt) libvmx libomtnet libomt;
-
           fazantix-web-ui = pkgs.buildNpmPackage {
             name = "fazantix-web-ui";
             src = ./web_ui;
@@ -61,8 +62,7 @@
             tags = [
               "wayland"
               "vulkan"
-              "omt"
-            ];
+            ] ++ lib.optional omtSupported "omt";
 
             doCheck = false;  # don't check on every build, just check during check phase
 
@@ -95,10 +95,10 @@
               libxinerama
               libxi
               libxxf86vm
-
-              # OMT support (the `omt` build tag links libomt via pkg-config)
-              omt.libomt
-            ];
+            ]
+            # OMT support (the `omt` build tag links libomt via pkg-config);
+            # x86_64-linux only for now.
+            ++ lib.optional omtSupported omt.libomt;
 
             patchPhase = ''
               # generate docs
@@ -112,6 +112,9 @@
             meta.mainProgram = "fazantix";
           };
           default = packages.fazantix;
+        }
+        // lib.optionalAttrs omtSupported {
+          inherit (omt) libvmx libomtnet libomt;
         };
 
         devShells = {
