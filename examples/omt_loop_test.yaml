@@ -5,7 +5,7 @@ sources:
   test1:
     tag: tst1
     type: omt
-    name: foo
+    name: '<HOSTNAME> (foo)'
     frames:
       width: 1920
       height: 1080
@@ -43,7 +43,7 @@ sinks:
 
   omtsink:
     type: omt
-    name: foo
+    name: foo # will result in a sink called "<CURRENT MACHINE HOSTNAME> (foo)"
     frames:
       width: 1920
       height: 1080
