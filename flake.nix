@@ -145,9 +145,6 @@
           };
 
           default = packages.fazantix-wayland;
-        }
-        // lib.optionalAttrs omtSupported {
-          inherit (omt) libvmx libomtnet libomt;
         };
 
         devShells = {
