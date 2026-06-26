@@ -149,7 +149,7 @@
 
         devShells = {
           default = pkgs.mkShell {
-            inputsFrom = [ packages.fazantix ];
+            inputsFrom = [ packages.fazantix-wayland ];
             buildInputs = with pkgs; [
               go
               gotools
@@ -171,7 +171,7 @@
             checkPhase = ''
               for f in *.yaml; do
                 echo "validating $f"
-                ${packages.fazantix}/bin/fazantix-validate-config "$f"
+                ${packages.fazantix-wayland}/bin/fazantix-validate-config "$f"
               done
             '';
             installPhase = ''
@@ -180,7 +180,11 @@
             '';
           };
 
-          fazantix-check = packages.fazantix.overrideAttrs (old: {
+          fazantix-wayland-check = packages.fazantix-wayland.overrideAttrs (old: {
+            doCheck = true;
+          });
+
+          fazantix-xorg-check = packages.fazantix-xorg.overrideAttrs (old: {
             doCheck = true;
           });
         };
