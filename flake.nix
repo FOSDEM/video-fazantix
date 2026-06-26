@@ -35,8 +35,14 @@
           name = "fazantix-sample-images";
           meta.description = "Example image files for fazantix";
           src = ./examples/images;
-          buildInputs = [ pkgs.coreutils pkgs.rsync ];
-          phases = [ "unpackPhase" "installPhase" ];
+          buildInputs = [
+            pkgs.coreutils
+            pkgs.rsync
+          ];
+          phases = [
+            "unpackPhase"
+            "installPhase"
+          ];
           installPhase = ''
             mkdir -p $out
             rsync -rva ./ $out/
@@ -71,52 +77,55 @@
           pkgs.pkg-config
         ];
 
-        mkFazantix = { name, tags }: pkgs.buildGoModule {
-          name = "fazantix";
-          src = ./.;
+        mkFazantix =
+          { name, tags }:
+          pkgs.buildGoModule {
+            name = "fazantix";
+            src = ./.;
 
-          # This currently needs to be manually updated when go.sum is changed
-          vendorHash = "sha256-s2ExngP2VASjEjPp91lvnb+nxPQQUAGcqyerJYF6+2I=";
-          goSum = ./go.sum;
-          subPackages = [
-            "cmd/fazantix"
-            "cmd/fazantix-window"
-            "cmd/fazantix-validate-config"
-          ];
+            # This currently needs to be manually updated when go.sum is changed
+            vendorHash = "sha256-s2ExngP2VASjEjPp91lvnb+nxPQQUAGcqyerJYF6+2I=";
+            goSum = ./go.sum;
+            subPackages = [
+              "cmd/fazantix"
+              "cmd/fazantix-window"
+              "cmd/fazantix-validate-config"
+            ];
 
-          inherit tags;
+            inherit tags;
 
-          doCheck = false;  # don't check on every build, just check during check phase
+            doCheck = false; # don't check on every build, just check during check phase
 
-          checkPhase = ''
-            runHook preCheck
+            checkPhase = ''
+              runHook preCheck
 
-            export HOME=$TMPDIR
-            make lint
+              export HOME=$TMPDIR
+              make lint
 
-            runHook postCheck
-          '';
+              runHook postCheck
+            '';
 
-          nativeBuildInputs = buildDeps;
-          buildInputs = commonDeps
-          ++ lib.optional (builtins.elem "omt" tags) omt.libomt
-          ++ lib.optionals (builtins.elem "wayland" tags) waylandDeps
-          ++ lib.optionals (builtins.elem "vulkan" tags) vulkanDeps
-          # FIXME: we should exclude xorgdeps when the wayland tag is not present,
-          # but for some reason they are still required?
-          ++ lib.optionals true xorgDeps;
+            nativeBuildInputs = buildDeps;
+            buildInputs =
+              commonDeps
+              ++ lib.optional (builtins.elem "omt" tags) omt.libomt
+              ++ lib.optionals (builtins.elem "wayland" tags) waylandDeps
+              ++ lib.optionals (builtins.elem "vulkan" tags) vulkanDeps
+              # FIXME: we should exclude xorgdeps when the wayland tag is not present,
+              # but for some reason they are still required?
+              ++ lib.optionals true xorgDeps;
 
-          patchPhase = ''
-            # generate docs
-            ${pkgs.go-swag}/bin/swag init -g lib/api/api.go
+            patchPhase = ''
+              # generate docs
+              ${pkgs.go-swag}/bin/swag init -g lib/api/api.go
 
-            # generate web ui
-            mkdir -p lib/api/static
-            cp -rvf ${fazantix-web-ui}/* lib/api/static/
-          '';
+              # generate web ui
+              mkdir -p lib/api/static
+              cp -rvf ${fazantix-web-ui}/* lib/api/static/
+            '';
 
-          meta.mainProgram = "fazantix";
-        };
+            meta.mainProgram = "fazantix";
+          };
       in
       rec {
         packages = rec {
@@ -125,12 +134,14 @@
             tags = [
               "wayland"
               "vulkan"
-            ] ++ lib.optional omtSupported "omt";
+            ]
+            ++ lib.optional omtSupported "omt";
           };
           fazantix-xorg = mkFazantix {
             name = "fazantix-xorg";
             tags = [
-            ] ++ lib.optional omtSupported "omt";
+            ]
+            ++ lib.optional omtSupported "omt";
           };
 
           default = packages.fazantix-wayland;
