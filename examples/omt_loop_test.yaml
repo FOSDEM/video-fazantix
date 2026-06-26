@@ -1,0 +1,60 @@
+sources:
+  background:
+    type: image
+    path: images/background.png
+  test1:
+    tag: tst1
+    type: omt
+    name: '<HOSTNAME> (foo)'
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 6
+
+scenes:
+  full-1:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: test1
+        transform:
+          cy: 0.5
+          left: -0.03
+          right: -0.03
+          opacity: 1
+        warp:
+          x: 0.03
+          y: 0.03
+          scale: 0.9
+          opacity: 0
+
+sinks:
+  projector:
+    type: window
+    frames:
+      width: 1280
+      height: 720
+    default_scene: full-1
+    transition_time_ms: 1500
+
+  omtsink:
+    type: omt
+    name: foo # will result in a sink called "<CURRENT MACHINE HOSTNAME> (foo)"
+    frames:
+      width: 1920
+      height: 1080
+      num_allocated_frames: 6
+    default_scene: full-1
+    transition_time_ms: 1500
+
+api:
+  bind: ':8000'
+  enable_profiler: true
+
+fallback_colour: '#ebac54'
+bg_colour: '#54aceb'
+base_framerate: -1

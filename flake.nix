@@ -14,35 +14,72 @@
       let
         pkgs = import nixpkgs { inherit system; };
         lib = pkgs.lib;
-      in
-      rec {
-        packages = rec {
-          fazantix-web-ui = pkgs.buildNpmPackage {
-            name = "fazantix-web-ui";
-            src = ./web_ui;
-            npmDepsHash = "sha256-cCgiR3LxArf5uYsqo7dN8W8qiK/zAz6lkK9vcL5/ev8=";
-            npmBuildScript = "build";
-            installPhase = ''
-              runHook preInstall
-              mkdir -p $out
-              cp -r dist/* $out/
-              runHook postInstall
-            '';
-          };
+        omt = pkgs.callPackage ./nix/omt.nix { };
+        # OMT (Open Media Transport) is currently x86_64-linux only
+        omtSupported = system == "x86_64-linux";
 
-          fazantix-sample-images = pkgs.stdenvNoCC.mkDerivation rec {
-            name = "fazantix-sample-images";
-            meta.description = "Example image files for fazantix";
-            src = ./examples/images;
-            buildInputs = [ pkgs.coreutils pkgs.rsync ];
-            phases = [ "unpackPhase" "installPhase" ];
-            installPhase = ''
-              mkdir -p $out
-              rsync -rva ./ $out/
-            '';
-          };
+        fazantix-web-ui = pkgs.buildNpmPackage {
+          name = "fazantix-web-ui";
+          src = ./web_ui;
+          npmDepsHash = "sha256-cCgiR3LxArf5uYsqo7dN8W8qiK/zAz6lkK9vcL5/ev8=";
+          npmBuildScript = "build";
+          installPhase = ''
+            runHook preInstall
+            mkdir -p $out
+            cp -r dist/* $out/
+            runHook postInstall
+          '';
+        };
 
-          fazantix = pkgs.buildGoModule {
+        fazantix-sample-images = pkgs.stdenvNoCC.mkDerivation rec {
+          name = "fazantix-sample-images";
+          meta.description = "Example image files for fazantix";
+          src = ./examples/images;
+          buildInputs = [
+            pkgs.coreutils
+            pkgs.rsync
+          ];
+          phases = [
+            "unpackPhase"
+            "installPhase"
+          ];
+          installPhase = ''
+            mkdir -p $out
+            rsync -rva ./ $out/
+          '';
+        };
+
+        waylandDeps = [
+          pkgs.wayland
+        ];
+
+        vulkanDeps = [
+          pkgs.vulkan-headers
+          pkgs.vulkan-loader
+        ];
+
+        xorgDeps = [
+          pkgs.libX11.dev
+          pkgs.libxcursor
+          pkgs.libxrandr
+          pkgs.libxinerama
+          pkgs.libxi
+          pkgs.libxxf86vm
+        ];
+
+        commonDeps = [
+          pkgs.libxkbcommon
+          pkgs.libGL
+        ];
+
+        buildDeps = [
+          pkgs.golangci-lint
+          pkgs.pkg-config
+        ];
+
+        mkFazantix =
+          { name, tags }:
+          pkgs.buildGoModule {
             name = "fazantix";
             src = ./.;
 
@@ -55,12 +92,9 @@
               "cmd/fazantix-validate-config"
             ];
 
-            tags = [
-              "wayland"
-              "vulkan"
-            ];
+            inherit tags;
 
-            doCheck = false;  # don't check on every build, just check during check phase
+            doCheck = false; # don't check on every build, just check during check phase
 
             checkPhase = ''
               runHook preCheck
@@ -71,27 +105,15 @@
               runHook postCheck
             '';
 
-            nativeBuildInputs = with pkgs; [
-              golangci-lint
-              pkg-config
-            ];
-
-            buildInputs = with pkgs; [
-              wayland
-              libxkbcommon
-              vulkan-headers
-              vulkan-loader
-              libGL
-
-              # FIXME: the tags specified above should probably stop this from
-              # needing X11 stuff, but they still get used
-              libX11.dev
-              libxcursor
-              libxrandr
-              libxinerama
-              libxi
-              libxxf86vm
-            ];
+            nativeBuildInputs = buildDeps;
+            buildInputs =
+              commonDeps
+              ++ lib.optional (builtins.elem "omt" tags) omt.libomt
+              ++ lib.optionals (builtins.elem "wayland" tags) waylandDeps
+              ++ lib.optionals (builtins.elem "vulkan" tags) vulkanDeps
+              # FIXME: we should exclude xorgdeps when the wayland tag is not present,
+              # but for some reason they are still required?
+              ++ lib.optionals true xorgDeps;
 
             patchPhase = ''
               # generate docs
@@ -104,12 +126,30 @@
 
             meta.mainProgram = "fazantix";
           };
-          default = packages.fazantix;
+      in
+      rec {
+        packages = rec {
+          fazantix-wayland = mkFazantix {
+            name = "fazantix-wayland";
+            tags = [
+              "wayland"
+              "vulkan"
+            ]
+            ++ lib.optional omtSupported "omt";
+          };
+          fazantix-xorg = mkFazantix {
+            name = "fazantix-xorg";
+            tags = [
+            ]
+            ++ lib.optional omtSupported "omt";
+          };
+
+          default = packages.fazantix-wayland;
         };
 
         devShells = {
           default = pkgs.mkShell {
-            inputsFrom = [ packages.fazantix ];
+            inputsFrom = [ packages.fazantix-wayland ];
             buildInputs = with pkgs; [
               go
               gotools
@@ -131,7 +171,7 @@
             checkPhase = ''
               for f in *.yaml; do
                 echo "validating $f"
-                ${packages.fazantix}/bin/fazantix-validate-config "$f"
+                ${packages.fazantix-wayland}/bin/fazantix-validate-config "$f"
               done
             '';
             installPhase = ''
@@ -140,7 +180,11 @@
             '';
           };
 
-          fazantix-check = packages.fazantix.overrideAttrs (old: {
+          fazantix-wayland-check = packages.fazantix-wayland.overrideAttrs (old: {
+            doCheck = true;
+          });
+
+          fazantix-xorg-check = packages.fazantix-xorg.overrideAttrs (old: {
             doCheck = true;
           });
         };
