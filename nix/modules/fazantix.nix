@@ -82,6 +82,9 @@ in {
 
         StateDirectory = name;  # creates fazantdir; FIXME - make this depend on fazantdir
         WorkingDirectory = "${fazantdir}";
+
+        Restart = "always";
+        RestartSec = "3s";
       };
       wantedBy = [ "multi-user.target" ];
     };
