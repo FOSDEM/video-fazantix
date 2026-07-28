@@ -128,6 +128,9 @@
           };
       in
       rec {
+        nixosModules = {
+          fazantix = (import ./nix/modules/fazantix.nix);
+        };
         packages = rec {
           fazantix-wayland = mkFazantix {
             name = "fazantix-wayland";

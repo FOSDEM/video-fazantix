@@ -27,8 +27,8 @@ func BuildGLProgram(shaderData *ShaderData) (uint32, error) {
 		return 0, fmt.Errorf("could not get vertex shader: %w", err)
 	}
 
-	writeFileDebug("/tmp/shader.vert", vertexShader)
-	writeFileDebug("/tmp/shader.frag", fragmentShader)
+	// writeFileDebug("/tmp/shader.vert", vertexShader)
+	// writeFileDebug("/tmp/shader.frag", fragmentShader)
 
 	program, err := newProgram(vertexShader, fragmentShader)
 	if err != nil {
