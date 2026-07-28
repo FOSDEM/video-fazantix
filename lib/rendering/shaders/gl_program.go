@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -27,8 +28,10 @@ func BuildGLProgram(shaderData *ShaderData) (uint32, error) {
 		return 0, fmt.Errorf("could not get vertex shader: %w", err)
 	}
 
-	// writeFileDebug("/tmp/shader.vert", vertexShader)
-	// writeFileDebug("/tmp/shader.frag", fragmentShader)
+	if debugDir := os.Getenv("FAZANTIX_SHADER_DEBUG_DIR"); debugDir != "" {
+		writeFileDebug(path.Join(debugDir, "shader.vert"), vertexShader)
+		writeFileDebug(path.Join(debugDir, "shader.frag"), fragmentShader)
+	}
 
 	program, err := newProgram(vertexShader, fragmentShader)
 	if err != nil {
