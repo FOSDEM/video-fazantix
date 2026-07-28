@@ -299,7 +299,11 @@ func (s *V4LSource) dequeueFrame() error {
 
 	if !s.v4l2BufOK(&buff) {
 		s.brokenFrameCounter++
-		s.Frames().FailedWriting(frame)
+		if frame != nil {
+			s.Frames().FailedWriting(frame)
+		} else {
+			s.log("v4l reported that frame with idx=%d is broken, but it was already invalidated? this might be a bug and we could be leaking frames", buff.Index)
+		}
 		return nil
 	}
 

@@ -157,6 +157,10 @@ func (f *FrameForwarder) GetFrameForWriting() *encdec.Frame {
 	frame := f.bin[len(f.bin)-1]
 	f.bin = f.bin[:len(f.bin)-1]
 
+	if frame == nil {
+		panic("oops, got a nil frame out of frames-for-writing bin")
+	}
+
 	f.LastWrittenFrameID += 1
 	frame.ID = f.LastWrittenFrameID
 
@@ -205,6 +209,10 @@ func (f *FrameForwarder) AvailableFramesForWriting() int {
 }
 
 func (f *FrameForwarder) recycleFrame(frame *encdec.Frame) {
+	if frame == nil {
+		panic("recycleFrame given a nil frame")
+	}
+
 	if len(f.bin) >= cap(f.bin) || cap(f.bin) != f.FrameInfo.NumAllocatedFrames {
 		panic("more frames returned than extracted??")
 	}
@@ -218,6 +226,9 @@ func (f *FrameForwarder) allocateFrames(num int) {
 	f.bin = make([]*encdec.Frame, num)
 	for i := range num {
 		f.bin[i] = f.Allocator.NewFrame(&f.FrameInfo)
+		if f.bin[i] == nil {
+			panic("frame allocator returned nil frame?!")
+		}
 	}
 }
 
