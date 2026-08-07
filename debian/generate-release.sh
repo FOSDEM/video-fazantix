@@ -10,4 +10,4 @@ fi
 #RVERSION="$(${CIRCLE_TAG:=0.0.${CIRCLE_BUILD_NUM:-1}} | sed 's/[^0-9\.]*//g')"
 RDATE="$(date -R)"
 
-sed -e 's/$RELEASE/'"$RVERSION"'/' -e 's/$DATE/'"$RDATE"'/' debian/changelog.template > debian/changelog
+sed -e 's/$RELEASE/'"$RVERSION"'/' -e 's/$DATE/'"$RDATE"'/' changelog.template > changelog
