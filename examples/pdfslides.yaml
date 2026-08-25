@@ -1,0 +1,86 @@
+sources:
+  background:
+    type: image
+    path: images/background.png
+  slides:
+    tag: SLD
+    type: pdf
+    path: images/fazantix.pdf
+    width: 1920
+    height: 1080
+    makescene: true
+  camera:
+    tag: CAM
+    type: image
+    path: images/testsrc1.png
+    makescene: true
+
+
+scenes:
+  side-by-side:
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: slides
+        transform:
+          cx: 0.25
+          cy: 0.5
+          left: 0.01
+          opacity: 1
+      - source: camera
+        transform:
+          cx: 0.75
+          cy: 0.5
+          right: 0.01
+          opacity: 1
+  default:
+    tag: "dflt"
+    layers:
+      - source: background
+        transform:
+          x: 0
+          y: 0
+          scale: 1
+          opacity: 1
+      - source: slides
+        transform:
+          left: -0.04
+          top: -0.04
+          scale: 0.79
+          opacity: 1
+        warp:
+          opacity: 0
+          cx: 0.5
+          cy: 0.5
+          scale: 0.1
+      - source: camera
+        transform:
+          right: -0.04
+          bottom: -0.1
+          scale: 0.25
+          opacity: 1
+        warp:
+          opacity: 1
+          scale: 0.001
+          right: -0.04
+          bottom: -0.1
+
+sinks:
+  projector:
+    type: window
+    frames:
+      width: 1280
+      height: 720
+    default_scene: default
+    transition_time_ms: 1500
+
+api:
+  bind: ':8000'
+  enable_profiler: true
+
+fallback_colour: '#ebac54'
+bg_colour: '#54aceb'

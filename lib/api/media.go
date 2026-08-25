@@ -11,6 +11,7 @@ import (
 	"github.com/fosdem/fazantix/lib/encdec"
 	"github.com/fosdem/fazantix/lib/layer"
 	"github.com/fosdem/fazantix/lib/source/imgsource"
+	"github.com/fosdem/fazantix/lib/source/pdfsource"
 )
 
 type FrameForwarderObject interface {
@@ -124,25 +125,32 @@ func (a *Api) handleMediaSource(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	imgSource, ok := source.(*imgsource.ImgSource)
-	if !ok {
-		http.Error(w, "not a valid image source", http.StatusBadRequest)
-		return
-	}
-
 	if req.Method == "PUT" {
-		newImage, ftype, err := image.Decode(req.Body)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("not a valid image: %s", err), http.StatusBadRequest)
+		switch src := source.(type) {
+		case *imgsource.ImgSource:
+			newImage, ftype, err := image.Decode(req.Body)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("not a valid image: %s", err), http.StatusBadRequest)
+				return
+			}
+			log.Printf("Image source %s was updated with new %s image (%dx%d)\n", sourceName, ftype, newImage.Bounds().Dx(), newImage.Bounds().Dy())
+			err = src.SetImage(newImage)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("could not update image: %s", err), http.StatusBadRequest)
+				return
+			}
+			return
+		case *pdfsource.PdfSource:
+			err := src.SetDocument(req.Body)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("could not update document: %s", err), http.StatusBadRequest)
+				return
+			}
+			return
+		default:
+			http.Error(w, "Unsupported source type", http.StatusBadRequest)
 			return
 		}
-		log.Printf("Image source %s was updated with new %s image (%dx%d)\n", sourceName, ftype, newImage.Bounds().Dx(), newImage.Bounds().Dy())
-		err = imgSource.SetImage(newImage)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("could not update image: %s", err), http.StatusBadRequest)
-			return
-		}
-		return
 	}
 
 	http.Error(w, "Invalid method, only GET and PUT supported", http.StatusMethodNotAllowed)

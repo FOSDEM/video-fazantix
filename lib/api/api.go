@@ -93,6 +93,7 @@ func (a *Api) Serve() error {
 	a.mux.HandleFunc("/api/media/source/{source}", a.handleMediaSource)
 	a.mux.HandleFunc("/api/media/sink/{sink}", a.handleMediaSource)
 	a.mux.HandleFunc("/api/media/source/{source}/{format}", a.handleMediaSource)
+	a.mux.HandleFunc("/api/slide/source/{source}/{action}/{num}", a.handleSlidePage)
 	a.mux.Handle("/swagger/", httpSwagger.Handler())
 	a.mux.Handle("/metrics", metrics.Handler())
 	a.mux.Handle("/", http.FileServer(http.FS(contentFS)))
