@@ -8,6 +8,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"golang.org/x/sys/unix"
 
 	"github.com/fosdem/fazantix/lib/config"
 	"github.com/fosdem/fazantix/lib/encdec"
@@ -24,6 +25,10 @@ type FFmpegSink struct {
 	frames   layer.FrameForwarder
 	rate     float64
 	cfg      *config.FFmpegSinkCfg
+}
+type FdWriteCloser interface {
+	io.WriteCloser
+	Fd() uintptr
 }
 
 func New(name string, cfg *config.FFmpegSinkCfg, frameCfg *encdec.FrameCfg, alloc encdec.FrameAllocator) *FFmpegSink {
@@ -55,6 +60,7 @@ func (f *FFmpegSink) Start() bool {
 }
 
 func (f *FFmpegSink) setupCmd() error {
+
 	f.cmd = exec.Command("bash", "-c", f.shellCmd)
 	f.cmd.Env = os.Environ()
 	f.cmd.Env = append(f.cmd.Env, fmt.Sprintf("WIDTH=%d", f.Frames().Width))
@@ -63,10 +69,15 @@ func (f *FFmpegSink) setupCmd() error {
 	f.cmd.Env = append(f.cmd.Env, fmt.Sprintf("RATE=%f", f.rate))
 	f.cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGTERM}
 	var err error
-	f.stdin, err = f.cmd.StdinPipe()
+
+	f.cmd.Stdin, f.stdin, err = os.Pipe()
 	if err != nil {
 		return fmt.Errorf("could not get ffmpeg stdin: %s", err)
 	}
+	// set to 1MiB (because that's standardly the max) and try 10MiB, if set in sysctl
+	// as that would fit a frame in a single write()
+	unix.FcntlInt(f.stdin.(FdWriteCloser).Fd(), syscall.F_SETPIPE_SZ, 1*1024*1024)
+	unix.FcntlInt(f.stdin.(FdWriteCloser).Fd(), syscall.F_SETPIPE_SZ, 10*1024*1024)
 	f.stdout, err = f.cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("could not get ffmpeg stdout: %s", err)
