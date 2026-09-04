@@ -91,6 +91,15 @@ func (a *Api) handleMediaSource(w http.ResponseWriter, req *http.Request) {
 				pix[i*4+2] = frame.Data[i*3+2]
 				pix[i*4+3] = 255
 			}
+		case encdec.YUV422pFrames:
+			img = image.NewYCbCr(bounds, image.YCbCrSubsampleRatio422)
+			for i := range len(frame.Data) / 4 {
+				j := i * 4
+				img.(*image.YCbCr).Y[i*2] = frame.Data[j]
+				img.(*image.YCbCr).Cb[i] = frame.Data[j+1]
+				img.(*image.YCbCr).Y[i*2+1] = frame.Data[j+2]
+				img.(*image.YCbCr).Cr[i] = frame.Data[j+3]
+			}
 		case encdec.YUV422Frames:
 			img = image.NewYCbCr(bounds, image.YCbCrSubsampleRatio422)
 			textureY, _, _ := frame.Texture(0)
