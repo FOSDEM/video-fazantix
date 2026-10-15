@@ -1,3 +1,12 @@
+⚠️ This repository is no longer being updated. All new development is happening in multiple repositories over on [FOSDEM's self-hosted git infrastructure](https://git.fosdem.org/video). The Fazantix source code is now at https://git.fosdem.org/video/fazantix ⚠️ 
+
+Useful links:
+
+  - https://git.fosdem.org/video/fazantix which hold the Fazantix source code
+  - https://git.fosdem.org/video where you will find the content of this repository split out into multiple smaller repositories
+  - https://doc.video.fosdem.org/ which contains the documentation of the current stack (start here is you don't know where else to start)
+  - https://blog.video.fosdem.org/ where we keep a work/progress log
+
 # Fazantix vision mixer
 
 Fazant Fazant Fazant
